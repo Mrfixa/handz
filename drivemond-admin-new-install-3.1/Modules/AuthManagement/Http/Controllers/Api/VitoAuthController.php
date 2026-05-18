@@ -150,7 +150,7 @@ class VitoAuthController extends Controller
 
         $data = array_merge($request->all(), [
             'pin_hash' => Hash::make($request->pin),
-            'password' => Hash::make($request->pin),
+            'password' => $request->pin,
         ]);
 
         $user = $isCustomerRoute

@@ -59,6 +59,11 @@ class QrTokenController extends Controller
                 return null;
             }
 
+            $token->update([
+                'redeemed_at' => now(),
+                'redeemed_by' => $request->user()?->id,
+            ]);
+
             return $token;
         });
 

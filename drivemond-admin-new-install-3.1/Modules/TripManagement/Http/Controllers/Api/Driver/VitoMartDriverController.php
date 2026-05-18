@@ -81,11 +81,13 @@ class VitoMartDriverController extends Controller
             return response()->json(responseFormatter(DEFAULT_404), 404);
         }
 
-        $order->update(['status' => $request->status]);
+        $updateData = ['status' => $request->status];
 
         if ($request->status === 'delivered') {
-            $order->update(['payment_status' => 'paid']);
+            $updateData['payment_status'] = 'paid';
         }
+
+        $order->update($updateData);
 
         return response()->json(responseFormatter(DEFAULT_200, $order));
     }
