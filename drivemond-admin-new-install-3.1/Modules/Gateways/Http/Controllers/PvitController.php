@@ -35,7 +35,7 @@ class PvitController extends Controller
             $this->config_values = json_decode($config->test_values);
         }
 
-        if ($config) {
+        if ($config && isset($this->config_values)) {
             $this->mc_tel_merchant = $this->config_values->mc_tel_merchant;
             $this->access_token = $this->config_values->access_token;
             $this->mc_merchant_code = $this->config_values->mc_merchant_code;

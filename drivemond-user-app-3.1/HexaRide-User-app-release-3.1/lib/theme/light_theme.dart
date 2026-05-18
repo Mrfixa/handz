@@ -19,12 +19,12 @@ ThemeData lightTheme = ThemeData(
     backgroundColor: const Color(0xFFEEEEEE)
   ),
 
-  pageTransitionsTheme: const PageTransitionsTheme(
+  pageTransitionsTheme: PageTransitionsTheme(
     builders: <TargetPlatform, PageTransitionsBuilder>{
-      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.linux: OpenUpwardsPageTransitionsBuilder(),
-      TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.android: ZoomPageTransitionsBuilder(),
+      TargetPlatform.linux: const OpenUpwardsPageTransitionsBuilder(),
+      TargetPlatform.macOS: const FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
     },
   ),
 

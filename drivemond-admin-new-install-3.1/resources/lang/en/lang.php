@@ -4402,4 +4402,8 @@
   'First, select a brand' => 'First, select a brand',
   'Select Model' => 'Select Model',
   'Vehicle Features' => 'Vehicle Features',
+  'The username field is required.' => 'The username field is required.',
+  'The pin field is required.' => 'The pin field is required.',
+  'The amount must be at least 1.' => 'The amount must be at least 1.',
+  'please_try_again_after_' => 'Please try again after ',
 );

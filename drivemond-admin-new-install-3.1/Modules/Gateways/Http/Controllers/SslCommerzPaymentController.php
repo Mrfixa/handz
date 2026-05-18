@@ -34,7 +34,7 @@ class SslCommerzPaymentController extends Controller
             $values = json_decode($config->test_values);
         }
 
-        if ($config) {
+        if ($config && isset($values)) {
             $this->store_id = $values->store_id;
             $this->store_password = $values->store_password;
 

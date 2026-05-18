@@ -1,0 +1,144 @@
+name: VITO CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  FLUTTER_VERSION: "3.24.5"
+  PHP_VERSION: "8.2"
+
+jobs:
+  laravel:
+    name: Laravel Tests & Analysis
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: drivemond-admin-new-install-3.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, sqlite3, pdo_sqlite, json, curl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-scripts --ignore-platform-reqs --prefer-dist
+
+      - name: Copy .env
+        run: cp .env.example .env 2>/dev/null || true
+
+      - name: Generate app key
+        run: php artisan key:generate --force 2>/dev/null || true
+
+      - name: Generate Passport keys
+        run: php artisan passport:keys --force 2>/dev/null || true
+
+      - name: Set APP_URL for tests
+        run: |
+          sed -i 's|^APP_URL=.*|APP_URL=http://localhost|' .env
+
+      - name: Run PHPStan (level 0)
+        run: |
+          ./vendor/bin/phpstan analyse \
+            Modules/AuthManagement/Http/Controllers/Api/VitoAuthController.php \
+            Modules/AuthManagement/Http/Controllers/Api/QrTokenController.php \
+            Modules/TripManagement/Http/Controllers/Api/Driver/VitoTripController.php \
+            Modules/TripManagement/Http/Controllers/Api/Driver/VitoParcelController.php \
+            Modules/TripManagement/Http/Controllers/Api/Driver/VitoMartDriverController.php \
+            Modules/TripManagement/Http/Controllers/Web/VitoMartAdminController.php \
+            Modules/Gateways/Http/Controllers/Api/VitoStripeController.php \
+            --level=0 --no-progress || true
+
+      - name: Run PHPUnit Tests
+        run: php artisan test --filter=VitoFlowTest
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+          APP_URL: "http://localhost"
+
+  flutter-user:
+    name: Flutter User App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: drivemond-user-app-3.1/HexaRide-User-app-release-3.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run flutter analyze
+        run: flutter analyze --no-fatal-infos || true
+
+      - name: Run tests
+        run: flutter test test/vito_flows_test.dart
+
+      - name: Build debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY || '' }} \
+            --dart-define=STRIPE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY || '' }}
+        continue-on-error: true
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-app-debug-apk
+          path: drivemond-user-app-3.1/HexaRide-User-app-release-3.1/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+  flutter-driver:
+    name: Flutter Driver App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run flutter analyze
+        run: flutter analyze --no-fatal-infos || true
+
+      - name: Run tests
+        run: flutter test test/vito_flows_test.dart
+
+      - name: Build debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY || '' }} \
+            --dart-define=STRIPE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY || '' }}
+        continue-on-error: true
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: driver-app-debug-apk
+          path: drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
