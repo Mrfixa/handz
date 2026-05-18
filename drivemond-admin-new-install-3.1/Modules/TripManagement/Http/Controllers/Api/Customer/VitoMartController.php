@@ -51,51 +51,51 @@ class VitoMartController extends Controller
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
         }
 
-        $order = DB::transaction(function () use ($request) {
-            $totalAmount = 0;
-            $orderItems = [];
+        try {
+            $order = DB::transaction(function () use ($request) {
+                $totalAmount = 0;
+                $orderItems = [];
 
-            foreach ($request->items as $item) {
-                $product = MartProduct::where('id', $item['product_id'])
-                    ->where('is_active', true)
-                    ->lockForUpdate()
-                    ->first();
+                foreach ($request->items as $item) {
+                    $product = MartProduct::where('id', $item['product_id'])
+                        ->where('is_active', true)
+                        ->lockForUpdate()
+                        ->first();
 
-                if (!$product || $product->stock < $item['quantity']) {
-                    return null;
+                    if (!$product || $product->stock < $item['quantity']) {
+                        throw new \RuntimeException('Product unavailable or insufficient stock');
+                    }
+
+                    $product->decrement('stock', $item['quantity']);
+                    $itemTotal = $product->price * $item['quantity'];
+                    $totalAmount += $itemTotal;
+
+                    $orderItems[] = [
+                        'product_id' => $product->id,
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $product->price,
+                        'total_price' => $itemTotal,
+                    ];
                 }
 
-                $product->decrement('stock', $item['quantity']);
-                $itemTotal = $product->price * $item['quantity'];
-                $totalAmount += $itemTotal;
+                $order = MartOrder::create([
+                    'ref_id' => 'VM-' . strtoupper(Str::random(8)),
+                    'customer_id' => $request->user()->id,
+                    'status' => 'pending',
+                    'total_amount' => $totalAmount,
+                    'delivery_address' => $request->delivery_address,
+                    'delivery_lat' => $request->delivery_lat,
+                    'delivery_lng' => $request->delivery_lng,
+                    'notes' => $request->notes,
+                ]);
 
-                $orderItems[] = [
-                    'product_id' => $product->id,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $product->price,
-                    'total_price' => $itemTotal,
-                ];
-            }
+                foreach ($orderItems as $item) {
+                    MartOrderItem::create(array_merge($item, ['order_id' => $order->id]));
+                }
 
-            $order = MartOrder::create([
-                'ref_id' => 'VM-' . strtoupper(Str::random(8)),
-                'customer_id' => $request->user()->id,
-                'status' => 'pending',
-                'total_amount' => $totalAmount,
-                'delivery_address' => $request->delivery_address,
-                'delivery_lat' => $request->delivery_lat,
-                'delivery_lng' => $request->delivery_lng,
-                'notes' => $request->notes,
-            ]);
-
-            foreach ($orderItems as $item) {
-                MartOrderItem::create(array_merge($item, ['order_id' => $order->id]));
-            }
-
-            return $order->load('items.product');
-        });
-
-        if (!$order) {
+                return $order->load('items.product');
+            });
+        } catch (\RuntimeException $e) {
             return response()->json(responseFormatter(constant: DEFAULT_404), 403);
         }
 

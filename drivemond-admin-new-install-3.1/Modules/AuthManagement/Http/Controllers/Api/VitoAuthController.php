@@ -148,7 +148,7 @@ class VitoAuthController extends Controller
             return response()->json(responseFormatter(LEVEL_403), 403);
         }
 
-        $data = array_merge($request->all(), [
+        $data = array_merge($validator->validated(), [
             'pin_hash' => Hash::make($request->pin),
             'password' => $request->pin,
         ]);
