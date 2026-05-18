@@ -140,7 +140,9 @@ class VitoMartController extends Controller
             }
 
             foreach ($order->items as $item) {
-                $item->product->increment('stock', $item->quantity);
+                if ($item->product) {
+                    $item->product->increment('stock', $item->quantity);
+                }
             }
 
             $order->update(['status' => 'cancelled']);
