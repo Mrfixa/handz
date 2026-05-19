@@ -34,6 +34,7 @@ class VitoMartDriverController extends Controller
         $order = DB::transaction(function () use ($request) {
             $order = MartOrder::where('id', $request->order_id)
                 ->where('status', 'pending')
+                ->whereNull('driver_id')
                 ->lockForUpdate()
                 ->first();
 

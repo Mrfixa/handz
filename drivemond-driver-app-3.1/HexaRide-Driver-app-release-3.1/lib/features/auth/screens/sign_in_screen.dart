@@ -100,10 +100,6 @@ class _SignInScreenState extends State<SignInScreen> {
                           focusNode: pinNode,
                           isPassword: true,
                           controller: pinController,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(6),
-                          ],
                         ),
 
                         Row(children: [

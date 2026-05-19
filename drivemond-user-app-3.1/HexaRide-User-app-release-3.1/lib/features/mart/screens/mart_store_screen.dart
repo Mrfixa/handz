@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
-import 'package:ride_sharing_user_app/common_widgets/no_data_widget.dart';
 
 class MartStoreScreen extends StatefulWidget {
   const MartStoreScreen({super.key});
@@ -26,7 +25,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'vito_mart'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'vito_mart'.tr),
       body: _isOffline ? _buildOfflineBanner(context) : _buildBody(context),
       floatingActionButton: _cartItems.isNotEmpty
           ? FloatingActionButton.extended(
@@ -296,7 +295,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'cart'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'cart'.tr),
       body: widget.cartItems.isEmpty
           ? _buildEmptyCart(context)
           : Column(

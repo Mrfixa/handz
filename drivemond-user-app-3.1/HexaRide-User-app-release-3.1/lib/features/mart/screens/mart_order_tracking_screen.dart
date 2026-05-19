@@ -32,7 +32,7 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'order_tracking'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'order_tracking'.tr),
       body: Column(
         children: [
           if (_isOffline) _buildOfflineBanner(context),

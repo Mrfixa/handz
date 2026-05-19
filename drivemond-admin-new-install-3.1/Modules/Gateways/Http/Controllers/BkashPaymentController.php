@@ -36,7 +36,7 @@ class BkashPaymentController extends Controller
             $this->config_values = json_decode($config->test_values);
         }
 
-        if ($config) {
+        if ($config && isset($this->config_values)) {
             $this->app_key = $this->config_values->app_key;
             $this->app_secret = $this->config_values->app_secret;
             $this->username = $this->config_values->username;
