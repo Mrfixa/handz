@@ -539,7 +539,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         extraFields,
         multipartFiles,
         null,
-        [],
+        <MultipartDocument>[],
       );
 
       final response = await Get.find<ApiClient>().putData(
@@ -607,6 +607,7 @@ class _SignatureDialogState extends State<SignatureDialog> {
   final List<Offset?> _points = [];
   static const double _canvasWidth = 320;
   static const double _canvasHeight = 200;
+  final GlobalKey _canvasKey = GlobalKey();
 
   Future<Uint8List> _renderToBytes() async {
     final recorder = ui.PictureRecorder();
@@ -649,6 +650,7 @@ class _SignatureDialogState extends State<SignatureDialog> {
             )),
           ),
           Container(
+            key: _canvasKey,
             width: _canvasWidth,
             height: _canvasHeight,
             margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
@@ -659,7 +661,7 @@ class _SignatureDialogState extends State<SignatureDialog> {
             ),
             child: GestureDetector(
               onPanUpdate: (details) {
-                final renderBox = context.findRenderObject() as RenderBox?;
+                final renderBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
                 if (renderBox == null) return;
                 setState(() {
                   _points.add(renderBox.globalToLocal(details.globalPosition));
