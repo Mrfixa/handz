@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:ride_sharing_user_app/data/api_client.dart';
+import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
+import 'package:ride_sharing_user_app/features/mart/screens/mart_order_tracking_screen.dart';
 
 class MartStoreScreen extends StatefulWidget {
   const MartStoreScreen({super.key});
@@ -16,17 +19,45 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<Map<String, dynamic>> _products = [];
   final List<Map<String, dynamic>> _cartItems = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool _isOffline = false;
   String _selectedCategory = 'all';
 
   final List<String> _categories = ['all', 'food', 'drinks', 'snacks', 'essentials'];
 
   @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    try {
+      final response = await Get.find<ApiClient>().getData(AppConstants.martProducts);
+      if (response.statusCode == 200 && response.body['data'] != null) {
+        setState(() {
+          _products.clear();
+          for (final item in response.body['data']) {
+            _products.add(Map<String, dynamic>.from(item));
+          }
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (_) {
+      setState(() {
+        _isOffline = true;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWidget(title: 'vito_mart'.tr),
-      body: _isOffline ? _buildOfflineBanner(context) : _buildBody(context),
+      body: _isOffline ? _buildOfflineBody(context) : _buildBody(context),
       floatingActionButton: _cartItems.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () {
@@ -44,7 +75,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     );
   }
 
-  Widget _buildOfflineBanner(BuildContext context) {
+  Widget _buildOfflineBody(BuildContext context) {
     return Column(
       children: [
         Container(
@@ -56,10 +87,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
             children: [
               const Icon(Icons.wifi_off, color: Colors.white, size: 16),
               const SizedBox(width: 8),
-              Text(
-                'you_are_offline'.tr,
-                style: textMedium.copyWith(color: Colors.white),
-              ),
+              Text('you_are_offline'.tr, style: textMedium.copyWith(color: Colors.white)),
             ],
           ),
         ),
@@ -164,6 +192,10 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   }
 
   Widget _buildProductGrid(BuildContext context) {
+    final filtered = _selectedCategory == 'all'
+        ? _products
+        : _products.where((p) => p['category'] == _selectedCategory).toList();
+
     return GridView.builder(
       padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -172,8 +204,8 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         crossAxisSpacing: Dimensions.paddingSizeSmall,
         mainAxisSpacing: Dimensions.paddingSizeSmall,
       ),
-      itemCount: _products.length,
-      itemBuilder: (context, index) => _buildProductCard(context, _products[index]),
+      itemCount: filtered.length,
+      itemBuilder: (context, index) => _buildProductCard(context, filtered[index]),
     );
   }
 
@@ -282,15 +314,24 @@ class MartCartScreen extends StatefulWidget {
 class _MartCartScreenState extends State<MartCartScreen> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _promoController = TextEditingController();
   bool _isOrdering = false;
+  bool _isApplyingPromo = false;
+  double _discount = 0.0;
+  String? _appliedPromoCode;
+  double _tipAmount = 0.0;
 
-  double get _totalAmount {
+  final List<double> _tipOptions = [0, 2, 5, 10];
+
+  double get _subtotal {
     double total = 0;
     for (final item in widget.cartItems) {
       total += (item['price'] as num? ?? 0) * (item['quantity'] as int? ?? 1);
     }
     return total;
   }
+
+  double get _totalAmount => _subtotal - _discount + _tipAmount;
 
   @override
   Widget build(BuildContext context) {
@@ -301,10 +342,16 @@ class _MartCartScreenState extends State<MartCartScreen> {
           : Column(
               children: [
                 Expanded(
-                  child: ListView.builder(
+                  child: ListView(
                     padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
-                    itemCount: widget.cartItems.length,
-                    itemBuilder: (context, index) => _buildCartItem(context, index),
+                    children: [
+                      ...List.generate(widget.cartItems.length,
+                          (index) => _buildCartItem(context, index)),
+                      const SizedBox(height: Dimensions.paddingSizeDefault),
+                      _buildPromoSection(context),
+                      const SizedBox(height: Dimensions.paddingSizeDefault),
+                      _buildTipSection(context),
+                    ],
                   ),
                 ),
                 _buildOrderSummary(context),
@@ -384,6 +431,149 @@ class _MartCartScreenState extends State<MartCartScreen> {
     );
   }
 
+  Widget _buildPromoSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('promo_code'.tr, style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+            if (_appliedPromoCode != null) ...[
+              Container(
+                padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${'promo_applied'.tr}: $_appliedPromoCode (-\$${_discount.toStringAsFixed(2)})',
+                        style: textMedium.copyWith(color: Colors.green, fontSize: Dimensions.fontSizeSmall),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _appliedPromoCode = null;
+                          _discount = 0.0;
+                          _promoController.clear();
+                        });
+                      },
+                      icon: const Icon(Icons.close, size: 18),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _promoController,
+                      decoration: InputDecoration(
+                        hintText: 'enter_promo_code'.tr,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: Dimensions.paddingSizeSmall,
+                          vertical: Dimensions.paddingSizeSmall,
+                        ),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Dimensions.paddingSizeSmall),
+                  SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: _isApplyingPromo ? null : _applyPromoCode,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                        ),
+                      ),
+                      child: _isApplyingPromo
+                          ? const SizedBox(width: 16, height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text('apply'.tr, style: textMedium.copyWith(color: Colors.white, fontSize: Dimensions.fontSizeSmall)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('tip_driver'.tr, style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+            Text(
+              'show_appreciation'.tr,
+              style: textRegular.copyWith(color: Theme.of(context).hintColor, fontSize: Dimensions.fontSizeSmall),
+            ),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+            Row(
+              children: _tipOptions.map((tip) {
+                final isSelected = _tipAmount == tip;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _tipAmount = tip);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                          border: Border.all(
+                            color: isSelected
+                                ? Theme.of(context).primaryColor
+                                : Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            tip == 0 ? 'no_tip'.tr : '\$${tip.toInt()}',
+                            style: textMedium.copyWith(
+                              color: isSelected ? Colors.white : Theme.of(context).primaryColor,
+                              fontSize: Dimensions.fontSizeSmall,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildOrderSummary(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
@@ -422,6 +612,10 @@ class _MartCartScreenState extends State<MartCartScreen> {
             ),
           ),
           const SizedBox(height: Dimensions.paddingSizeDefault),
+          _buildPriceLine('subtotal'.tr, _subtotal),
+          if (_discount > 0) _buildPriceLine('discount'.tr, -_discount, isDiscount: true),
+          if (_tipAmount > 0) _buildPriceLine('tip'.tr, _tipAmount),
+          const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -467,18 +661,92 @@ class _MartCartScreenState extends State<MartCartScreen> {
     );
   }
 
-  void _placeOrder() {
+  Widget _buildPriceLine(String label, double amount, {bool isDiscount = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall)),
+          Text(
+            '${isDiscount ? '-' : ''}\$${amount.abs().toStringAsFixed(2)}',
+            style: textMedium.copyWith(
+              fontSize: Dimensions.fontSizeSmall,
+              color: isDiscount ? Colors.green : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applyPromoCode() async {
+    final code = _promoController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _isApplyingPromo = true);
+
+    try {
+      final response = await Get.find<ApiClient>().postData(
+        '/api/customer/mart/apply-promo',
+        {'code': code, 'subtotal': _subtotal},
+      );
+
+      if (response.statusCode == 200 && response.body['data'] != null) {
+        setState(() {
+          _discount = (response.body['data']['discount'] as num?)?.toDouble() ?? 0.0;
+          _appliedPromoCode = code;
+        });
+      } else {
+        Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
+      }
+    } catch (_) {
+      Get.snackbar('error'.tr, 'promo_validation_failed'.tr);
+    } finally {
+      setState(() => _isApplyingPromo = false);
+    }
+  }
+
+  Future<void> _placeOrder() async {
     if (_addressController.text.isEmpty) {
       Get.snackbar('error'.tr, 'please_enter_delivery_address'.tr);
       return;
     }
+
     setState(() => _isOrdering = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isOrdering = false);
+
+    try {
+      final items = widget.cartItems.map((item) => {
+        'product_id': item['id'],
+        'quantity': item['quantity'] ?? 1,
+      }).toList();
+
+      final response = await Get.find<ApiClient>().postData(
+        AppConstants.martCreateOrder,
+        {
+          'items': items,
+          'delivery_address': _addressController.text,
+          'notes': _notesController.text,
+          'promo_code': _appliedPromoCode,
+          'tip_amount': _tipAmount,
+          'total': _totalAmount,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final orderId = response.body['data']?['order_id'] ?? '';
         Get.back();
         Get.snackbar('success'.tr, 'order_placed_successfully'.tr);
+        if (orderId.toString().isNotEmpty) {
+          Get.to(() => MartOrderTrackingScreen(orderId: orderId.toString()));
+        }
+      } else {
+        Get.snackbar('error'.tr, 'order_failed'.tr);
       }
-    });
+    } catch (_) {
+      Get.snackbar('error'.tr, 'network_error'.tr);
+    } finally {
+      if (mounted) setState(() => _isOrdering = false);
+    }
   }
 }

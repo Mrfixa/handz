@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:ride_sharing_user_app/data/api_client.dart';
+import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MartDeliveryScreen extends StatefulWidget {
   final String orderId;
@@ -20,37 +23,75 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   bool _hasSignature = false;
   bool _hasDeliveryPhoto = false;
   bool _isOffline = false;
+  bool _isLoading = true;
+
+  Map<String, dynamic> _orderData = {};
+  String? _deliveryPhotoPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrderDetails();
+  }
+
+  Future<void> _fetchOrderDetails() async {
+    try {
+      final response = await Get.find<ApiClient>().getData(
+        '${AppConstants.martMyOrders}/${widget.orderId}',
+      );
+      if (response.statusCode == 200 && response.body['data'] != null) {
+        setState(() {
+          _orderData = response.body['data'];
+          _orderStatus = _orderData['status'] ?? 'accepted';
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (_) {
+      setState(() {
+        _isOffline = true;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWidget(title: 'delivery_details'.tr, regularAppbar: true),
-      body: Column(
-        children: [
-          if (_isOffline) _buildOfflineBanner(context),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildOrderStatusCard(context),
-                  const SizedBox(height: Dimensions.paddingSizeDefault),
-                  _buildDeliveryAddress(context),
-                  const SizedBox(height: Dimensions.paddingSizeDefault),
-                  if (_orderStatus == 'picked_up') ...[
-                    _buildSignatureSection(context),
-                    const SizedBox(height: Dimensions.paddingSizeDefault),
-                    _buildPhotoSection(context),
-                    const SizedBox(height: Dimensions.paddingSizeDefault),
-                  ],
-                  _buildActionButton(context),
-                ],
-              ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
+          : Column(
+              children: [
+                if (_isOffline) _buildOfflineBanner(context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildOrderStatusCard(context),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
+                        _buildCustomerInfo(context),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
+                        _buildDeliveryAddress(context),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
+                        _buildOrderItems(context),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
+                        if (_orderStatus == 'picked_up') ...[
+                          _buildSignatureSection(context),
+                          const SizedBox(height: Dimensions.paddingSizeDefault),
+                          _buildPhotoSection(context),
+                          const SizedBox(height: Dimensions.paddingSizeDefault),
+                        ],
+                        _buildActionButton(context),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -94,7 +135,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${'order'.tr} #${widget.orderId.substring(0, 8)}',
+                    '${'order'.tr} #${widget.orderId.length > 8 ? widget.orderId.substring(0, 8) : widget.orderId}',
                     style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault),
                   ),
                   const SizedBox(height: 4),
@@ -115,7 +156,35 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                 ],
               ),
             ),
+            if (_orderData['total'] != null)
+              Text(
+                '\$${_orderData['total']}',
+                style: textBold.copyWith(
+                  fontSize: Dimensions.fontSizeLarge,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerInfo(BuildContext context) {
+    final customer = _orderData['customer'] as Map<String, dynamic>?;
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+          child: Icon(Icons.person, color: Theme.of(context).primaryColor),
+        ),
+        title: Text(customer?['name'] ?? 'customer'.tr, style: textMedium),
+        subtitle: Text(customer?['phone'] ?? '', style: textRegular),
+        trailing: IconButton(
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+          },
+          icon: Icon(Icons.phone, color: Theme.of(context).primaryColor),
         ),
       ),
     );
@@ -138,12 +207,66 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'loading_address'.tr,
+                    _orderData['delivery_address'] ?? 'loading_address'.tr,
                     style: textRegular.copyWith(fontSize: Dimensions.fontSizeDefault),
                   ),
                 ),
               ],
             ),
+            if (_orderData['notes'] != null && (_orderData['notes'] as String).isNotEmpty) ...[
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+              Row(
+                children: [
+                  Icon(Icons.notes, color: Theme.of(context).hintColor, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _orderData['notes'],
+                      style: textRegular.copyWith(
+                        fontSize: Dimensions.fontSizeSmall,
+                        color: Theme.of(context).hintColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderItems(BuildContext context) {
+    final items = _orderData['items'] as List<dynamic>? ?? [];
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('order_items'.tr, style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+            ...items.map((item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${item['quantity']}x ${item['name']}',
+                      style: textRegular.copyWith(fontSize: Dimensions.fontSizeDefault),
+                    ),
+                  ),
+                  Text(
+                    '\$${item['price']}',
+                    style: textMedium.copyWith(fontSize: Dimensions.fontSizeDefault),
+                  ),
+                ],
+              ),
+            )),
           ],
         ),
       ),
@@ -164,7 +287,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   fontSize: Dimensions.fontSizeDefault,
                 )),
                 if (_hasSignature)
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
               ],
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
@@ -186,7 +309,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green, size: 40),
+                            const Icon(Icons.check_circle, color: Colors.green, size: 40),
                             const SizedBox(height: 8),
                             Text('signature_captured'.tr, style: textMedium.copyWith(
                               color: Colors.green,
@@ -235,14 +358,21 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   fontSize: Dimensions.fontSizeDefault,
                 )),
                 if (_hasDeliveryPhoto)
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
               ],
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
             GestureDetector(
-              onTap: () {
+              onTap: () async {
                 HapticFeedback.mediumImpact();
-                setState(() => _hasDeliveryPhoto = true);
+                final picker = ImagePicker();
+                final photo = await picker.pickImage(source: ImageSource.camera);
+                if (photo != null) {
+                  setState(() {
+                    _hasDeliveryPhoto = true;
+                    _deliveryPhotoPath = photo.path;
+                  });
+                }
               },
               child: Container(
                 width: double.infinity,
@@ -257,7 +387,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green, size: 40),
+                            const Icon(Icons.check_circle, color: Colors.green, size: 40),
                             const SizedBox(height: 8),
                             Text('photo_captured'.tr, style: textMedium.copyWith(
                               color: Colors.green,
@@ -299,11 +429,13 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     switch (_orderStatus) {
       case 'accepted':
         buttonText = 'mark_as_picked_up'.tr;
-        onPressed = _isOffline ? null : () => _updateStatus('picked_up');
+        onPressed = _isOffline ? null : () => _updateStatusViaApi('picked_up');
         break;
       case 'picked_up':
         buttonText = 'mark_as_delivered'.tr;
-        onPressed = (_isOffline || !_hasSignature || !_hasDeliveryPhoto) ? null : () => _updateStatus('delivered');
+        onPressed = (_isOffline || !_hasSignature || !_hasDeliveryPhoto)
+            ? null
+            : () => _markAsDelivered();
         break;
       default:
         buttonText = 'completed'.tr;
@@ -335,21 +467,72 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     );
   }
 
-  void _updateStatus(String newStatus) {
+  Future<void> _updateStatusViaApi(String newStatus) async {
     HapticFeedback.heavyImpact();
     setState(() => _isUpdating = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
+
+    try {
+      final response = await Get.find<ApiClient>().postData(
+        AppConstants.martUpdateStatus,
+        {
+          'order_id': widget.orderId,
+          'status': newStatus,
+        },
+      );
+
+      if (response.statusCode == 200) {
         setState(() {
           _orderStatus = newStatus;
           _isUpdating = false;
         });
-        if (newStatus == 'delivered') {
-          Get.back();
-          Get.snackbar('success'.tr, 'delivery_completed'.tr);
-        }
+      } else {
+        setState(() => _isUpdating = false);
+        Get.snackbar('error'.tr, 'status_update_failed'.tr);
       }
-    });
+    } catch (_) {
+      setState(() => _isUpdating = false);
+      Get.snackbar('error'.tr, 'network_error'.tr);
+    }
+  }
+
+  Future<void> _markAsDelivered() async {
+    HapticFeedback.heavyImpact();
+    setState(() => _isUpdating = true);
+
+    try {
+      if (_deliveryPhotoPath != null) {
+        await Get.find<ApiClient>().postMultipartData(
+          AppConstants.martUploadProof,
+          {'order_id': widget.orderId},
+          [MultipartBody('proof_photo', XFile(_deliveryPhotoPath!))],
+          null,
+          [],
+        );
+      }
+
+      final response = await Get.find<ApiClient>().postData(
+        AppConstants.martUpdateStatus,
+        {
+          'order_id': widget.orderId,
+          'status': 'delivered',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _orderStatus = 'delivered';
+          _isUpdating = false;
+        });
+        Get.back();
+        Get.snackbar('success'.tr, 'delivery_completed'.tr);
+      } else {
+        setState(() => _isUpdating = false);
+        Get.snackbar('error'.tr, 'delivery_failed'.tr);
+      }
+    } catch (_) {
+      setState(() => _isUpdating = false);
+      Get.snackbar('error'.tr, 'network_error'.tr);
+    }
   }
 
   void _showSignatureCanvas(BuildContext context) {

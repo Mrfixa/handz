@@ -75,6 +75,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
   loading_overlay_pro: ^2.1.1
   app_links: ^7.0.0
+  mobile_scanner: ^6.0.2
 
 dependency_overrides:
   open_file_plus:
@@ -97,6 +98,7 @@ flutter:
     - assets/svg/
     - assets/map/
     - assets/
+    - assets/lottie/
 
   fonts:
     - family: SFProText

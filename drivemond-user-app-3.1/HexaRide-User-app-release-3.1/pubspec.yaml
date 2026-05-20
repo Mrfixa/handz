@@ -58,6 +58,8 @@ dependencies:
   firebase_auth: ^6.1.4
   phone_numbers_parser: ^9.0.19
   flutter_keyboard_visibility: ^6.0.0
+  mobile_scanner: ^6.0.2
+  lottie: ^3.3.2
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +74,7 @@ flutter:
     - assets/language/
     - assets/svg/
     - assets/map/
+    - assets/lottie/
 
   fonts:
     - family: SFProText

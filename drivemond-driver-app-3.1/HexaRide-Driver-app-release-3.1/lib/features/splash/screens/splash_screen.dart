@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 import 'package:ride_sharing_user_app/features/trip/controllers/trip_controller.dart';
 import 'package:ride_sharing_user_app/features/wallet/controllers/wallet_controller.dart';
 import 'package:ride_sharing_user_app/helper/login_helper.dart';
@@ -20,10 +21,11 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   StreamSubscription<List<ConnectivityResult>>? _onConnectivityChanged;
-  late AnimationController _controller;
-  late Animation _animation;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  late AnimationController _lottieController;
 
   @override
   void initState() {
@@ -31,12 +33,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if(!GetPlatform.isIOS){
       _checkConnectivity();
     }
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500));
-    _animation = Tween(begin: 0.0, end: 1.0).animate(_controller)
-      ..addListener(() {
-        setState(() {});
-      });
-    _controller.forward();
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500));
+    _fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(_fadeController);
+
+    _lottieController = AnimationController(vsync: this, duration: const Duration(seconds: 2));
+
+    _fadeController.forward();
+    _lottieController.repeat();
 
     Get.find<SplashController>().initSharedData();
     Get.find<TripController>().rideCancellationReasonList();
@@ -56,8 +59,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     _onConnectivityChanged?.cancel();
-    _animation.removeListener(() { });
-    _controller.dispose();// you
+    _fadeController.dispose();
+    _lottieController.dispose();
     super.dispose();
   }
 
@@ -92,16 +95,29 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       body: GetBuilder<RideController>(builder: (rideController) {
         return GetBuilder<ProfileController>(builder: (profileController) {
           return GetBuilder<LocationController>(builder: (locationController) {
-            return Opacity(
-              opacity: _animation.value,
-              child: Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(Images.splashBackground),
-                    fit: BoxFit.cover,
+            return AnimatedBuilder(
+              animation: _fadeAnimation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage(Images.splashBackground),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: Center(
+                      child: Lottie.asset(
+                        'assets/lottie/splash_3d.json',
+                        controller: _lottieController,
+                        width: 200,
+                        height: 200,
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           });
         });
