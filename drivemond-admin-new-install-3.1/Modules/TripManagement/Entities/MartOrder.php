@@ -4,7 +4,11 @@ namespace Modules\TripManagement\Entities;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\ChattingManagement\Entities\ChannelConversation;
+use Modules\ChattingManagement\Entities\ChannelList;
 use Modules\UserManagement\Entities\User;
 
 class MartOrder extends Model
@@ -51,5 +55,15 @@ class MartOrder extends Model
     public function items()
     {
         return $this->hasMany(MartOrderItem::class, 'order_id');
+    }
+
+    public function channel(): MorphOne
+    {
+        return $this->morphOne(ChannelList::class, 'channelable');
+    }
+
+    public function conversations(): MorphMany
+    {
+        return $this->morphMany(ChannelConversation::class, 'convable');
     }
 }

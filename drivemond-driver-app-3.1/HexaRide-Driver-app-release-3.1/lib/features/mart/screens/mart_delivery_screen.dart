@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
+import 'package:ride_sharing_user_app/features/chat/controllers/chat_controller.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -179,6 +180,11 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   Widget _buildCustomerInfo(BuildContext context) {
     final customer = _orderData['customer'] as Map<String, dynamic>?;
     final phone = customer?['phone'] as String? ?? '';
+    final customerId = (_orderData['customer_id'] as String?) ??
+        (customer?['id'] as String?) ?? '';
+    final customerName = '${customer?['first_name'] ?? ''} ${customer?['last_name'] ?? ''}'.trim().isNotEmpty
+        ? '${customer?['first_name'] ?? ''} ${customer?['last_name'] ?? ''}'.trim()
+        : customer?['name'] ?? 'customer'.tr;
 
     return Card(
       child: ListTile(
@@ -186,10 +192,13 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
           backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
           child: Icon(Icons.person, color: Theme.of(context).primaryColor),
         ),
-        title: Text(customer?['name'] ?? 'customer'.tr, style: textMedium),
+        title: Text(customerName, style: textMedium),
         subtitle: phone.isNotEmpty ? Text(phone, style: textRegular) : null,
-        trailing: phone.isNotEmpty
-            ? IconButton(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (phone.isNotEmpty)
+              IconButton(
                 onPressed: () async {
                   HapticFeedback.mediumImpact();
                   final uri = Uri.parse('tel:$phone');
@@ -198,8 +207,21 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   }
                 },
                 icon: Icon(Icons.phone, color: Theme.of(context).primaryColor),
-              )
-            : null,
+              ),
+            if (customerId.isNotEmpty)
+              IconButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  Get.find<ChatController>().createMartChannel(
+                    customerId,
+                    widget.orderId,
+                    customerName,
+                  );
+                },
+                icon: Icon(Icons.chat, color: Theme.of(context).primaryColor),
+              ),
+          ],
+        ),
       ),
     );
   }
