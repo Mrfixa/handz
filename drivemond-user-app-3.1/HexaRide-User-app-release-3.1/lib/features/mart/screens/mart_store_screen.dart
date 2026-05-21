@@ -343,6 +343,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
   double get _totalAmount => _subtotal - _discount + _tipAmount;
 
   @override
+  void dispose() {
+    _addressController.dispose();
+    _notesController.dispose();
+    _promoController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWidget(title: 'cart'.tr),
