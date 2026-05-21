@@ -464,12 +464,27 @@ class VitoFlowTest extends TestCase
     {
         $this->seedUserLevel('customer');
 
+        $token = str_repeat('c', 64);
+        DB::table('qr_tokens')->insert([
+            'id' => Str::uuid()->toString(),
+            'token' => $token,
+            'role' => 'customer',
+            'created_by' => null,
+            'redeemed_by' => null,
+            'redeemed_at' => null,
+            'expires_at' => now()->addHour(),
+            'is_revoked' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $response = $this->postJson('/api/customer/auth/pin-register', [
             'first_name' => 'Jane',
             'last_name' => 'Doe',
             'username' => 'janedoe',
             'pin' => '654321',
             'pin_confirmation' => '654321',
+            'qr_token' => $token,
         ]);
 
         $response->assertOk();
@@ -477,6 +492,25 @@ class VitoFlowTest extends TestCase
         $this->assertNotNull($user);
         $this->assertTrue(Hash::check('654321', $user->pin_hash));
         $this->assertEquals('customer', $user->user_type);
+
+        // Token must be redeemed atomically
+        $this->assertDatabaseHas('qr_tokens', [
+            'token' => $token,
+            'redeemed_by' => $user->id,
+        ]);
+        $this->assertNotNull(DB::table('qr_tokens')->where('token', $token)->value('redeemed_at'));
+
+        // Same token cannot be reused
+        $this->seedUserLevel('customer');
+        $retry = $this->postJson('/api/customer/auth/pin-register', [
+            'first_name' => 'Eve',
+            'last_name' => 'Repeat',
+            'username' => 'everepeat',
+            'pin' => '999888',
+            'pin_confirmation' => '999888',
+            'qr_token' => $token,
+        ]);
+        $retry->assertStatus(403);
     }
 
     // ========================================================================
@@ -496,12 +530,27 @@ class VitoFlowTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        $driverToken = str_repeat('d', 64);
+        DB::table('qr_tokens')->insert([
+            'id' => Str::uuid()->toString(),
+            'token' => $driverToken,
+            'role' => 'driver',
+            'created_by' => null,
+            'redeemed_by' => null,
+            'redeemed_at' => null,
+            'expires_at' => now()->addDays(7),
+            'is_revoked' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $response = $this->postJson('/api/driver/auth/pin-register', [
             'first_name' => 'John',
             'last_name' => 'Driver',
             'username' => 'johndriver',
             'pin' => '111222',
             'pin_confirmation' => '111222',
+            'qr_token' => $driverToken,
         ]);
 
         $response->assertOk();
@@ -509,6 +558,9 @@ class VitoFlowTest extends TestCase
         $this->assertNotNull($user);
         $this->assertTrue(Hash::check('111222', $user->pin_hash));
         $this->assertEquals('driver', $user->user_type);
+
+        // Token redeemed
+        $this->assertNotNull(DB::table('qr_tokens')->where('token', $driverToken)->value('redeemed_at'));
     }
 
     // ========================================================================

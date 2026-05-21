@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Modules\AuthManagement\Entities\QrToken;
 use Modules\AuthManagement\Service\Interfaces\AuthServiceInterface;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Service\Interfaces\CustomerLevelServiceInterface;
@@ -128,6 +129,7 @@ class VitoAuthController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'referral_code' => 'nullable|string',
+            'qr_token' => 'required|string|size:64',
         ]);
 
         if ($validator->fails()) {
@@ -153,9 +155,31 @@ class VitoAuthController extends Controller
             'password' => $request->pin,
         ]);
 
-        $user = $isCustomerRoute
-            ? $this->customerService->create($data)
-            : $this->driverService->create($data);
+        try {
+            DB::transaction(function () use ($request, $data, $isCustomerRoute) {
+                $qrToken = QrToken::where('token', $request->qr_token)
+                    ->where('expires_at', '>', now())
+                    ->whereNull('redeemed_at')
+                    ->where('is_revoked', false)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$qrToken) {
+                    throw new \RuntimeException('invalid_qr_token');
+                }
+
+                $user = $isCustomerRoute
+                    ? $this->customerService->create($data)
+                    : $this->driverService->create($data);
+
+                $qrToken->update(['redeemed_at' => now(), 'redeemed_by' => $user->id]);
+            });
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'invalid_qr_token') {
+                return response()->json(responseFormatter(constant: DEFAULT_400, errors: [['error_code' => 'qr_token', 'message' => 'Invalid or expired invitation token']]), 403);
+            }
+            throw $e;
+        }
 
         return response()->json(responseFormatter(REGISTRATION_200));
     }

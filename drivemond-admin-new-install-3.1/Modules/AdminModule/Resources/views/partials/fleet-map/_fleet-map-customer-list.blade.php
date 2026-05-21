@@ -48,7 +48,7 @@
                             <a href="{{route('admin.trip.show', ['type' => ALL, 'id' => $trip->id, 'page' => 'summary'])}}"
                                target="_blank">
                                 <img
-                                    src="http://localhost/HexaRide-Admin/public/assets/admin-module/img/maps/up-right-arrow-square.svg"
+                                    src="{{ dynamicAsset('public/assets/admin-module/img/maps/up-right-arrow-square.svg') }}"
                                     class="svg" alt="">
                             </a>
                             </span>

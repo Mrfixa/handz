@@ -17,7 +17,7 @@ class VitoMartDriverController extends Controller
         $orders = MartOrder::where('status', 'pending')
             ->with('items.product', 'customer')
             ->orderByDesc('created_at')
-            ->paginate($request->input('limit', 20));
+            ->paginate(min($request->input('limit', 20), 100));
 
         return response()->json(responseFormatter(DEFAULT_200, $orders));
     }
@@ -29,7 +29,7 @@ class VitoMartDriverController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         $order = DB::transaction(function () use ($request) {
@@ -52,7 +52,7 @@ class VitoMartDriverController extends Controller
         });
 
         if (!$order) {
-            return response()->json(responseFormatter(TRIP_REQUEST_404), 403);
+            return response()->json(responseFormatter(TRIP_REQUEST_404), 404);
         }
 
         // Notify customer their order was accepted
@@ -74,7 +74,7 @@ class VitoMartDriverController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         $allowedTransitions = [
@@ -127,7 +127,7 @@ class VitoMartDriverController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         $order = MartOrder::where('id', $request->order_id)
@@ -209,8 +209,8 @@ class VitoMartDriverController extends Controller
                     user_id: $customer->id,
                 );
             }
-        } catch (\Throwable) {
-            // Non-critical: don't break the status update
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Mart customer notify failed: ' . $e->getMessage());
         }
     }
 }

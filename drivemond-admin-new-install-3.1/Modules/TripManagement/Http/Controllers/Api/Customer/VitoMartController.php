@@ -18,13 +18,16 @@ class VitoMartController extends Controller
 {
     public function products(Request $request): JsonResponse
     {
+        $search = substr((string)($request->search ?? ''), 0, 100);
+        $limit = min($request->input('limit', 20), 100);
+
         $products = MartProduct::where('is_active', true)
             ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
-            ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->zone_id, fn($q, $zoneId) => $q->where(function ($q) use ($zoneId) {
                 $q->where('zone_id', $zoneId)->orWhereNull('zone_id');
             }))
-            ->paginate($request->input('limit', 20));
+            ->paginate($limit);
 
         return response()->json(responseFormatter(DEFAULT_200, $products));
     }
@@ -76,17 +79,17 @@ class VitoMartController extends Controller
         $validator = Validator::make($request->all(), [
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|string',
-            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:1|max:100',
             'delivery_address' => 'required|string',
-            'delivery_lat' => 'nullable|numeric',
-            'delivery_lng' => 'nullable|numeric',
+            'delivery_lat' => 'nullable|numeric|between:-90,90',
+            'delivery_lng' => 'nullable|numeric|between:-180,180',
             'notes' => 'nullable|string',
-            'tip_amount' => 'nullable|numeric|min:0',
+            'tip_amount' => 'nullable|numeric|min:0|max:9999.99',
             'promo_code' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         try {
@@ -159,7 +162,7 @@ class VitoMartController extends Controller
             $this->notifyDriversNewOrder($order);
 
         } catch (\RuntimeException $e) {
-            return response()->json(responseFormatter(constant: DEFAULT_404, errors: [['message' => $e->getMessage()]]), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: [['message' => $e->getMessage()]]), 400);
         }
 
         return response()->json(responseFormatter(DEFAULT_200, $order));
@@ -170,7 +173,7 @@ class VitoMartController extends Controller
         $orders = MartOrder::where('customer_id', $request->user()->id)
             ->with('items.product')
             ->orderByDesc('created_at')
-            ->paginate($request->input('limit', 20));
+            ->paginate(min($request->input('limit', 20), 100));
 
         return response()->json(responseFormatter(DEFAULT_200, $orders));
     }
@@ -249,8 +252,8 @@ class VitoMartController extends Controller
                     action: 'new_mart_order',
                 );
             }
-        } catch (\Throwable) {
-            // Non-critical: log silently, don't break order creation
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Mart FCM notify failed: ' . $e->getMessage());
         }
     }
 }

@@ -298,8 +298,8 @@ class NotificationHelper {
 
   static Future<void> showTextNotification(String title, String body, String orderID, String action, FlutterLocalNotificationsPlugin fln) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'hexaride',
-      'hexaride',
+      'vito',
+      'vito',
       playSound: true,
       importance: Importance.max,
       priority: Priority.max,
@@ -317,8 +317,8 @@ class NotificationHelper {
       htmlFormatContentTitle: true,
     );
     AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'hexaride',
-      'hexaride',
+      'vito',
+      'vito',
       importance: Importance.max,
       styleInformation: bigTextStyleInformation,
       priority: Priority.max,
@@ -357,8 +357,8 @@ class NotificationHelper {
 
     }
     final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'hexaride',
-      'hexaride',
+      'vito',
+      'vito',
       priority: Priority.max,
       importance: Importance.max,
       playSound: true,

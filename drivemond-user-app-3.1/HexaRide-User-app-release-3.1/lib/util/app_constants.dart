@@ -5,7 +5,7 @@ import 'package:ride_sharing_user_app/util/images.dart';
 
 class AppConstants {
   static const String appName = 'Vito';
-  static const String baseUrl = 'YOUR_BASE_URL_HERE';
+  static const String baseUrl = 'https://dacatlon.shop';
   static const double appVersion = 3.1; /// Flutter SDK 3.41.4
   static const String fontFamily = 'SFProText';
   static const double coverageRadiusInMeter = 50;
@@ -76,7 +76,8 @@ class AppConstants {
   static const String changeLanguage = '/api/customer/change-language';
   static const String getProfileLevel = '/api/customer/level';
   static const String externalLoginUri = '/api/customer/auth/external-login';
-  static const String transferMoneyFromDrivemondToMart = '/api/customer/wallet/transfer-drivemond-to-mart';
+  static const String transferMoneyFromVitoToMart = '/api/customer/wallet/transfer-vito-to-mart';
+  static const String transferMoneyFromDrivemondToMart = transferMoneyFromVitoToMart; // kept for backward compat
   static const String referralDetails = '/api/customer/referral-details';
   static const String referralEarningList = '/api/customer/transaction/referral-earning-list?limit=10&offset=';
   static const String parcelCancellationReasonList = '/api/customer/config/parcel-cancellation-reason-list';
