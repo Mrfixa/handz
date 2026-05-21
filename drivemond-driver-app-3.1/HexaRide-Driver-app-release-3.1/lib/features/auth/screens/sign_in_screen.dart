@@ -33,7 +33,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   void initState() {
-    final savedUsername = Get.find<AuthController>().getUserNumber() ?? '';
+    final savedUsername = Get.find<AuthController>().getUserNumber();
     if(savedUsername.isNotEmpty){
       usernameController.text = savedUsername;
     }

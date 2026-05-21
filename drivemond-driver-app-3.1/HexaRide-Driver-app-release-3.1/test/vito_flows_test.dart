@@ -125,8 +125,8 @@ void main() {
     });
 
     test('Already accepted ride cannot be re-accepted', () {
-      String? rideDriverId = 'driver-1';
-      final canAccept = rideDriverId?.isEmpty ?? true;
+      String rideDriverId = 'driver-1';
+      final canAccept = rideDriverId.isEmpty;
       expect(canAccept, isFalse);
     });
   });
