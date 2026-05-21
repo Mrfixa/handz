@@ -33,6 +33,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   FocusNode passwordFocusNode = FocusNode();
   FocusNode confirmPasswordFocusNode = FocusNode();
   FocusNode oldPasswordFocus = FocusNode();
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    oldPasswordController.dispose();
+    passwordFocusNode.dispose();
+    confirmPasswordFocusNode.dispose();
+    oldPasswordFocus.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(

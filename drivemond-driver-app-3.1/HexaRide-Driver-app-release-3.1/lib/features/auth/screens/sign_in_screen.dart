@@ -44,6 +44,15 @@ class _SignInScreenState extends State<SignInScreen> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    usernameController.dispose();
+    pinController.dispose();
+    usernameNode.dispose();
+    pinNode.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {

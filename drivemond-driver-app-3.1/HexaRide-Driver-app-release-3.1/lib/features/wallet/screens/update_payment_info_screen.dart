@@ -33,6 +33,13 @@ class _UpdatePaymentInfoScreenState extends State<UpdatePaymentInfoScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _methodName.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,

@@ -60,6 +60,22 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    licencePlateNumberController.dispose();
+    licenceExpiryDateController.dispose();
+    vinNumberController.dispose();
+    transmissionController.dispose();
+    parcelWeightCapacity.dispose();
+    _scrollController.dispose();
+    licencePlateFocus.dispose();
+    licenceExpiryFocus.dispose();
+    vinNumberFocus.dispose();
+    transmissionFocus.dispose();
+    parcelWeightFocus.dispose();
+    super.dispose();
+  }
+
   void _scrollDown() {
     _scrollController.animateTo(
       _scrollController.position.maxScrollExtent + 50,
