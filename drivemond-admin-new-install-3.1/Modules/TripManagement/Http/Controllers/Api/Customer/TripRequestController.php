@@ -803,10 +803,20 @@ class TripRequestController extends Controller
         if (!$trip) {
             return response()->json(responseFormatter(constant: TRIP_REQUEST_404), 403);
         }
+
+        // TOCTOU guard: re-read the trip status under a row-level lock so two
+        // concurrent cancel requests cannot both pass the terminal-status check
+        // and both update the record.
+        $lockedStatus = DB::transaction(function () use ($trip_request_id) {
+            return TripRequest::where('id', $trip_request_id)
+                ->lockForUpdate()
+                ->value('current_status');
+        });
+
         $response = match (true) {
-            $trip->current_status === CANCELLED => TRIP_STATUS_CANCELLED_403,
-            $trip->current_status === COMPLETED => TRIP_STATUS_COMPLETED_403,
-            $trip->current_status === RETURNING => TRIP_STATUS_RETURNING_403,
+            $lockedStatus === CANCELLED => TRIP_STATUS_CANCELLED_403,
+            $lockedStatus === COMPLETED => TRIP_STATUS_COMPLETED_403,
+            $lockedStatus === RETURNING => TRIP_STATUS_RETURNING_403,
             $trip->is_paused => TRIP_REQUEST_PAUSED_404,
             default => null,
         };

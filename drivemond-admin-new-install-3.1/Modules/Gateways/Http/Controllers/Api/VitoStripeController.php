@@ -30,14 +30,22 @@ class VitoStripeController extends Controller
         try {
             \Stripe\Stripe::setApiKey($stripeSecret);
 
-            $paymentIntent = \Stripe\PaymentIntent::create([
-                'amount' => (int) round($request->amount * 100),
-                'currency' => $request->input('currency', 'usd'),
-                'metadata' => [
-                    'user_id' => $request->user()->id,
-                    'type' => 'wallet_topup',
+            // Idempotency key: one PaymentIntent per user per day for wallet top-ups.
+            // Using user_id + date means retrying within the same calendar day is safe
+            // and won't create duplicate charges.
+            $idempotencyKey = 'pi_' . $request->user()->id . '_walletTopup_' . date('Ymd');
+
+            $paymentIntent = \Stripe\PaymentIntent::create(
+                [
+                    'amount' => (int) round($request->amount * 100),
+                    'currency' => $request->input('currency', 'usd'),
+                    'metadata' => [
+                        'user_id' => $request->user()->id,
+                        'type' => 'wallet_topup',
+                    ],
                 ],
-            ]);
+                ['idempotency_key' => $idempotencyKey],
+            );
 
             StripeEvent::create([
                 'stripe_event_id' => $paymentIntent->id,
@@ -75,6 +83,20 @@ class VitoStripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
+        // Check Stripe event ID idempotency first — if we have already stored a
+        // 'succeeded' record for this exact Stripe event, return immediately so
+        // retried webhook deliveries never double-credit the wallet.
+        $stripeEventId = is_object($event) && property_exists($event, 'id') ? $event->id : ($event['id'] ?? null);
+
+        if ($stripeEventId) {
+            $alreadyProcessed = StripeEvent::where('stripe_event_id', $stripeEventId)
+                ->where('status', 'succeeded')
+                ->exists();
+            if ($alreadyProcessed) {
+                return response()->json(['status' => 'already_processed']);
+            }
+        }
+
         $eventType = is_object($event) && property_exists($event, 'type') ? $event->type : ($event['type'] ?? '');
         $data = is_object($event) && property_exists($event, 'data') ? $event->data->object : ($event['data']['object'] ?? null);
 
@@ -84,7 +106,7 @@ class VitoStripeController extends Controller
                 ? $data->metadata->user_id
                 : ($data['metadata']['user_id'] ?? null);
 
-            DB::transaction(function () use ($paymentIntentId, $userId, $data) {
+            DB::transaction(function () use ($paymentIntentId, $stripeEventId, $userId, $data) {
                 $stripeEvent = StripeEvent::where('payment_intent_id', $paymentIntentId)
                     ->lockForUpdate()
                     ->first();
@@ -93,7 +115,12 @@ class VitoStripeController extends Controller
                     return;
                 }
 
-                $stripeEvent->update(['status' => 'succeeded']);
+                // Record the Stripe event ID alongside the status so future duplicate
+                // webhook deliveries are rejected by the idempotency check above.
+                $stripeEvent->update([
+                    'status' => 'succeeded',
+                    'stripe_event_id' => $stripeEventId ?? $stripeEvent->stripe_event_id,
+                ]);
 
                 if ($userId) {
                     $user = \Modules\UserManagement\Entities\User::find($userId);

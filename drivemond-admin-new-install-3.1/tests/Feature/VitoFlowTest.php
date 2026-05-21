@@ -234,6 +234,7 @@ class VitoFlowTest extends TestCase
                 $table->decimal('min_order_amount', 10, 2)->default(0);
                 $table->decimal('max_discount', 10, 2)->nullable();
                 $table->unsignedInteger('usage_limit')->nullable();
+                $table->unsignedInteger('per_user_limit')->nullable();
                 $table->unsignedInteger('used_count')->default(0);
                 $table->boolean('is_active')->default(true);
                 $table->timestamp('expires_at')->nullable();
