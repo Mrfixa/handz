@@ -37,6 +37,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
+  static const double _defaultBearing = 192.83;
   GoogleMapController? _mapController;
   GlobalKey<ExpandableBottomSheetState> key = GlobalKey<ExpandableBottomSheetState>();
   @override
@@ -81,8 +82,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
     return byteData.buffer.asUint8List();
   }
 
-  void updateMarkerAndCircle(Position? newLocalData, Uint8List imageData) {
-    LatLng latLng = LatLng(newLocalData!.latitude, newLocalData.longitude);
+  void updateMarkerAndCircle(Position newLocalData, Uint8List imageData) {
+    LatLng latLng = LatLng(newLocalData.latitude, newLocalData.longitude);
     setState(() {
       marker = Marker(
           markerId: const MarkerId("home"),
@@ -108,7 +109,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
       _locationSubscription = Geolocator.getPositionStream().listen((newLocalData) {
         if (_controller != null) {
           _controller!.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
-              bearing: 192.8334901395799,
+              bearing: _defaultBearing,
               target: LatLng(newLocalData.latitude, newLocalData.longitude),
               tilt: 0,
               zoom: 16)));

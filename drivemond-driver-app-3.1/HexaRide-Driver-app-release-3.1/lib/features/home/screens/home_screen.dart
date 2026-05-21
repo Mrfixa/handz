@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     bool isShowBottomSheet = ((rideController.ongoingRideList?.length ?? 0) == 0) && ((rideController.parcelListModel?.totalSize ?? 0) == 0 ) && lastRefundData != null;
 
-    if(isShowBottomSheet) {
+    if(isShowBottomSheet && lastRefundData != null) {
       await showModalBottomSheet(context: Get.context!, builder: (ctx)=> RefundAlertBottomSheet(
         title: lastRefundData['title'],
         description: lastRefundData['body'],

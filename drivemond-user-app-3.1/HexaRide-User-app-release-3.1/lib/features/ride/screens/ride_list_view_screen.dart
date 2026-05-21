@@ -18,7 +18,7 @@ class RideListViewScreen extends StatelessWidget {
         body: BodyWidget(
           appBar: AppBarWidget(title: 'ride_list_view'.tr),
           body: GetBuilder<RideController>(builder: (rideController){
-            return rideController.runningRideList == null || rideController.runningRideList!.data!.isEmpty ?
+            return rideController.runningRideList == null || (rideController.runningRideList?.data?.isEmpty ?? true) ?
             const NoDataWidget(title: 'no_trip_found') :
              ListView.builder(
                 padding: EdgeInsets.zero,

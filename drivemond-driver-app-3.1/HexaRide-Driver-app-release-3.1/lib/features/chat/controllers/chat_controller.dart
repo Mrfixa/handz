@@ -247,10 +247,10 @@ class ChatController extends GetxController implements GetxService{
   void onClose() {
     try {
       _rideChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) { debugPrint('Chat error: $e'); }
     try {
       _martChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) { debugPrint('Chat error: $e'); }
     super.onClose();
   }
 
@@ -266,7 +266,7 @@ class ChatController extends GetxController implements GetxService{
 
     if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
       // Unsubscribe previous ride channel if any
-      try { _rideChannel?.unsubscribe(); } catch (_) {}
+      try { _rideChannel?.unsubscribe(); } catch (e) { debugPrint('Chat error: $e'); }
       channel = PusherHelper.pusherClient!.privateChannel("private-driver-ride-chat.$id", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
         authorizationEndpoint: Uri.parse('https://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
@@ -303,7 +303,7 @@ class ChatController extends GetxController implements GetxService{
     if (Get.find<SplashController>().pusherConnectionStatus != null ||
         Get.find<SplashController>().pusherConnectionStatus == 'Connected') {
       // Unsubscribe previous mart channel if any
-      try { _martChannel?.unsubscribe(); } catch (_) {}
+      try { _martChannel?.unsubscribe(); } catch (e) { debugPrint('Chat error: $e'); }
       martChannel = PusherHelper.pusherClient!.privateChannel(
           "private-driver-mart-chat.$orderId",
           authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(

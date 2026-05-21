@@ -1018,5 +1018,8 @@
   "proof_of_delivery": "Proof of Delivery",
   "upload_photo": "Upload Photo",
   "withdraw_earnings": "Withdraw Earnings",
-  "confirm_status_update": "Confirm status update?"
+  "confirm_status_update": "Confirm status update?",
+  "pending_mart_orders": "Pending Orders",
+  "accept_order": "Accept Order",
+  "no_pending_orders": "No pending mart orders"
 }

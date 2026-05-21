@@ -1017,5 +1017,8 @@
   "proof_of_delivery": "Prueba de Entrega",
   "upload_photo": "Subir Foto",
   "withdraw_earnings": "Retirar Ganancias",
-  "confirm_status_update": "¿Confirmar actualización de estado?"
+  "confirm_status_update": "¿Confirmar actualización de estado?",
+  "pending_mart_orders": "Pedidos Pendientes",
+  "accept_order": "Aceptar Pedido",
+  "no_pending_orders": "No hay pedidos de mart pendientes"
 }

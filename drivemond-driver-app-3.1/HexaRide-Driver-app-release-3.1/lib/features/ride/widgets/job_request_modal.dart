@@ -62,9 +62,11 @@ class _JobRequestModalState extends State<JobRequestModal>
         }
       } else {
         _timer.cancel();
-        widget.onTimeout?.call();
-        if (mounted && Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
+        if (mounted) {
+          widget.onTimeout?.call();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
         }
       }
     });

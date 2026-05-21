@@ -41,7 +41,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 scrollController: scrollController,
                 totalSize: notificationController.notificationModel!.totalSize,
                 offset: (notificationController.notificationModel != null && notificationController.notificationModel!.offset != null) ?
-                int.parse(notificationController.notificationModel!.offset.toString()) : null,
+                (() { try { return int.parse(notificationController.notificationModel!.offset.toString()); } catch (e) { debugPrint('Notification offset parse error: $e'); return 0; } })() : null,
                 onPaginate: (int? offset) async {
                   await notificationController.getNotificationList(offset!);
                 },

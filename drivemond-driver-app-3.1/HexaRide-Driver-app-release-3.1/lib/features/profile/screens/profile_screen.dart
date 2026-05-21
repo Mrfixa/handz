@@ -88,8 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           profileController.profileInfo!.vehicle != null ?
                           ImageWidget(width: 80,height: 80,
                             image:
-                            '${Get.find<SplashController>().config!.imageBaseUrl!.vehicleCategory}/''${
-                                profileController.profileInfo!.vehicle!.category!.image}',
+                            '${Get.find<SplashController>().config!.imageBaseUrl!.vehicleCategory}/${profileController.profileInfo?.vehicle?.category?.image ?? ''}',
                           ) :
                           const SizedBox(),
                         ),

@@ -109,8 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await Get.find<RideController>().getRunningRideList();
-    if(Get.find<RideController>().runningRideList?.data != null){
-      for(var element in Get.find<RideController>().runningRideList!.data!){
+    final runningRideData = Get.find<RideController>().runningRideList?.data;
+    if(runningRideData != null){
+      for(var element in runningRideData){
         PusherHelper().pusherDriverStatus(element.id!);
       }
     }
@@ -123,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await Get.find<ParcelController>().getRunningParcelList();
-    if(Get.find<ParcelController>().parcelListModel!.data!.isNotEmpty){
+    if(Get.find<ParcelController>().parcelListModel?.data?.isNotEmpty == true){
       for (var element in Get.find<ParcelController>().parcelListModel!.data!) {
         PusherHelper().pusherDriverStatus(element.id!);
       }

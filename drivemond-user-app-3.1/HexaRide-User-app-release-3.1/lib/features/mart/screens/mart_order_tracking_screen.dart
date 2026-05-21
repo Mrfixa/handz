@@ -24,6 +24,8 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   bool _isOffline = false;
   bool _isLoading = true;
   Timer? _pollTimer;
+  int _pollCount = 0;
+  static const int _maxPollCount = 240;
 
   Map<String, dynamic> _driverInfo = {};
   String _estimatedArrival = '';
@@ -45,7 +47,15 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   void initState() {
     super.initState();
     _fetchOrderStatus();
-    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetchOrderStatus());
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _pollCount++;
+      if (_pollCount >= _maxPollCount) {
+        _pollTimer?.cancel();
+        debugPrint('Mart tracking: max poll count reached, stopping timer');
+        return;
+      }
+      _fetchOrderStatus();
+    });
   }
 
   @override
@@ -78,7 +88,8 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
       } else {
         setState(() => _isLoading = false);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart tracking error: $e');
       setState(() {
         _isOffline = true;
         _isLoading = false;
@@ -439,7 +450,8 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                 );
                 Get.back();
                 Get.snackbar('success'.tr, 'order_cancelled'.tr);
-              } catch (_) {
+              } catch (e) {
+                debugPrint('Mart tracking error: $e');
                 Get.snackbar('error'.tr, 'cancel_failed'.tr);
               }
             },

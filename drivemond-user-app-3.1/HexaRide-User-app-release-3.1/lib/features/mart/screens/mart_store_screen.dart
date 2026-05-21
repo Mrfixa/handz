@@ -45,7 +45,8 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       } else {
         setState(() => _isLoading = false);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart error: $e');
       setState(() {
         _isOffline = true;
         _isLoading = false;
@@ -700,7 +701,8 @@ class _MartCartScreenState extends State<MartCartScreen> {
       } else {
         Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart error: $e');
       Get.snackbar('error'.tr, 'promo_validation_failed'.tr);
     } finally {
       setState(() => _isApplyingPromo = false);
@@ -747,7 +749,8 @@ class _MartCartScreenState extends State<MartCartScreen> {
         final message = response.body['errors']?.first?['message'] ?? 'order_failed'.tr;
         Get.snackbar('error'.tr, message.toString());
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart error: $e');
       Get.snackbar('error'.tr, 'network_error'.tr);
     } finally {
       if (mounted) setState(() => _isOrdering = false);
