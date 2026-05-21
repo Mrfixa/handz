@@ -13,7 +13,7 @@ Route::group(['prefix' => 'customer/mart', 'middleware' => ['auth:api', 'mainten
     Route::controller(VitoMartController::class)->group(function () {
         Route::get('products', 'products');
         Route::get('products/{id}', 'productDetails');
-        Route::post('apply-promo', 'applyPromo');
+        Route::middleware('throttle:30,1')->post('apply-promo', 'applyPromo');
         Route::post('order', 'createOrder');
         Route::get('orders', 'orderList');
         Route::get('orders/{id}', 'orderDetails');

@@ -40,7 +40,7 @@ if (!function_exists('sendDeviceNotification')) {
                     "reward_amount" => (string)($notificationData['reward_amount'] ?? 0),
                     "next_level" => (string)($notificationData['next_level'] ?? null),
                     "sound" => "notification.wav",
-                    "android_channel_id" => "hexaride"
+                    "android_channel_id" => "vito"
                 ],
                 'notification' => [
                     'title' => (string)$title,
@@ -50,7 +50,7 @@ if (!function_exists('sendDeviceNotification')) {
                 "android" => [
                     'priority' => 'high',
                     "notification" => [
-                        "channel_id" => "hexaride",
+                        "channel_id" => "vito",
                         "sound" => "notification.wav",
                         "icon" => "notification_icon",
                     ]
@@ -88,7 +88,7 @@ if (!function_exists('sendTopicNotification')) {
                     "body_loc_key" => (string)$type,
                     "image" => (string)$imageURL,
                     "sound" => "notification.wav",
-                    "android_channel_id" => "hexaride",
+                    "android_channel_id" => "vito",
                     "sent_by" => (string)$sentBy,
                     "trip_reference_id" => (string)$tripReferenceId,
                     "route" => (string)$route,
@@ -103,7 +103,7 @@ if (!function_exists('sendTopicNotification')) {
                 "android" => [
                     'priority' => 'high',
                     "notification" => [
-                        "channelId" => "hexaride"
+                        "channelId" => "vito"
                     ]
                 ],
                 "apns" => [

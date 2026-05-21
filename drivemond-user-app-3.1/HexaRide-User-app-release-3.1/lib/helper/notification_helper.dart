@@ -328,8 +328,8 @@ class NotificationHelper {
       htmlFormatContentTitle: true,
     );
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'hexaride',
-      'hexaride',
+      'vito',
+      'vito',
       channelDescription: 'progress channel description',
       styleInformation: bigTextStyleInformation,
       channelShowBadge: true,
@@ -392,8 +392,8 @@ class NotificationHelper {
       );
     }
     final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'hexaride',
-      'hexaride',
+      'vito',
+      'vito',
       priority: Priority.max,
       importance: Importance.max,
       playSound: true,

@@ -29,7 +29,7 @@ class WalletRepository implements WalletRepositoryInterface{
 
   @override
   Future<Response> transferWalletMoney(String balance) async{
-    return await apiClient.postData(AppConstants.transferMoneyFromDrivemondToMart, {"amount":balance});
+    return await apiClient.postData(AppConstants.transferMoneyFromVitoToMart, {"amount":balance});
   }
 
   @override

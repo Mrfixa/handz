@@ -17,7 +17,7 @@ class VitoMartDriverController extends Controller
         $orders = MartOrder::where('status', 'pending')
             ->with('items.product', 'customer')
             ->orderByDesc('created_at')
-            ->paginate($request->input('limit', 20));
+            ->paginate(min($request->input('limit', 20), 100));
 
         return response()->json(responseFormatter(DEFAULT_200, $orders));
     }
@@ -29,7 +29,7 @@ class VitoMartDriverController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         $order = DB::transaction(function () use ($request) {
@@ -52,7 +52,7 @@ class VitoMartDriverController extends Controller
         });
 
         if (!$order) {
-            return response()->json(responseFormatter(TRIP_REQUEST_404), 403);
+            return response()->json(responseFormatter(TRIP_REQUEST_404), 404);
         }
 
         // Notify customer their order was accepted
@@ -74,7 +74,7 @@ class VitoMartDriverController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         $allowedTransitions = [
@@ -82,23 +82,31 @@ class VitoMartDriverController extends Controller
             'delivered' => ['picked_up'],
         ];
 
-        $order = MartOrder::where('id', $request->order_id)
-            ->where('driver_id', $request->user()->id)
-            ->whereIn('status', $allowedTransitions[$request->status])
-            ->first();
+        $order = DB::transaction(function () use ($request, $allowedTransitions) {
+            $order = MartOrder::where('id', $request->order_id)
+                ->where('driver_id', $request->user()->id)
+                ->whereIn('status', $allowedTransitions[$request->status])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$order) {
+                return null;
+            }
+
+            $updateData = ['status' => $request->status];
+
+            if ($request->status === 'delivered') {
+                $updateData['payment_status'] = 'paid';
+            }
+
+            $order->update($updateData);
+
+            return $order->fresh();
+        });
 
         if (!$order) {
             return response()->json(responseFormatter(DEFAULT_404), 404);
         }
-
-        $updateData = ['status' => $request->status];
-
-        if ($request->status === 'delivered') {
-            $updateData['payment_status'] = 'paid';
-        }
-
-        $order->update($updateData);
-        $order->refresh();
 
         $messages = [
             'picked_up' => ['title' => 'Order Picked Up', 'description' => "Your mart order #{$order->ref_id} has been picked up and is on the way.", 'action' => 'mart_order_picked_up'],
@@ -127,7 +135,7 @@ class VitoMartDriverController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
         $order = MartOrder::where('id', $request->order_id)
@@ -209,8 +217,8 @@ class VitoMartDriverController extends Controller
                     user_id: $customer->id,
                 );
             }
-        } catch (\Throwable) {
-            // Non-critical: don't break the status update
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Mart customer notify failed: ' . $e->getMessage());
         }
     }
 }

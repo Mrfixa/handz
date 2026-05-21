@@ -94,7 +94,7 @@
                                 {{ translate('Thanks & Regards,') }}
                             </p>
                             <p style="margin:6px 0 0; font-size:14px; color:#6b7280;">
-                                {{ translate('DriveMond') }}
+                                {{ translate('Vito') }}
                             </p>
                         </td>
                     </tr>

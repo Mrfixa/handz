@@ -445,7 +445,7 @@ class CustomerService extends BaseService implements Interfaces\CustomerServiceI
             $customer->userAccount()->decrement('wallet_balance', $data['amount']);
             //customer transaction (debit)
             $transferData = [
-                'attribute' => 'wallet_transfer_drivemond_to_mart',
+                'attribute' => 'wallet_transfer_vito_to_mart',
                 'debit' => $data['amount'],
                 'balance' => $customer->userAccount->wallet_balance,
                 'user_id' => $customer->id,
@@ -458,7 +458,7 @@ class CustomerService extends BaseService implements Interfaces\CustomerServiceI
             //customer transaction (debit)
 
             $transferData = [
-                'attribute' => 'wallet_transfer_drivemond_from_mart',
+                'attribute' => 'wallet_transfer_vito_from_mart',
                 'credit' => $data['amount'],
                 'balance' => $customer->userAccount->wallet_balance,
                 'user_id' => $customer->id,

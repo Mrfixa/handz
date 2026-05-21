@@ -15,7 +15,7 @@
                         </span>
                     </h3>
                     <p class="m-0">
-                        {{translate('connect_6ammart_system_with_drivemond')}}
+                        {{translate('connect_6ammart_system_with_vito')}}
                     </p>
                 </div>
                 <div class="text--primary-2 py-1 d-flex flex-wrap align-items-center" type="button"
@@ -87,11 +87,11 @@
                                     <div class="p-3 p-sm-4 bg-body rounded">
                                         <div class="d-flex justify-content-between">
                                             <label
-                                                class="mb-2">{{ (businessConfig('business_name')?->value ?? "DriveMond"). ' ' .translate('System Token') }}
+                                                class="mb-2">{{ (businessConfig('business_name')?->value ?? "Vito"). ' ' .translate('System Token') }}
                                                 <i
                                                     class="bi bi-info-circle-fill text-primary cursor-pointer"
                                                     data-bs-toggle="tooltip"
-                                                    data-bs-title="{{translate("Click on the Generate Token button, It will automatically generate the Drivemond System Token and insert it into the input field.")}}">
+                                                    data-bs-title="{{translate("Click on the Generate Token button, It will automatically generate the Vito System Token and insert it into the input field.")}}">
                                                 </i>
                                             </label>
                                         </div>
@@ -176,19 +176,19 @@
                                         <div class="how-it-count">
                                             <span>3</span>
                                         </div>
-                                        <h5 class="mb-2">{{(businessConfig('business_name')?->value ?? "DriveMond" ) . ' ' .translate('System Token Generate')}}</h5>
+                                        <h5 class="mb-2">{{(businessConfig('business_name')?->value ?? "Vito" ) . ' ' .translate('System Token Generate')}}</h5>
                                         <p>
                                             {{translate("At last,  Click on the  ")}}
                                             <strong>{{translate("Generate Token ")}}</strong>
                                             {{translate("button for automatic token generation & paste it Into the input field of ")}}
-                                            {{(businessConfig('business_name')?->value ?? "DriveMond") . ' ' .translate('System Token Generate')}}
+                                            {{(businessConfig('business_name')?->value ?? "Vito") . ' ' .translate('System Token Generate')}}
                                         </p>
                                     </div>
                                 </div>
                             </div>
                             <br>
                             <div class="pb-1">
-                                <i class="text-dark">{{translate('Note :  Follow the same steps on 6amMart to successfully connect DriveMond with 6amMart')}}</i>
+                                <i class="text-dark">{{translate('Note :  Follow the same steps on 6amMart to successfully connect Vito with 6amMart')}}</i>
                             </div>
                         </div>
                     </div>

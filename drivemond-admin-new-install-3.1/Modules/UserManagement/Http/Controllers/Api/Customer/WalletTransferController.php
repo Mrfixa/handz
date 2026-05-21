@@ -42,7 +42,7 @@ class WalletTransferController extends Controller
             $systemSelfToken = externalConfig('system_self_token')?->value;
             $martToken = externalConfig('mart_token')?->value;
             try {
-                $response = Http::post($martBaseUrl . '/api/v1/customer/wallet/transfer-mart-from-drivemond',
+                $response = Http::post($martBaseUrl . '/api/v1/customer/wallet/transfer-mart-from-vito',
                     [
                         'bearer_token' => $request->bearerToken(),
                         'currency' => businessConfig('currency_code')?->value??"USD",
@@ -139,8 +139,8 @@ class WalletTransferController extends Controller
                             ]);
                             sendDeviceNotification(
                                 fcm_token: $customer?->fcm_token,
-                                title:translate("wallet_transfer_drivemond_from_mart") ,
-                                description: translate("you_transfer_your_wallet_balance_drivemond_from_mart"),
+                                title:translate("wallet_transfer_vito_from_mart") ,
+                                description: translate("you_transfer_your_wallet_balance_vito_from_mart"),
                                 status: 1
                             );
                             $data = [

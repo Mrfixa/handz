@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - 'claude/analyze-mart-qr-code-FySPn'
   workflow_dispatch:
 
 jobs:
@@ -33,14 +35,33 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos || true
 
+      - name: Build debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
+            --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+        continue-on-error: true
+
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload Driver APK
+      - name: Stage APKs for upload
+        run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/vito-driver-debug.apk 2>/dev/null || true
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-driver-release.apk
+
+      - name: Upload Driver Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: vito-driver-apk
-          path: drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/build/app/outputs/flutter-apk/app-release.apk
+          name: vito-driver-debug-apk
+          path: vito-driver-debug.apk
+          if-no-files-found: ignore
+
+      - name: Upload Driver Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vito-driver-release-apk
+          path: vito-driver-release.apk
 
   build-user-apk:
     name: Build User APK
@@ -68,14 +89,33 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos || true
 
+      - name: Build debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
+            --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+        continue-on-error: true
+
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload User APK
+      - name: Stage APKs for upload
+        run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/vito-user-debug.apk 2>/dev/null || true
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-user-release.apk
+
+      - name: Upload User Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: vito-user-apk
-          path: drivemond-user-app-3.1/HexaRide-User-app-release-3.1/build/app/outputs/flutter-apk/app-release.apk
+          name: vito-user-debug-apk
+          path: vito-user-debug.apk
+          if-no-files-found: ignore
+
+      - name: Upload User Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vito-user-release-apk
+          path: vito-user-release.apk
 
   laravel-checks:
     name: Laravel Backend Checks
@@ -97,3 +137,47 @@ jobs:
 
       - name: PHP syntax check
         run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "No syntax errors" || true
+
+  create-release:
+    name: Create GitHub Release v1.1.0
+    needs: [build-driver-apk, build-user-apk]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Driver Debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: vito-driver-debug-apk
+          path: release-assets/
+        continue-on-error: true
+
+      - name: Download Driver Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: vito-driver-release-apk
+          path: release-assets/
+
+      - name: Download User Debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: vito-user-debug-apk
+          path: release-assets/
+        continue-on-error: true
+
+      - name: Download User Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: vito-user-release-apk
+          path: release-assets/
+
+      - name: Create Release v1.1.0
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.1.0
+          name: Vito v1.1.0
+          files: release-assets/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
