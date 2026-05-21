@@ -22,6 +22,13 @@ class ReviewThisCustomerScreen extends StatefulWidget {
 class _ReviewThisCustomerScreenState extends State<ReviewThisCustomerScreen> {
   TextEditingController reviewTextController = TextEditingController();
   double ratting = 3;
+
+  @override
+  void dispose() {
+    reviewTextController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(

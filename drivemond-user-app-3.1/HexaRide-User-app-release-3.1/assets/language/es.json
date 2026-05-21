@@ -719,6 +719,9 @@
   "upload_image_within": "Upload image within",
   "upload_video_within": "Upload Video within",
   "video_length_max": "Video length Max",
+  "refund_amount_example": "Ej: 50",
+  "max_file_size_10mb": "10mb",
+  "max_duration_2min": "2min",
   "upload_media": "Upload Media",
   "add_more": "Add More",
   "refund_request_send_successfully": "Refund Request Sent, Successfully!",
@@ -981,5 +984,14 @@
   "tip": "Propina",
   "tip_driver": "Dar propina al conductor",
   "you_are_offline": "Estás desconectado",
-  "your_driver": "Tu conductor"
+  "your_driver": "Tu conductor",
+  "token_history": "Historial de Tokens",
+  "username": "Usuario",
+  "enter_6_digit_pin": "Ingresa PIN de 6 dígitos",
+  "pin_must_be_6_digits": "El PIN debe tener 6 dígitos",
+  "username_min_3_characters": "El usuario debe tener al menos 3 caracteres",
+  "confirm_booking": "Confirmar Reserva",
+  "confirm_booking_message": "¿Está seguro de que desea reservar este viaje?",
+  "too_many_requests": "Demasiadas solicitudes. Inténtelo más tarde.",
+  "server_error": "Error del servidor. Inténtelo de nuevo."
 }

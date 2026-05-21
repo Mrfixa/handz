@@ -184,14 +184,27 @@ class ProfileController extends GetxController implements GetxService{
   }
 
   Future<Response> profileOnlineOffline( bool value) async {
+    // Before going online, ensure location permission is granted
+    if (isOnline == "0") {
+      final permission = await Permission.location.status;
+      if (!permission.isGranted) {
+        final result = await Permission.location.request();
+        if (!result.isGranted) {
+          showCustomSnackBar('location_permission_required'.tr);
+          return Response(statusCode: 403);
+        }
+      }
+    }
     isLoading = true;
     update();
     Response? response = await profileServiceInterface.profileOnlineOffline();
     if(response!.statusCode == 200){
       if(isOnline == "0"){
         isOnline = "1";
+        startLocationRecord();
       }else if(isOnline == "1"){
         isOnline = "0";
+        stopLocationRecord();
       }
     }else{
       Get.back();
@@ -437,6 +450,16 @@ class ProfileController extends GetxController implements GetxService{
   void stopLocationRecord() {
     _location.enableBackgroundMode(enable: false);
     _timer?.cancel();
+  }
+
+  @override
+  void onClose() {
+    if (isOnline == "1") {
+      // best effort — fire and forget
+      profileServiceInterface.profileOnlineOffline();
+    }
+    stopLocationRecord();
+    super.onClose();
   }
 
   void _checkPermission(Function callback) async {

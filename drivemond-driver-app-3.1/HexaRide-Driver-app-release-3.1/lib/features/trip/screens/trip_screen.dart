@@ -78,7 +78,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
             ]),
 
             Positioned(
-              top: Get.height * (GetPlatform.isIOS ? ResponsiveHelper.isTab ? 0.10 : 0.14 :  0.11), left: Dimensions.paddingSizeSmall,
+              top: Get.height * (GetPlatform.isIOS ? (ResponsiveHelper.isTab ? 0.10 : 0.14) : 0.11), left: Dimensions.paddingSizeSmall,
               child: SizedBox(
                 height: Get.find<LocalizationController>().isLtr ? 45 : 50,
                 child: ListView.builder(

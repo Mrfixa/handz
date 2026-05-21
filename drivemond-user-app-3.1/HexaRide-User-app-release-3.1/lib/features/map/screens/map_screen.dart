@@ -117,12 +117,13 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
                               style: Get.isDarkMode ?
                               Get.find<ThemeController>().darkMap : Get.find<ThemeController>().lightMap,
                               initialCameraPosition:  CameraPosition(
-                                target:  rideController.tripDetails?.pickupCoordinates != null ?
-                                LatLng(
-                                  rideController.tripDetails!.pickupCoordinates!.coordinates![1],
-                                  rideController.tripDetails!.pickupCoordinates!.coordinates![0],
-                                ) :
-                                Get.find<LocationController>().initialPosition,
+                                target: () {
+                                  final coords = rideController.tripDetails?.pickupCoordinates?.coordinates;
+                                  if (coords != null && coords.length >= 2) {
+                                    return LatLng(coords[1], coords[0]);
+                                  }
+                                  return Get.find<LocationController>().initialPosition;
+                                }(),
                                 zoom: 16,
                               ),
                               onMapCreated: (GoogleMapController controller) {
@@ -132,12 +133,12 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
                                     rideController.currentRideState.name == AppConstants.riseFare
                                 ){
                                   mapController.initializeData();
+                                  final coords = rideController.tripDetails?.pickupCoordinates?.coordinates;
+                                  if (coords != null && coords.length >= 2) {
                                   mapController.setOwnCurrentLocation(
-                                      LatLng(
-                                        rideController.tripDetails!.pickupCoordinates!.coordinates![1],
-                                        rideController.tripDetails!.pickupCoordinates!.coordinates![0],
-                                      )
+                                      LatLng(coords[1], coords[0])
                                   );
+                                  }
                                 }else if(rideController.currentRideState.name == AppConstants.initial){
                                   mapController.getPolyline();
                                 }else if(rideController.currentRideState.name == AppConstants.completeRide){

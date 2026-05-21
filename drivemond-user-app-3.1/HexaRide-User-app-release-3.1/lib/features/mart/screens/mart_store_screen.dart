@@ -31,9 +31,16 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     _fetchProducts();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchProducts() async {
     try {
       final response = await Get.find<ApiClient>().getData(AppConstants.martProducts);
+      if (!mounted) return;
       if (response.statusCode == 200 && response.body['data'] != null) {
         setState(() {
           _products.clear();
@@ -45,7 +52,9 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       } else {
         setState(() => _isLoading = false);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart error: $e');
+      if (!mounted) return;
       setState(() {
         _isOffline = true;
         _isLoading = false;
@@ -332,6 +341,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
   }
 
   double get _totalAmount => _subtotal - _discount + _tipAmount;
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _notesController.dispose();
+    _promoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -692,6 +709,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
         {'code': code, 'subtotal': _subtotal},
       );
 
+      if (!mounted) return;
       if (response.statusCode == 200 && response.body['data'] != null) {
         setState(() {
           _discount = (response.body['data']['discount'] as num?)?.toDouble() ?? 0.0;
@@ -700,10 +718,11 @@ class _MartCartScreenState extends State<MartCartScreen> {
       } else {
         Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart error: $e');
       Get.snackbar('error'.tr, 'promo_validation_failed'.tr);
     } finally {
-      setState(() => _isApplyingPromo = false);
+      if (mounted) setState(() => _isApplyingPromo = false);
     }
   }
 
@@ -735,6 +754,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
         body,
       );
 
+      if (!mounted) return;
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.body['data'];
         final orderId = data?['id'] ?? data?['order_id'] ?? '';
@@ -747,7 +767,8 @@ class _MartCartScreenState extends State<MartCartScreen> {
         final message = response.body['errors']?.first?['message'] ?? 'order_failed'.tr;
         Get.snackbar('error'.tr, message.toString());
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Mart error: $e');
       Get.snackbar('error'.tr, 'network_error'.tr);
     } finally {
       if (mounted) setState(() => _isOrdering = false);

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Modules\TripManagement\Entities\MartOrder;
+use Modules\TripManagement\Entities\MartOrderItem;
+use Modules\TripManagement\Entities\MartPromoCode;
 
 class VitoMartDriverController extends Controller
 {
@@ -70,16 +72,18 @@ class VitoMartDriverController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|string',
-            'status' => 'required|in:picked_up,delivered',
+            'status' => 'required|in:picked_up,delivered,cancelled',
         ]);
 
         if ($validator->fails()) {
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
+        // Drivers may cancel an order only while it is still in 'accepted' state.
         $allowedTransitions = [
-            'picked_up' => ['accepted'],
-            'delivered' => ['picked_up'],
+            'picked_up'  => ['accepted'],
+            'delivered'  => ['picked_up'],
+            'cancelled'  => ['accepted'],
         ];
 
         $order = DB::transaction(function () use ($request, $allowedTransitions) {
@@ -99,6 +103,27 @@ class VitoMartDriverController extends Controller
                 $updateData['payment_status'] = 'paid';
             }
 
+            if ($request->status === 'cancelled') {
+                // Restore product stock atomically under the same transaction lock.
+                foreach ($order->items as $item) {
+                    if ($item->product) {
+                        $item->product()->lockForUpdate()->first();
+                        $item->product->increment('stock', $item->quantity);
+                    }
+                }
+                // If a promo code was used, decrement its global used_count.
+                if ($order->promo_code) {
+                    $promo = MartPromoCode::where('code', $order->promo_code)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($promo && $promo->used_count > 0) {
+                        $promo->decrement('used_count');
+                    }
+                }
+                // Release driver so they can accept another order.
+                $updateData['driver_id'] = null;
+            }
+
             $order->update($updateData);
 
             return $order->fresh();
@@ -111,6 +136,7 @@ class VitoMartDriverController extends Controller
         $messages = [
             'picked_up' => ['title' => 'Order Picked Up', 'description' => "Your mart order #{$order->ref_id} has been picked up and is on the way.", 'action' => 'mart_order_picked_up'],
             'delivered' => ['title' => 'Order Delivered', 'description' => "Your mart order #{$order->ref_id} has been delivered. Enjoy!", 'action' => 'mart_order_delivered'],
+            'cancelled' => ['title' => 'Order Cancelled', 'description' => "Your mart order #{$order->ref_id} was cancelled by the driver. We are finding another driver.", 'action' => 'mart_order_cancelled'],
         ];
 
         $this->notifyCustomer(

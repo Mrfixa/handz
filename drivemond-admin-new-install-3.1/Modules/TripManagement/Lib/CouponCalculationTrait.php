@@ -171,11 +171,16 @@ trait CouponCalculationTrait
 
     private function updateCouponCount($coupon, $amount)
     {
-        $coupon = CouponSetup::where('id', $coupon->id)->first();
-        $coupon->total_amount += $amount;
-        $coupon->increment('total_used');
-        $coupon->save();
-
+        // Use lockForUpdate + atomic increment to prevent race conditions when
+        // multiple concurrent requests try to record coupon usage simultaneously.
+        DB::transaction(function () use ($coupon, $amount) {
+            $locked = CouponSetup::where('id', $coupon->id)->lockForUpdate()->first();
+            if ($locked) {
+                $locked->increment('total_used');
+                CouponSetup::where('id', $locked->id)
+                    ->update(['total_amount' => DB::raw('total_amount + ' . (float) $amount)]);
+            }
+        });
     }
 
 }

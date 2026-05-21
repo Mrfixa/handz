@@ -69,10 +69,13 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
       if (!tabController.indexIsChanging){
        if(tabController.index == 1){
          Get.find<WalletController>().setPayableTypeIndex(1, notify: false);
+         setState(() {});
        }else if(tabController.index == 2){
          Get.find<WalletController>().setPayableTypeIndex(0, notify: false);
+         setState(() {});
        }else if(tabController.index == 0){
          Get.find<WalletController>().setSelectedHistoryIndex(1,false);
+         setState(() {});
        }
       }
     });

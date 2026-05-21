@@ -40,19 +40,22 @@ class _AddNewAddressState extends State<AddNewAddress> {
   void initState() {
     Get.find<LocationController>().initTextControllers();
     if(widget.address != null) {
-      Get.find<LocationController>().locationController.text = widget.address!.address!;
-      houseController.text = widget.address!.house ?? '';
-      roadController.text = widget.address!.street ?? '';
+      Get.find<LocationController>().locationController.text = widget.address?.address ?? '';
+      houseController.text = widget.address?.house ?? '';
+      roadController.text = widget.address?.street ?? '';
       addressLevelController.text = widget.address?.addressLabel ?? '';
+      final addressLabel = widget.address?.addressLabel ?? '';
       Get.find<AddressController>().updateAddressIndex(
-        widget.address!.addressLabel! == 'home' ? 0 : widget.address!.addressLabel! == 'office' ? 1 : 2,
+        addressLabel == 'home' ? 0 : addressLabel == 'office' ? 1 : 2,
         false,
       );
-      _cameraPosition = CameraPosition(target: LatLng(widget.address!.latitude!, widget.address!.longitude!));
+      final lat = widget.address?.latitude ?? 0.0;
+      final lng = widget.address?.longitude ?? 0.0;
+      _cameraPosition = CameraPosition(target: LatLng(lat, lng));
     }
-    phoneController.text = Get.find<ProfileController>().profileModel!.data!.phone!;
-    nameController.text = '${Get.find<ProfileController>().profileModel!.data!.firstName ?? ''} '
-        '${Get.find<ProfileController>().profileModel!.data!.lastName ?? ''}';
+    phoneController.text = Get.find<ProfileController>().profileModel?.data?.phone ?? '';
+    nameController.text = '${Get.find<ProfileController>().profileModel?.data?.firstName ?? ''} '
+        '${Get.find<ProfileController>().profileModel?.data?.lastName ?? ''}';
     super.initState();
   }
   @override
@@ -85,7 +88,7 @@ class _AddNewAddressState extends State<AddNewAddress> {
                         child: SizedBox(height: 170, width: Get.width, child: GoogleMap(
                             initialCameraPosition:  CameraPosition(
                               target: widget.address != null ?
-                              LatLng(widget.address!.latitude!, widget.address!.longitude!) :
+                              LatLng(widget.address?.latitude ?? 0.0, widget.address?.longitude ?? 0.0) :
                               locationController.initialPosition, zoom: 16,
                             ),
                             onMapCreated: (GoogleMapController controller) {

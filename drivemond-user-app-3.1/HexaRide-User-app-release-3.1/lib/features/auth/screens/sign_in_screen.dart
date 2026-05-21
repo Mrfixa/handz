@@ -42,6 +42,15 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   @override
+  void dispose() {
+    usernameController.dispose();
+    pinController.dispose();
+    usernameNode.dispose();
+    pinNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(child: Scaffold(
       backgroundColor: Theme.of(context).canvasColor,
@@ -85,6 +94,7 @@ class _SignInScreenState extends State<SignInScreen> {
               isPassword: true,
               controller: pinController,
               focusNode: pinNode,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
 
             Row(children: [
@@ -131,7 +141,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 }else if(pin.isEmpty) {
                   showCustomSnackBar('pin_is_required'.tr);
                   FocusScope.of(context).requestFocus(pinNode);
-                }else if(pin.length != 6) {
+                }else if(!RegExp(r'^\d{6}$').hasMatch(pin)) {
                   showCustomSnackBar('pin_must_be_6_digits'.tr);
                 }else {
                   authController.login('', username, pin);

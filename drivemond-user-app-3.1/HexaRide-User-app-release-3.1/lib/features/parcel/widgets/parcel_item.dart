@@ -35,11 +35,11 @@ class ParcelItem extends StatelessWidget {
                   Get.find<MapController>().notifyMapController();
                   Get.to(() => const MapScreen(fromScreen: MapScreenType.parcel));
                 }
-              });
+              }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
             }else if(rideRequest.currentStatus == "returning" && rideRequest.type == AppConstants.parcel){
               rideController.getRideDetails(rideRequest.id!).then((value){
                 Get.to(()=> TripDetailsScreen(tripId: rideRequest.id!,fromNotification: true));
-              });
+              }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
             }else{
               if(rideRequest.paymentStatus == AppConstants.paid){
                 rideController.getFinalFare(rideRequest.id!).then((value) {
@@ -51,9 +51,9 @@ class ParcelItem extends StatelessWidget {
                         parcelController.setParcelLoadingDeactive(index);
                         Get.to(()=> const MapScreen(fromScreen: MapScreenType.parcel));
                       }
-                    });
+                    }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
                   }
-                });
+                }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
 
               }else{
                 if(rideRequest.parcelInformation!.payer == AppConstants.sender && rideRequest.driver != null){
@@ -66,9 +66,9 @@ class ParcelItem extends StatelessWidget {
                           parcelController.setParcelLoadingDeactive(index);
                           Get.off(()=>const PaymentScreen(fromParcel: true));
                         }
-                      });
+                      }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
                     }
-                  });
+                  }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
                 }else{
                   if(rideRequest.driver != null){
                     rideController.getRideDetails(rideRequest.id!).then((value){
@@ -78,7 +78,7 @@ class ParcelItem extends StatelessWidget {
                         parcelController.setParcelLoadingDeactive(index);
                         Get.to(() => const MapScreen(fromScreen: MapScreenType.parcel));
                       }
-                    });
+                    }).catchError((e) { parcelController.setParcelLoadingDeactive(index); debugPrint('Parcel error: $e'); });
                   }else{
                     rideController.getRideDetails(rideRequest.id!);
                     Get.find<ParcelController>().updateParcelState(ParcelDeliveryState.findingRider);

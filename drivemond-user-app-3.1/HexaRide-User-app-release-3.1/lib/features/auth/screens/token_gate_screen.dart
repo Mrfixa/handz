@@ -277,7 +277,8 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
         await _saveTokenToHistory(token, false);
         showCustomSnackBar('invalid_or_expired_token'.tr);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Token validation error: $e');
       await _saveTokenToHistory(token, false);
       showCustomSnackBar('token_validation_failed'.tr);
     } finally {

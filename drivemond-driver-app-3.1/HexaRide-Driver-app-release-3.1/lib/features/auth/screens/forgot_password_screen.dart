@@ -41,6 +41,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    phoneController.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {

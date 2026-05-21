@@ -31,6 +31,7 @@ import 'package:ride_sharing_user_app/features/profile/controllers/profile_contr
 import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/body_widget.dart';
+import 'package:ride_sharing_user_app/helper/display_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -108,8 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await Get.find<RideController>().getRunningRideList();
-    if(Get.find<RideController>().runningRideList?.data != null){
-      for(var element in Get.find<RideController>().runningRideList!.data!){
+    final runningRideData = Get.find<RideController>().runningRideList?.data;
+    if(runningRideData != null){
+      for(var element in runningRideData){
         PusherHelper().pusherDriverStatus(element.id!);
       }
     }
@@ -122,16 +124,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await Get.find<ParcelController>().getRunningParcelList();
-    if(Get.find<ParcelController>().parcelListModel!.data!.isNotEmpty){
+    if(Get.find<ParcelController>().parcelListModel?.data?.isNotEmpty == true){
       for (var element in Get.find<ParcelController>().parcelListModel!.data!) {
         PusherHelper().pusherDriverStatus(element.id!);
       }
     }
 
-    await Get.find<RideController>().getNearestDriverList(
-      Get.find<LocationController>().getUserAddress()!.latitude!.toString(),
-      Get.find<LocationController>().getUserAddress()!.longitude!.toString(),
-    );
+    final userAddress = Get.find<LocationController>().getUserAddress();
+    if (userAddress == null || userAddress.latitude == null || userAddress.longitude == null) {
+      showCustomSnackBar('you_have_to_allow'.tr);
+    } else {
+      await Get.find<RideController>().getNearestDriverList(
+        userAddress.latitude!.toString(),
+        userAddress.longitude!.toString(),
+      );
+    }
 
     HomeScreenHelper.checkMaintanceMode();
   }

@@ -72,6 +72,19 @@ class ProfileEditScreenState extends State<ProfileEditScreen>  with TickerProvid
     super.initState();
   }
 
+  @override
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    identityNumberController.dispose();
+    firstNameFocus.dispose();
+    lastNameFocus.dispose();
+    emailFocus.dispose();
+    super.dispose();
+  }
+
 
 
   @override
