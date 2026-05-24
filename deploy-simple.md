@@ -80,3 +80,42 @@ php artisan serve --host=0.0.0.0 --port=8000
 API is live at `http://YOUR_SERVER_IP:8000`
 
 > Open port 8000 in your EC2 security group inbound rules.
+
+---
+
+## 6 — Build Test APKs (on your dev machine)
+
+Point both apps at your server, then build debug APKs.
+
+**User app:**
+
+```bash
+cd Vito/drivemond-user-app-3.1/HexaRide-User-app-release-3.1
+
+# Swap the URL (run once)
+sed -i "s|https://dacatlon.shop|http://YOUR_SERVER_IP:8000|g" lib/util/app_constants.dart
+
+flutter pub get
+flutter build apk --debug \
+  --dart-define=MAPS_API_KEY=YOUR_MAPS_KEY \
+  --dart-define=STRIPE_PUBLISHABLE_KEY=YOUR_STRIPE_KEY
+```
+
+APK: `build/app/outputs/flutter-apk/app-debug.apk`
+
+**Driver app:**
+
+```bash
+cd Vito/drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
+
+sed -i "s|https://dacatlon.shop|http://YOUR_SERVER_IP:8000|g" lib/util/app_constants.dart
+
+flutter pub get
+flutter build apk --debug \
+  --dart-define=MAPS_API_KEY=YOUR_MAPS_KEY \
+  --dart-define=STRIPE_PUBLISHABLE_KEY=YOUR_STRIPE_KEY
+```
+
+APK: `build/app/outputs/flutter-apk/app-debug.apk`
+
+Install both APKs on your phone and test.
