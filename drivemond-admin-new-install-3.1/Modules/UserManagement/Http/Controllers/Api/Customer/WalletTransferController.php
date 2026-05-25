@@ -21,7 +21,7 @@ class WalletTransferController extends Controller
         $this->customerAccountService = $customerAccountService;
     }
 
-    public function transferDrivemondToMartWallet(Request $request)
+    public function transferVitoToMartWallet(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'amount' => [
@@ -92,7 +92,7 @@ class WalletTransferController extends Controller
 
     }
 
-    public function transferDrivemondFromMartWallet(Request $request)
+    public function transferVitoFromMartWallet(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'currency' => 'required',
