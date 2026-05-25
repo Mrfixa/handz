@@ -63,7 +63,7 @@ class VitoStripeController extends Controller
             ]));
 
         } catch (\Exception $e) {
-            return response()->json(responseFormatter(constant: DEFAULT_400), 403);
+            return response()->json(responseFormatter(constant: DEFAULT_400), 400);
         }
     }
 

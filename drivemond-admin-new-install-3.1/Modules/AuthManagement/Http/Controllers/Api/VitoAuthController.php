@@ -148,7 +148,7 @@ class VitoAuthController extends Controller
         $isCustomerRoute = str_contains($request->route()->getPrefix(), 'customer');
 
         if (!$isCustomerRoute && !businessConfig('driver_self_registration')?->value) {
-            return response()->json(responseFormatter(SELF_REGISTRATION_400), 403);
+            return response()->json(responseFormatter(SELF_REGISTRATION_400), 400);
         }
 
         $firstLevel = $isCustomerRoute
@@ -190,7 +190,7 @@ class VitoAuthController extends Controller
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: [['error_code' => 'username', 'message' => 'Username already taken']]), 409);
         } catch (\RuntimeException $e) {
             if ($e->getMessage() === 'invalid_qr_token') {
-                return response()->json(responseFormatter(constant: DEFAULT_400, errors: [['error_code' => 'qr_token', 'message' => 'Invalid or expired invitation token']]), 403);
+                return response()->json(responseFormatter(constant: DEFAULT_400, errors: [['error_code' => 'qr_token', 'message' => 'Invalid or expired invitation token']]), 400);
             }
             throw $e;
         }

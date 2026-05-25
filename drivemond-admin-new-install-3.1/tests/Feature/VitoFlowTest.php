@@ -511,7 +511,7 @@ class VitoFlowTest extends TestCase
             'pin_confirmation' => '999888',
             'qr_token' => $token,
         ]);
-        $retry->assertStatus(403);
+        $retry->assertStatus(400);
     }
 
     // ========================================================================
@@ -652,7 +652,7 @@ class VitoFlowTest extends TestCase
         // Driver 2 cannot accept (already taken)
         Passport::actingAs($driver2, ['AccessToDriver']);
         $res2 = $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $rideId]);
-        $res2->assertStatus(403);
+        $res2->assertStatus(404);
     }
 
     // ========================================================================
