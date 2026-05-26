@@ -995,5 +995,18 @@
   "confirm_booking_message": "¿Está seguro de que desea reservar este viaje?",
   "too_many_requests": "Demasiadas solicitudes. Inténtelo más tarde.",
   "server_error": "Error del servidor. Inténtelo de nuevo.",
-  "order_not_found": "Pedido no encontrado o no se puede cancelar"
+  "order_not_found": "Pedido no encontrado o no se puede cancelar",
+  "vito_ride": "VitoRide",
+  "vito_send": "VitoEnvío",
+  "book_ride": "Reservar un Viaje",
+  "send_package": "Enviar un Paquete",
+  "shop_mart": "Tienda Mart",
+  "offline": "Sin conexión",
+  "order_placed": "Pedido Realizado",
+  "order_accepted": "Pedido Aceptado",
+  "picked_up": "Recogido",
+  "delivered": "Entregado",
+  "order_placed_success": "Pedido realizado exitosamente",
+  "filter_all": "Todo",
+  "rebook": "Reservar de Nuevo"
 }

@@ -1032,5 +1032,19 @@
   "order_cancelled": "Cancelado",
   "username": "Usuario",
   "pin_must_be_6_digits": "El PIN debe tener 6 dígitos",
-  "username_min_3_characters": "El usuario debe tener al menos 3 caracteres"
+  "username_min_3_characters": "El usuario debe tener al menos 3 caracteres",
+  "decline": "Rechazar",
+  "decline_ride": "Rechazar Viaje",
+  "today_earnings": "Ganancias de Hoy",
+  "change_pin": "Cambiar PIN",
+  "new_pin": "Nuevo PIN",
+  "confirm_new_pin": "Confirmar Nuevo PIN",
+  "pin_changed": "PIN cambiado exitosamente",
+  "order_details": "Detalles del Pedido",
+  "upload_delivery_proof": "Subir Prueba de Entrega",
+  "signature_required": "Firma Requerida",
+  "service_badge": "Servicio",
+  "ride_service": "Viaje",
+  "send_service": "Envío",
+  "mart_service": "Tienda"
 }

@@ -998,5 +998,18 @@
   "confirm_booking_message": "Are you sure you want to book this ride?",
   "too_many_requests": "Too many requests. Please try again later.",
   "server_error": "Server error. Please try again.",
-  "order_not_found": "Order not found or cannot be cancelled"
+  "order_not_found": "Order not found or cannot be cancelled",
+  "vito_ride": "VitoRide",
+  "vito_send": "VitoSend",
+  "book_ride": "Book a Ride",
+  "send_package": "Send a Package",
+  "shop_mart": "Shop Mart",
+  "offline": "Offline",
+  "order_placed": "Order Placed",
+  "order_accepted": "Order Accepted",
+  "picked_up": "Picked Up",
+  "delivered": "Delivered",
+  "order_placed_success": "Order placed successfully",
+  "filter_all": "All",
+  "rebook": "Rebook"
 }
