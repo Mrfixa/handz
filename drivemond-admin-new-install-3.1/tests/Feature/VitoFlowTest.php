@@ -1349,4 +1349,88 @@ class VitoFlowTest extends TestCase
 
         Schema::dropIfExists('reviews');
     }
+
+    // ========================================================================
+    // 17. Parcel Flow Tests
+    // ========================================================================
+
+    public function test_parcel_delivery_notes_stored(): void
+    {
+        $customer = $this->createUser('customer');
+        $driver   = $this->createUser('driver', ['username' => 'driverp1']);
+
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(),
+            'last_ride_completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $parcelId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id'                => $parcelId,
+            'customer_id'       => $customer->id,
+            'driver_id'         => $driver->id,
+            'current_status'    => 'accepted',
+            'type'              => 'parcel',
+            'payment_method'    => 'cash',
+            'estimated_fare'    => 50,
+            'actual_fare'       => 0,
+            'estimated_distance'=> 3,
+            'paid_fare'         => 0,
+            'delivery_notes'    => 'Leave at door',
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        $this->assertDatabaseHas('trip_requests', [
+            'id'             => $parcelId,
+            'delivery_notes' => 'Leave at door',
+        ]);
+    }
+
+    public function test_driver_can_update_parcel_to_out_for_pickup(): void
+    {
+        $customer = $this->createUser('customer');
+        $driver   = $this->createUser('driver', ['username' => 'driverp2']);
+
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(),
+            'last_ride_completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $parcelId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id'                => $parcelId,
+            'customer_id'       => $customer->id,
+            'driver_id'         => $driver->id,
+            'current_status'    => 'accepted',
+            'type'              => 'parcel',
+            'payment_method'    => 'cash',
+            'estimated_fare'    => 50,
+            'actual_fare'       => 0,
+            'estimated_distance'=> 3,
+            'paid_fare'         => 0,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $r = $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $parcelId,
+            'current_status'  => 'out_for_pickup',
+        ]);
+
+        $r->assertOk();
+        $this->assertDatabaseHas('trip_requests', [
+            'id'             => $parcelId,
+            'current_status' => 'out_for_pickup',
+        ]);
+    }
 }
