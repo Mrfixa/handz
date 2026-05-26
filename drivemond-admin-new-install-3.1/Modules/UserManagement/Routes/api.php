@@ -57,6 +57,7 @@ Route::group(['prefix' => 'customer'], function () {
                 Route::post('transfer-vito-from-mart', 'transferVitoFromMartWallet')->withoutMiddleware('auth:api');
             });
             Route::controller(WalletController::class)->group(function () {
+                Route::get('balance', 'balance');
                 Route::get('bonus-list', 'bonusList');
                 Route::get('add-fund-digitally', 'addFundDigitally')->withoutMiddleware('auth:api');
             });

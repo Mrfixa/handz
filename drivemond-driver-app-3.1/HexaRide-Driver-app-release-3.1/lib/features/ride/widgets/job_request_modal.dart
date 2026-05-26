@@ -25,6 +25,29 @@ class JobRequestModal extends StatefulWidget {
     this.onTimeout,
   });
 
+  static Future<void> show({
+    required String tripId,
+    required String pickupAddress,
+    required String destinationAddress,
+    required String estimatedFare,
+    required String distance,
+    required VoidCallback onAccept,
+    VoidCallback? onTimeout,
+  }) {
+    return Get.dialog(
+      JobRequestModal(
+        tripId: tripId,
+        pickupAddress: pickupAddress,
+        destinationAddress: destinationAddress,
+        estimatedFare: estimatedFare,
+        distance: distance,
+        onAccept: onAccept,
+        onTimeout: onTimeout,
+      ),
+      barrierDismissible: false,
+    );
+  }
+
   @override
   State<JobRequestModal> createState() => _JobRequestModalState();
 }

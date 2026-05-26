@@ -130,7 +130,9 @@ class VitoMartDriverController extends Controller
         });
 
         if (!$order) {
-            return response()->json(responseFormatter(DEFAULT_404), 404);
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: [
+                ['message' => "Cannot transition to '{$request->status}': order not found or transition not allowed from its current status."],
+            ]), 400);
         }
 
         $messages = [
