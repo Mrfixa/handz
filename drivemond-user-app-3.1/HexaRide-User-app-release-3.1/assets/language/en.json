@@ -1053,5 +1053,11 @@
   "customer_signature": "Customer Signature",
   "something_went_wrong": "Something went wrong",
   "cash_on_delivery": "Cash on Delivery",
-  "card": "Card"
+  "card": "Card",
+  "otp_sent": "OTP sent to your phone",
+  "invalid_otp": "Invalid OTP. Please try again.",
+  "otp_expired": "OTP has expired. Please request a new one.",
+  "resend_otp": "Resend OTP",
+  "verify_otp": "Verify OTP",
+  "profile_incomplete": "Please complete your profile"
 }

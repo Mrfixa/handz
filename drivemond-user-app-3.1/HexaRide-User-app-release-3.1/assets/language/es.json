@@ -1053,5 +1053,11 @@
   "customer_signature": "Firma del cliente",
   "something_went_wrong": "Algo salió mal",
   "cash_on_delivery": "Pago en efectivo",
-  "card": "Tarjeta"
+  "card": "Tarjeta",
+  "otp_sent": "OTP enviado a su teléfono",
+  "invalid_otp": "OTP inválido. Por favor intente de nuevo.",
+  "otp_expired": "OTP ha expirado. Solicite uno nuevo.",
+  "resend_otp": "Reenviar OTP",
+  "verify_otp": "Verificar OTP",
+  "profile_incomplete": "Por favor complete su perfil"
 }
