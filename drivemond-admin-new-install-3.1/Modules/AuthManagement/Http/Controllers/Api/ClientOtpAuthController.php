@@ -167,8 +167,8 @@ class ClientOtpAuthController extends Controller
     public function registrationFromOtp(Request $request)
     {
         $validated = $request->validate([
-            'f_name'        => 'required|string|max:100',
-            'l_name'        => 'nullable|string|max:100',
+            'first_name'    => 'required|string|max:100',
+            'last_name'     => 'nullable|string|max:100',
             'phone'         => 'required|string|min:5|max:30',
             'email'         => 'nullable|email|max:255',
             'referral_code' => 'nullable|string|max:50',
@@ -201,11 +201,11 @@ class ClientOtpAuthController extends Controller
 
         $updateData = [
             'is_active'  => 1,
-            'first_name' => $validated['f_name'],
+            'first_name' => $validated['first_name'],
         ];
 
-        if (!empty($validated['l_name'])) {
-            $updateData['last_name'] = $validated['l_name'];
+        if (!empty($validated['last_name'])) {
+            $updateData['last_name'] = $validated['last_name'];
         }
         if (!empty($validated['email'])) {
             $updateData['email'] = $validated['email'];

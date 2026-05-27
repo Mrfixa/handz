@@ -33,6 +33,7 @@ class SignUpBody {
     data['username'] = username;
     data['first_name'] = fName;
     data['last_name'] = lName;
+    if (phone != null) data['phone'] = phone;
     data['pin'] = password;
     data['pin_confirmation'] = confirmPassword;
     data['referral_code'] = referralCode;

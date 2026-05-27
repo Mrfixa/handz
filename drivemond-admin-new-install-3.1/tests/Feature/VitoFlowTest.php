@@ -194,6 +194,7 @@ class VitoFlowTest extends TestCase
                 $table->string('edited_by')->nullable();
                 $table->text('before')->nullable();
                 $table->text('after')->nullable();
+                $table->string('user_type')->nullable();
                 $table->string('logable_id')->nullable();
                 $table->string('logable_type')->nullable();
                 $table->timestamps();

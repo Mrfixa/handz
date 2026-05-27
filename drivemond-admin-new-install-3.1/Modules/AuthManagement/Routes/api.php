@@ -102,7 +102,7 @@ Route::controller(\Modules\AuthManagement\Http\Controllers\Api\QrTokenController
 */
 Route::group(['prefix' => 'customer/auth', 'middleware' => ['throttle:20,1']], function () {
     Route::post('check', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'checkUser']);
-    Route::post('send-otp', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'sendOtp'])->middleware('throttle:5,1');
+    Route::post('send-otp', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'sendOtp']);
     Route::post('otp-verification', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'verifyOtp']);
     Route::post('registration-from-otp', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'registrationFromOtp']);
 });
