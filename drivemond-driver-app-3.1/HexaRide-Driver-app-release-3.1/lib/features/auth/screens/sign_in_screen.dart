@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
-import 'package:ride_sharing_user_app/features/auth/screens/sign_up_screen.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
 import 'package:ride_sharing_user_app/features/html/domain/html_enum_types.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
@@ -179,7 +179,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
 
                           TextButton(
-                            onPressed: () =>  Get.to(()=> const SignUpScreen()),
+                            onPressed: () =>  Get.to(()=> const TokenGateScreen()),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero, minimumSize: const Size(50,30),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
