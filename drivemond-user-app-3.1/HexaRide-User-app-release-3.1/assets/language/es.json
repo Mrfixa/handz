@@ -1059,5 +1059,8 @@
   "otp_expired": "OTP ha expirado. Solicite uno nuevo.",
   "resend_otp": "Reenviar OTP",
   "verify_otp": "Verificar OTP",
-  "profile_incomplete": "Por favor complete su perfil"
+  "profile_incomplete": "Por favor complete su perfil",
+  "create_your_account": "Crea tu cuenta",
+  "enter_your_first_name": "Ingresa tu nombre",
+  "enter_your_last_name": "Ingresa tu apellido"
 }

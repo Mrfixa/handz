@@ -383,4 +383,25 @@ class DriverController extends BaseController
         return back();
     }
 
+    public function resetPin($id): RedirectResponse
+    {
+        $this->authorize('user_edit');
+        $driver = $this->driverService->findOne(id: $id);
+        if (!$driver) {
+            Toastr::warning(translate('Driver not found'));
+            return back();
+        }
+
+        $newPin = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $driver->update([
+            'pin_hash'        => \Illuminate\Support\Facades\Hash::make($newPin),
+            'pin_attempts'    => 0,
+            'pin_blocked_at'  => null,
+        ]);
+
+        Toastr::success(translate('Driver PIN reset successfully. New PIN: ') . $newPin);
+
+        return back();
+    }
+
 }

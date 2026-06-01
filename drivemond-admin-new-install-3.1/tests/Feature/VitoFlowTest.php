@@ -227,6 +227,7 @@ class VitoFlowTest extends TestCase
                 $table->string('availability_status')->default('unavailable');
                 $table->string('plate_number')->nullable();
                 $table->string('car_photo')->nullable();
+                $table->boolean('car_photo_approved')->default(false);
                 $table->boolean('is_approved')->default(false);
                 $table->integer('ride_count')->default(0);
                 $table->integer('parcel_count')->default(0);
@@ -1566,5 +1567,68 @@ class VitoFlowTest extends TestCase
             'id'             => $parcelId,
             'current_status' => 'out_for_pickup',
         ]);
+    }
+
+    // ========================================================================
+    // Checklist-named aliases (§8.1)
+    // ========================================================================
+
+    public function test_client_otp_send_and_verify(): void
+    {
+        $this->test_client_otp_auth_flow();
+    }
+
+    public function test_stripe_webhook_idempotent(): void
+    {
+        $this->test_webhook_idempotent();
+    }
+
+    public function test_driver_pin_register_and_login(): void
+    {
+        $this->seedUserLevel('driver');
+
+        DB::table('business_settings')->insert([
+            'id' => Str::uuid()->toString(),
+            'key_name' => 'driver_self_registration',
+            'value' => json_encode('1'),
+            'settings_type' => 'business_information',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $driverToken = str_repeat('e', 64);
+        DB::table('qr_tokens')->insert([
+            'id' => Str::uuid()->toString(),
+            'token' => $driverToken,
+            'role' => 'driver',
+            'created_by' => null,
+            'redeemed_by' => null,
+            'redeemed_at' => null,
+            'expires_at' => now()->addDays(7),
+            'is_revoked' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $regResp = $this->postJson('/api/driver/auth/pin-register', [
+            'first_name' => 'Pin',
+            'last_name'  => 'Tester',
+            'username'   => 'pintester',
+            'pin'        => '654321',
+            'pin_confirmation' => '654321',
+            'qr_token'   => $driverToken,
+        ]);
+        $regResp->assertOk();
+
+        $user = User::where('username', 'pintester')->first();
+        $this->assertNotNull($user);
+        $this->assertTrue(Hash::check('654321', $user->pin_hash));
+
+        $loginResp = $this->postJson('/api/driver/auth/pin-login', [
+            'username' => 'pintester',
+            'pin'      => '654321',
+        ]);
+        $loginResp->assertOk();
+        $this->assertNotNull($loginResp->json('data.token'));
     }
 }

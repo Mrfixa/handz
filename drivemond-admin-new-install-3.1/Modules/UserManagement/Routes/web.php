@@ -103,6 +103,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
             Route::get('transaction-export', 'driverTransactionExport')->name('transaction-export');
             Route::get('update-suspension-status/{id}', 'updateSuspensionStatus')->name('update-suspension-status');
             Route::get('mark-as-verified/{id}', 'markAsVerified')->name('mark-as-verified');
+            Route::post('reset-pin/{id}', 'resetPin')->name('reset-pin');
         });
 
 

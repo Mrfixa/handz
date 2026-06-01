@@ -66,6 +66,15 @@
                                 {{ translate('Suspend Driver') }}
                             </a>
                         @endif
+                        @can('user_edit')
+                        <form method="POST" action="{{ route('admin.driver.reset-pin', $driver->id) }}" onsubmit="return confirm('{{ translate('Reset this driver\'s PIN?') }}')">
+                            @csrf
+                            <button type="submit" class="btn btn-warning d-flex align-items-center gap-2 px-3 fs-14 fw-semibold">
+                                <i class="bi bi-key-fill"></i>
+                                {{ translate('Reset PIN') }}
+                            </button>
+                        </form>
+                        @endcan
                         @if($driverDetails->is_verified)
                             <a href="{{ route('admin.driver.edit', ['id' => $driver->id]) }}"
                                class="btn btn-success text-white d-flex align-items-center gap-2 p-2 fs-14"

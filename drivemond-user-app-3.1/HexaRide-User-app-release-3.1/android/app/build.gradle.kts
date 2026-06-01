@@ -30,10 +30,11 @@ android {
     defaultConfig {
         multiDexEnabled = true
         applicationId = "com.sixamtech.hexarideuser"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["MAPS_API_KEY"] = System.getenv("MAPS_API_KEY") ?: "YOUR_MAP_KEY_HERE"
     }
 
     signingConfigs {

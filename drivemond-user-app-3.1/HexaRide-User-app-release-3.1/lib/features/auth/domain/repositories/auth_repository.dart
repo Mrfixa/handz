@@ -9,6 +9,7 @@ import 'package:ride_sharing_user_app/features/auth/domain/repositories/auth_rep
 import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/features/address/domain/models/address_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthRepository implements AuthRepositoryInterface{
   final ApiClient apiClient;
@@ -169,26 +170,26 @@ class AuthRepository implements AuthRepositoryInterface{
     try {
       address = Address.fromJson(jsonDecode(sharedPreferences.getString(AppConstants.userAddress)!));
       // ignore: empty_catches
-    }catch(e) {
-    }
+    } catch (e) {}
     apiClient.updateHeader(token, address);
-    return await sharedPreferences.setString(AppConstants.token, token);
-
+    await Get.find<FlutterSecureStorage>().write(key: AppConstants.token, value: token);
+    await sharedPreferences.remove(AppConstants.token);
+    return true;
   }
-
 
   @override
   String getUserToken() {
-    return sharedPreferences.getString(AppConstants.token) ?? "";
+    return apiClient.token;
   }
 
   @override
   bool isLoggedIn() {
-    return sharedPreferences.containsKey(AppConstants.token);
+    return apiClient.token.isNotEmpty;
   }
 
   @override
   bool clearSharedData() {
+    Get.find<FlutterSecureStorage>().delete(key: AppConstants.token);
     sharedPreferences.remove(AppConstants.token);
     sharedPreferences.remove(AppConstants.userAddress);
     return true;

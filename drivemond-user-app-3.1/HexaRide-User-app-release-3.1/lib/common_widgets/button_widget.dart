@@ -18,6 +18,7 @@ class ButtonWidget extends StatelessWidget {
   final Color? textColor;
   final Color? backgroundColor;
   final bool boldText;
+  final String? semanticLabel;
   const ButtonWidget({super.key, this.onPressed,
     required this.buttonText,
     this.transparent = false,
@@ -30,7 +31,8 @@ class ButtonWidget extends StatelessWidget {
     this.borderColor,
     this.textColor,
     this.backgroundColor,
-    this.boldText = true});
+    this.boldText = true,
+    this.semanticLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +50,10 @@ class ButtonWidget extends StatelessWidget {
     );
 
 
-    return Center(child: SizedBox(
+    return Semantics(
+      button: true,
+      label: semanticLabel ?? buttonText,
+      child: Center(child: SizedBox(
       width: width,
       child: Padding(padding: margin,
         child: TextButton(
@@ -80,6 +85,6 @@ class ButtonWidget extends StatelessWidget {
           ]),
         ),
       ),
-    ));
+    )));
   }
 }
