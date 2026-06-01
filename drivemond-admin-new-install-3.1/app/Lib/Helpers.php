@@ -636,7 +636,7 @@ if (!function_exists('getNotification')) {
         return [
             'title' => $notification['name'] ?? ' ',
             'description' => $notification['value'] ?? ' ',
-            'status' => (bool)$notification['status'] ?? 0,
+            'status' => (bool)($notification['status'] ?? 0),
             'action' => $notification['action'] ?? ' ',
         ];
     }

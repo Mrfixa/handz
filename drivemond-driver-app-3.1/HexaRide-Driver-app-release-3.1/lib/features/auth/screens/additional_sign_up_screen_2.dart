@@ -419,7 +419,6 @@ class AdditionalSignUpScreen2 extends StatelessWidget {
                           identificationType: authController.identityType,
                           fName: authController.fNameController.text,
                           lName: authController.lNameController.text,
-                          phone: authController.countryDialCode+authController.phoneController.text,
                           password: authController.passwordController.text,
                           confirmPassword: authController.confirmPasswordController.text,
                           services: services,

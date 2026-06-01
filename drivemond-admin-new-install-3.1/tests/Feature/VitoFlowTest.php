@@ -46,10 +46,13 @@ class VitoFlowTest extends TestCase
         Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('driver_details');
         Schema::dropIfExists('temp_trip_notifications');
+        Schema::dropIfExists('trip_status');
         Schema::dropIfExists('trip_requests');
         Schema::dropIfExists('user_levels');
         Schema::dropIfExists('business_settings');
         Schema::dropIfExists('admin_notifications');
+        Schema::dropIfExists('app_notifications');
+        Schema::dropIfExists('firebase_push_notifications');
         Schema::dropIfExists('vito_audit_log');
         Schema::dropIfExists('oauth_access_tokens');
         Schema::dropIfExists('oauth_personal_access_clients');
@@ -153,8 +156,66 @@ class VitoFlowTest extends TestCase
                 $table->decimal('actual_fare', 23, 2)->default(0);
                 $table->decimal('estimated_distance', 23, 2)->default(0);
                 $table->decimal('paid_fare', 23, 2)->default(0);
+                $table->text('delivery_notes')->nullable();
                 $table->timestamps();
                 $table->softDeletes();
+            });
+        }
+
+        if (!Schema::hasTable('temp_trip_notifications')) {
+            Schema::create('temp_trip_notifications', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('trip_request_id')->nullable();
+                $table->uuid('user_id')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('app_notifications')) {
+            Schema::create('app_notifications', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('user_id');
+                $table->uuid('ride_request_id')->nullable();
+                $table->string('title');
+                $table->string('description');
+                $table->string('type')->nullable();
+                $table->string('notification_type')->nullable();
+                $table->string('action')->nullable();
+                $table->boolean('is_read')->default(0);
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('firebase_push_notifications')) {
+            Schema::create('firebase_push_notifications', function (Blueprint $table) {
+                $table->id();
+                $table->string('name', 191);
+                $table->string('value', 191)->nullable();
+                $table->boolean('status')->default(0);
+                $table->string('type')->nullable();
+                $table->string('group')->nullable();
+                $table->string('action')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('trip_status')) {
+            Schema::create('trip_status', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('trip_request_id');
+                $table->uuid('customer_id');
+                $table->uuid('driver_id')->nullable();
+                $table->timestamp('pending')->nullable();
+                $table->timestamp('accepted')->nullable();
+                $table->timestamp('out_for_pickup')->nullable();
+                $table->timestamp('picked_up')->nullable();
+                $table->timestamp('ongoing')->nullable();
+                $table->timestamp('completed')->nullable();
+                $table->timestamp('cancelled')->nullable();
+                $table->timestamp('failed')->nullable();
+                $table->timestamp('returning')->nullable();
+                $table->timestamp('returned')->nullable();
+                $table->text('note')->nullable();
+                $table->timestamps();
             });
         }
 
@@ -167,6 +228,8 @@ class VitoFlowTest extends TestCase
                 $table->string('plate_number')->nullable();
                 $table->string('car_photo')->nullable();
                 $table->boolean('is_approved')->default(false);
+                $table->integer('ride_count')->default(0);
+                $table->integer('parcel_count')->default(0);
                 $table->timestamps();
             });
         }
@@ -1231,7 +1294,7 @@ class VitoFlowTest extends TestCase
         $product = MartProduct::create([
             'name' => 'Cancel Test Item',
             'price' => 5.00,
-            'stock' => 10,
+            'stock' => 9,
             'is_active' => true,
         ]);
 
@@ -1432,8 +1495,8 @@ class VitoFlowTest extends TestCase
         // 4. Complete profile
         $resp = $this->postJson('/api/customer/auth/registration-from-otp', [
             'phone'  => '+15550001234',
-            'f_name' => 'Test',
-            'l_name' => 'User',
+            'first_name' => 'Test',
+            'last_name' => 'User',
         ]);
         $resp->assertStatus(200);
         $token = $resp->json('data.token');
@@ -1495,7 +1558,7 @@ class VitoFlowTest extends TestCase
         Passport::actingAs($driver, ['AccessToDriver']);
         $r = $this->putJson('/api/driver/ride/update-status', [
             'trip_request_id' => $parcelId,
-            'current_status'  => 'out_for_pickup',
+            'status'          => 'out_for_pickup',
         ]);
 
         $r->assertOk();

@@ -458,7 +458,6 @@ class AuthController extends GetxController implements GetxService {
               identificationType: identityType,
               fName: fNameController.text,
               lName: lNameController.text,
-              phone: countryDialCode + phoneController.text,
               password: passwordController.text,
               confirmPassword: confirmPasswordController.text,
               services: services,
