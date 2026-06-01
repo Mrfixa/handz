@@ -14,6 +14,7 @@ import 'package:ride_sharing_user_app/theme/dark_theme.dart';
 import 'package:ride_sharing_user_app/theme/light_theme.dart';
 import 'package:ride_sharing_user_app/theme/theme_controller.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
+import 'package:ride_sharing_user_app/common_widgets/offline_banner_widget.dart';
 
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -69,7 +70,10 @@ class MyApp extends StatelessWidget {
               defaultTransition: Transition.fadeIn,
               transitionDuration: const Duration(milliseconds: 500),
               builder:(context,child){
-                return MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(0.95)), child: child!);
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(0.95)),
+                  child: OfflineBannerWidget(child: child!),
+                );
               }
           ),
         );

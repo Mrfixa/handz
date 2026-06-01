@@ -17,10 +17,11 @@ class ButtonWidget extends StatelessWidget {
   final Color? borderColor;
   final Color? textColor;
   final Color? backgroundColor;
+  final String? semanticLabel;
   const ButtonWidget({
     super.key, this.onPressed, required this.buttonText, this.transparent = false, this.margin = EdgeInsets.zero,
     this.width = Dimensions.webMaxWidth, this.height = 45, this.fontSize, this.radius = 5, this.icon,this.showBorder = false,this.borderWidth=1,
-    this.borderColor, this.textColor, this.backgroundColor,
+    this.borderColor, this.textColor, this.backgroundColor, this.semanticLabel,
   });
 
   @override
@@ -37,7 +38,10 @@ class ButtonWidget extends StatelessWidget {
 
     );
 
-    return Center(child: SizedBox(width: width, child: Padding(
+    return Semantics(
+      button: true,
+      label: semanticLabel ?? buttonText,
+      child: Center(child: SizedBox(width: width, child: Padding(
       padding: margin,
       child: TextButton(
         onPressed: onPressed,
@@ -62,6 +66,6 @@ class ButtonWidget extends StatelessWidget {
           ),
         ]),
       ),
-    )));
+    ))));
   }
 }

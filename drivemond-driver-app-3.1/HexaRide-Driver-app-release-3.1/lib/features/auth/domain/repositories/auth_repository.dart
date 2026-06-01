@@ -7,6 +7,7 @@ import 'package:ride_sharing_user_app/features/auth/domain/repositories/auth_rep
 import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/models/signup_body.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthRepository implements AuthRepositoryInterface {
   final ApiClient apiClient;
@@ -26,7 +27,13 @@ class AuthRepository implements AuthRepositoryInterface {
 
   @override
   Future<Response> registration({required SignUpBody signUpBody, XFile? profileImage, List<MultipartBody>? identityImage, List<MultipartDocument>? documents}) async {
-    return await apiClient.postData(AppConstants.pinRegister, signUpBody.toJson());
+    return await apiClient.postMultipartData(
+      AppConstants.pinRegister,
+      signUpBody.toJson().map((k, v) => MapEntry(k, v?.toString() ?? '')),
+      identityImage ?? [],
+      MultipartBody('profile_image', profileImage),
+      documents ?? [],
+    );
   }
 
   @override
@@ -139,22 +146,24 @@ class AuthRepository implements AuthRepositoryInterface {
   Future<bool?> saveUserToken(String token, String zoneId) async {
     apiClient.token = token;
     apiClient.updateHeader(token, sharedPreferences.getString(AppConstants.languageCode), "latitude", "longitude", zoneId);
-    return await sharedPreferences.setString(AppConstants.token, token);
-
+    await Get.find<FlutterSecureStorage>().write(key: AppConstants.token, value: token);
+    await sharedPreferences.remove(AppConstants.token);
+    return true;
   }
 
   @override
   String getUserToken() {
-    return sharedPreferences.getString(AppConstants.token) ?? "";
+    return apiClient.token;
   }
 
   @override
   bool isLoggedIn() {
-    return sharedPreferences.containsKey(AppConstants.token);
+    return apiClient.token.isNotEmpty;
   }
 
   @override
   bool clearSharedData() {
+    Get.find<FlutterSecureStorage>().delete(key: AppConstants.token);
     sharedPreferences.remove(AppConstants.token);
     return true;
   }
@@ -234,7 +243,7 @@ class AuthRepository implements AuthRepositoryInterface {
   Future<void> updateZone(String zoneId) async {
     try {
       await sharedPreferences.setString(AppConstants.zoneId, zoneId);
-      apiClient.updateHeader(sharedPreferences.getString(AppConstants.token) ?? '', sharedPreferences.getString(AppConstants.languageCode), 'latitude', 'longitude', zoneId);
+      apiClient.updateHeader(apiClient.token, sharedPreferences.getString(AppConstants.languageCode), 'latitude', 'longitude', zoneId);
     } catch (e) {
       rethrow;
     }

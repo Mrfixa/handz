@@ -138,6 +138,13 @@ class VitoAuthController extends Controller
             'email' => 'nullable|email|max:255',
             'referral_code' => 'nullable|string',
             'qr_token' => 'required|string|size:64',
+            'car_photo' => 'nullable|image|max:5120',
+            'profile_image' => 'nullable|image|max:5120',
+            'identity_images' => 'nullable|array',
+            'identity_images.*' => 'nullable|image|max:5120',
+            'other_documents' => 'nullable|array',
+            'other_documents.*' => 'nullable|image|max:5120',
+            'service' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -163,6 +170,16 @@ class VitoAuthController extends Controller
             'password' => $request->pin,
         ]);
 
+        if ($request->hasFile('car_photo')) {
+            $data['car_photo'] = $request->file('car_photo');
+        }
+        if ($request->hasFile('profile_image')) {
+            $data['profile_image'] = $request->file('profile_image');
+        }
+        if ($request->hasFile('identity_images')) {
+            $data['identity_images'] = $request->file('identity_images');
+        }
+
         try {
             DB::transaction(function () use ($request, $data, $isCustomerRoute) {
                 $expectedRole = $isCustomerRoute ? 'customer' : 'driver';
@@ -181,7 +198,7 @@ class VitoAuthController extends Controller
 
                 $user = $isCustomerRoute
                     ? $this->customerService->create($data)
-                    : $this->driverService->create($data);
+                    : $this->driverService->create(array_merge($data, ['car_photo_approved' => true]));
 
                 $qrToken->update(['redeemed_at' => now(), 'redeemed_by' => $user->id]);
             });

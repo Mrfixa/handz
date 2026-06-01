@@ -95,13 +95,36 @@ import 'package:ride_sharing_user_app/features/trip/domain/repositories/trip_rep
 import 'package:ride_sharing_user_app/features/wallet/controllers/wallet_controller.dart';
 import 'package:ride_sharing_user_app/features/wallet/domain/repositories/wallet_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
 Future<Map<String, Map<String, String>>> init() async {
   // Core
   final sharedPreferences = await SharedPreferences.getInstance();
+
+  const secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  // One-time migration: move legacy SharedPreferences token to secure storage
+  String? initialToken = await secureStorage.read(key: AppConstants.token);
+  if ((initialToken == null || initialToken.isEmpty) &&
+      sharedPreferences.containsKey(AppConstants.token)) {
+    final legacyToken = sharedPreferences.getString(AppConstants.token) ?? '';
+    if (legacyToken.isNotEmpty) {
+      await secureStorage.write(key: AppConstants.token, value: legacyToken);
+      await sharedPreferences.remove(AppConstants.token);
+      initialToken = legacyToken;
+    }
+  }
+
   Get.lazyPut(() => sharedPreferences);
-  Get.lazyPut(() => ApiClient(appBaseUrl: AppConstants.baseUrl, sharedPreferences: Get.find()));
+  Get.put<FlutterSecureStorage>(secureStorage, permanent: true);
+  Get.lazyPut(() => ApiClient(
+    appBaseUrl: AppConstants.baseUrl,
+    sharedPreferences: Get.find(),
+    initialToken: initialToken ?? '',
+  ));
 
   //Interface
   SplashRepositoryInterface splashRepositoryInterface = SplashRepository(apiClient: Get.find(), sharedPreferences: Get.find());

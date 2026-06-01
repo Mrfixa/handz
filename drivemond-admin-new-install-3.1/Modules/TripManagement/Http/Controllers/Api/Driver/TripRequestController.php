@@ -642,33 +642,36 @@ class TripRequestController extends Controller
         }
 
         $tripType = $trip->type == PARCEL ? PARCEL : ($trip->ride_request_type == SCHEDULED ? 'schedule_ride' : 'trip');
-        //Get status wise notification message
-        if ($request->status == 'cancelled' && $trip->type == PARCEL) {
-            $push = getNotification(key: 'parcel_canceled_after_trip_started', group: 'customer');
-            sendDeviceNotification(fcm_token: $trip->customer->fcm_token,
-                title: translate(key: $push['title'], locale: $trip->customer->current_language_key),
-                description: textVariableDataFormat(value: $push['description'], parcelId: $trip->ref_id, approximateAmount: $trip->paid_fare, locale: $trip->customer->current_language_key),
-                status: $push['status'],
-                ride_request_id: $request['trip_request_id'],
-                type: $trip->type,
-                notification_type: $trip->type == RIDE_REQUEST ? 'trip' : 'parcel',
-                action: $push['action'],
-                user_id: $trip->customer->id
-            );
-        } else {
-            $rideRequestType = $trip->ride_request_type == SCHEDULED ? 'schedule_ride_' : 'trip_';
-            $action = $request->status == 'cancelled' ? $rideRequestType . 'canceled' : $rideRequestType . $request->status;
-            $push = getNotification($action);
-            sendDeviceNotification(fcm_token: $trip->customer->fcm_token,
-                title: translate(key: $push['title'], locale: $trip->customer->current_language_key),
-                description: textVariableDataFormat(value: $push['description'], tripId: $trip->ref_id, sentTime: pushSentTime($trip->updated_at), locale: $trip->customer->current_language_key),
-                status: $push['status'],
-                ride_request_id: $request['trip_request_id'],
-                type: $trip->type,
-                notification_type: $trip->type == RIDE_REQUEST ? 'trip' : 'parcel',
-                action: $push['action'],
-                user_id: $trip->customer->id
-            );
+        try {
+            if ($request->status == 'cancelled' && $trip->type == PARCEL) {
+                $push = getNotification(key: 'parcel_canceled_after_trip_started', group: 'customer');
+                sendDeviceNotification(fcm_token: $trip->customer->fcm_token,
+                    title: translate(key: $push['title'], locale: $trip->customer->current_language_key),
+                    description: textVariableDataFormat(value: $push['description'], parcelId: $trip->ref_id, approximateAmount: $trip->paid_fare, locale: $trip->customer->current_language_key),
+                    status: $push['status'],
+                    ride_request_id: $request['trip_request_id'],
+                    type: $trip->type,
+                    notification_type: $trip->type == RIDE_REQUEST ? 'trip' : 'parcel',
+                    action: $push['action'],
+                    user_id: $trip->customer->id
+                );
+            } else {
+                $rideRequestType = $trip->ride_request_type == SCHEDULED ? 'schedule_ride_' : 'trip_';
+                $action = $request->status == 'cancelled' ? $rideRequestType . 'canceled' : $rideRequestType . $request->status;
+                $push = getNotification($action);
+                sendDeviceNotification(fcm_token: $trip->customer->fcm_token,
+                    title: translate(key: $push['title'], locale: $trip->customer->current_language_key),
+                    description: textVariableDataFormat(value: $push['description'], tripId: $trip->ref_id, sentTime: pushSentTime($trip->updated_at), locale: $trip->customer->current_language_key),
+                    status: $push['status'],
+                    ride_request_id: $request['trip_request_id'],
+                    type: $trip->type,
+                    notification_type: $trip->type == RIDE_REQUEST ? 'trip' : 'parcel',
+                    action: $push['action'],
+                    user_id: $trip->customer->id
+                );
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Push notification failed in rideStatusUpdate: ' . $e->getMessage());
         }
 
         if (checkReverbConnection()) {

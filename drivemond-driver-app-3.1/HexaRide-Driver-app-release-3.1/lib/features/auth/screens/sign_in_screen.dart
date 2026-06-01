@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
-import 'package:ride_sharing_user_app/features/auth/screens/sign_up_screen.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:ride_sharing_user_app/common_widgets/vito_pin_field.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
 import 'package:ride_sharing_user_app/features/html/domain/html_enum_types.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
@@ -30,6 +33,8 @@ class _SignInScreenState extends State<SignInScreen> {
   TextEditingController pinController = TextEditingController();
   FocusNode usernameNode = FocusNode();
   FocusNode pinNode = FocusNode();
+  final StreamController<ErrorAnimationType> _pinErrorController =
+      StreamController<ErrorAnimationType>.broadcast();
 
   @override
   void initState() {
@@ -50,6 +55,7 @@ class _SignInScreenState extends State<SignInScreen> {
     pinController.dispose();
     usernameNode.dispose();
     pinNode.dispose();
+    _pinErrorController.close();
     super.dispose();
   }
 
@@ -102,14 +108,10 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         const SizedBox(height: Dimensions.paddingSizeDefault),
 
-                        TextFieldWidget(
-                          hintText: 'enter_6_digit_pin'.tr,
-                          inputType: TextInputType.number,
-                          prefixIcon: Images.lock,
-                          inputAction: TextInputAction.done,
-                          focusNode: pinNode,
-                          isPassword: true,
+                        VitoPinField(
                           controller: pinController,
+                          focusNode: pinNode,
+                          errorController: _pinErrorController,
                         ),
 
                         Row(children: [
@@ -155,10 +157,10 @@ class _SignInScreenState extends State<SignInScreen> {
                               FocusScope.of(context).requestFocus(usernameNode);
                             }else if(pin.isEmpty){
                               showCustomSnackBar('pin_is_required'.tr);
-                              FocusScope.of(context).requestFocus(pinNode);
+                              _pinErrorController.add(ErrorAnimationType.shake);
                             }else if(pin.length != 6){
                               showCustomSnackBar('pin_must_be_6_digits'.tr);
-                              FocusScope.of(context).requestFocus(pinNode);
+                              _pinErrorController.add(ErrorAnimationType.shake);
                             }else{
                               authController.login('', username, pin);
                             }
@@ -179,7 +181,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
 
                           TextButton(
-                            onPressed: () =>  Get.to(()=> const SignUpScreen()),
+                            onPressed: () =>  Get.to(()=> const TokenGateScreen()),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero, minimumSize: const Size(50,30),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,

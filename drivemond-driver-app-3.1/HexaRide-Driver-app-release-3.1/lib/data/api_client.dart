@@ -25,8 +25,8 @@ class ApiClient extends GetxService {
   late String token;
   late Map<String, String> _mainHeaders;
 
-  ApiClient({required this.appBaseUrl, required this.sharedPreferences}) {
-    token = sharedPreferences.getString(AppConstants.token) ?? '';
+  ApiClient({required this.appBaseUrl, required this.sharedPreferences, String initialToken = ''}) {
+    token = initialToken.isNotEmpty ? initialToken : (sharedPreferences.getString(AppConstants.token) ?? '');
     if(kDebugMode) {
       print('Token: $token');
     }

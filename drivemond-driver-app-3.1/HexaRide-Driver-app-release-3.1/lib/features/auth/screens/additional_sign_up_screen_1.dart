@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/text_field_widget.dart';
+import 'package:ride_sharing_user_app/common_widgets/vito_pin_field.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/additional_sign_up_screen_2.dart';
 import 'package:ride_sharing_user_app/features/auth/widgets/signup_appbar_widget.dart';
@@ -12,32 +15,47 @@ import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 
-class AdditionalSignUpScreen1 extends StatelessWidget {
+class AdditionalSignUpScreen1 extends StatefulWidget {
   const AdditionalSignUpScreen1({super.key});
+
+  @override
+  State<AdditionalSignUpScreen1> createState() => _AdditionalSignUpScreen1State();
+}
+
+class _AdditionalSignUpScreen1State extends State<AdditionalSignUpScreen1> {
+  final StreamController<ErrorAnimationType> _confirmPinErrorController =
+      StreamController<ErrorAnimationType>.broadcast();
+
+  @override
+  void dispose() {
+    _confirmPinErrorController.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).cardColor,
       body: SafeArea(
-          child: GetBuilder<AuthController>(builder: (authController){
+          child: GetBuilder<AuthController>(builder: (authController) {
             return Column(children: [
-              const SignUpAppbarWidget(title: 'signup_as_a_driver', progressText: '2_of_3',enableBackButton: true),
+              const SignUpAppbarWidget(title: 'signup_as_a_driver', progressText: '2_of_3', enableBackButton: true),
 
               Expanded(child: SingleChildScrollView(
                   child: Column(children: [
                     const SizedBox(height: Dimensions.paddingSizeSignUp),
 
-                    Text('provide_basic_info'.tr,style: textBold.copyWith(fontSize: 22)),
+                    Text('provide_basic_info'.tr, style: textBold.copyWith(fontSize: 22)),
                     const SizedBox(height: Dimensions.paddingSizeSmall),
 
                     Text('enter_your_information'.tr, style: textRegular.copyWith(
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),fontSize: Dimensions.fontSizeSmall,
+                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                      fontSize: Dimensions.fontSizeSmall,
                     )),
                     const SizedBox(height: Dimensions.paddingSizeLarge),
 
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
+                      padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         TextFieldTitleWidget(title: 'username'.tr, isRequired: true),
 
@@ -51,7 +69,7 @@ class AdditionalSignUpScreen1 extends StatelessWidget {
                           inputAction: TextInputAction.next,
                           autoFocus: authController.usernameController.text.isEmpty,
                         ),
-                        const SizedBox(width: Dimensions.paddingSizeDefault),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
 
                         TextFieldTitleWidget(title: 'first_name'.tr, isRequired: true),
 
@@ -65,7 +83,7 @@ class AdditionalSignUpScreen1 extends StatelessWidget {
                           nextFocus: authController.lNameNode,
                           inputAction: TextInputAction.next,
                         ),
-                        const SizedBox(width: Dimensions.paddingSizeDefault),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
 
                         TextFieldTitleWidget(title: 'last_name'.tr),
 
@@ -76,11 +94,11 @@ class AdditionalSignUpScreen1 extends StatelessWidget {
                           prefixIcon: Images.person,
                           controller: authController.lNameController,
                           focusNode: authController.lNameNode,
-                          nextFocus: authController.passwordNode,
                           inputAction: TextInputAction.next,
                         ),
 
-                        if(Get.find<SplashController>().config?.referralEarningStatus ?? false)...[
+                        if (Get.find<SplashController>().config?.referralEarningStatus ?? false) ...[
+                          const SizedBox(height: Dimensions.paddingSizeDefault),
                           TextFieldTitleWidget(title: 'referral_code'.tr),
 
                           TextFieldWidget(
@@ -94,89 +112,72 @@ class AdditionalSignUpScreen1 extends StatelessWidget {
                           ),
                         ],
 
-                        TextFieldTitleWidget(title: 'password'.tr, isRequired: true),
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
+                        TextFieldTitleWidget(title: 'pin'.tr, isRequired: true),
 
-                        TextFieldWidget(
-                          hintText: 'password_hint'.tr,
-                          inputType: TextInputType.text,
-                          prefixIcon: Images.password,
-                          isPassword: true,
+                        VitoPinField(
                           controller: authController.passwordController,
                           focusNode: authController.passwordNode,
-                          nextFocus: authController.confirmPasswordNode,
-                          inputAction: TextInputAction.next,
                         ),
 
+                        const SizedBox(height: Dimensions.paddingSizeDefault),
                         TextFieldTitleWidget(title: 'confirm_password'.tr, isRequired: true),
 
-                        TextFieldWidget(
-                          hintText: 'enter_confirm_password'.tr,
-                          inputType: TextInputType.text,
-                          prefixIcon: Images.password,
+                        VitoPinField(
                           controller: authController.confirmPasswordController,
                           focusNode: authController.confirmPasswordNode,
-                          nextFocus: authController.referralNode,
-                          inputAction: TextInputAction.next,
-                          isPassword: true,
+                          errorController: _confirmPinErrorController,
                         ),
-
                       ]),
                     ),
                     const SizedBox(height: Dimensions.paddingSizeLarge),
-
                   ])
               )),
 
               Container(
-                decoration: BoxDecoration  (
-                    boxShadow: [BoxShadow(color: Theme.of(context).hintColor.withValues(alpha: 0.15), blurRadius: 10, offset: Offset(0, -4))],
-                    borderRadius: BorderRadius.only(topRight: Radius.circular(Dimensions.paddingSizeLarge), topLeft: Radius.circular(Dimensions.paddingSizeLarge)),
+                decoration: BoxDecoration(
+                    boxShadow: [BoxShadow(color: Theme.of(context).hintColor.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, -4))],
+                    borderRadius: const BorderRadius.only(topRight: Radius.circular(Dimensions.paddingSizeLarge), topLeft: Radius.circular(Dimensions.paddingSizeLarge)),
                     color: Theme.of(context).cardColor
                 ),
-                padding: EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall, horizontal: Dimensions.paddingSizeExtraSmall).copyWith(bottom: Dimensions.paddingSizeExtraLarge),
+                padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall, horizontal: Dimensions.paddingSizeExtraSmall)
+                    .copyWith(bottom: Dimensions.paddingSizeExtraLarge),
                 child: ButtonWidget(
-                  margin: EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
+                  margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
                   radius: Dimensions.radiusExtraLarge,
                   buttonText: 'next'.tr,
-                  onPressed: (){
-                    String username = authController.usernameController.text.trim();
-                    String fName = authController.fNameController.text;
-                    String password = authController.passwordController.text;
-                    String confirmPassword = authController.confirmPasswordController.text;
+                  onPressed: () {
+                    final String username = authController.usernameController.text.trim();
+                    final String fName = authController.fNameController.text;
+                    final String password = authController.passwordController.text;
+                    final String confirmPassword = authController.confirmPasswordController.text;
 
-                    if(username.isEmpty){
+                    if (username.isEmpty) {
                       showCustomSnackBar('username_is_required'.tr);
                       FocusScope.of(context).requestFocus(authController.usernameNode);
-                    }else if(username.length < 3){
+                    } else if (username.length < 3) {
                       showCustomSnackBar('username_min_3_characters'.tr);
                       FocusScope.of(context).requestFocus(authController.usernameNode);
-                    }else if(fName.isEmpty){
+                    } else if (fName.isEmpty) {
                       showCustomSnackBar('first_name_is_required'.tr);
                       FocusScope.of(context).requestFocus(authController.fNameNode);
-                    }else if(password.isEmpty){
+                    } else if (password.isEmpty) {
                       showCustomSnackBar('pin_is_required'.tr);
-                      FocusScope.of(context).requestFocus(authController.passwordNode);
-                    }else if(!RegExp(r'^\d{6}$').hasMatch(password)){
+                    } else if (!RegExp(r'^\d{6}$').hasMatch(password)) {
                       showCustomSnackBar('pin_must_be_6_digits'.tr);
-                      FocusScope.of(context).requestFocus(authController.passwordNode);
-                    }else if(confirmPassword.isEmpty){
+                    } else if (confirmPassword.isEmpty) {
                       showCustomSnackBar('confirm_password_is_required'.tr);
-                      FocusScope.of(context).requestFocus(authController.confirmPasswordNode);
-                    }else if(password != confirmPassword){
+                    } else if (password != confirmPassword) {
                       showCustomSnackBar('password_is_mismatch'.tr);
-                      FocusScope.of(context).requestFocus(authController.confirmPasswordNode);
-                    }else{
-                      Get.to(()=> const AdditionalSignUpScreen2());
-
+                      _confirmPinErrorController.add(ErrorAnimationType.shake);
+                    } else {
+                      Get.to(() => const AdditionalSignUpScreen2());
                     }
-
                   },
                 ),
               ),
-
             ]);
-          })
-      ),
+          })),
     );
   }
 }
