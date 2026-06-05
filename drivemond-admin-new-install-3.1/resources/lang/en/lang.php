@@ -4416,4 +4416,13 @@
   'The pin must be 6 digits.' => 'The pin must be 6 digits.',
   'The driver id field is required.' => 'The driver id field is required.',
   'The selected action is invalid.' => 'The selected action is invalid.',
+  'the smart, sustainable, and efficient ride sharing & delivery solution.' => 'The smart, sustainable, and efficient ride sharing & delivery solution.',
+  'Embrace the future today and explore the amazing features that make ' => 'Embrace the future today and explore the amazing features that make ',
+  'The token must be 64 characters.' => 'The token must be 64 characters.',
+  'The last name field is required.' => 'The last name field is required.',
+  'The first name field is required.' => 'The first name field is required.',
+  'It’s Time to Change The Riding Experience' => 'It’s Time to Change The Riding Experience',
+  'The external token field is required.' => 'The external token field is required.',
+  'The external base url field is required.' => 'The external base url field is required.',
+  'The token field is required.' => 'The token field is required.',
 );
