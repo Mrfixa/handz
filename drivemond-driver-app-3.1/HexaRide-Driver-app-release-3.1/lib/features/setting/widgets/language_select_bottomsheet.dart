@@ -66,7 +66,7 @@ class LanguageSelectBottomSheet extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Row(children: [
-                            Image.asset(AppConstants.languages[index].imageUrl,height: 26,width: 26,),
+                            Image.asset(AppConstants.languages[index].imageUrl, package: AppConstants.languages[index].imagePackage, height: 26, width: 26),
                             const SizedBox(width:Dimensions.paddingSizeExtraSmall),
 
                             Text(

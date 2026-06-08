@@ -66,7 +66,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                           child: Padding(
                             padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
                             child: Row(children: [
-                              Image.asset(AppConstants.languages[index].imageUrl,height: 26,width: 26),
+                              Image.asset(AppConstants.languages[index].imageUrl, package: AppConstants.languages[index].imagePackage, height: 26, width: 26),
 
                               const SizedBox(width:Dimensions.paddingSizeExtraSmall),
                               Text('${AppConstants.languages[index].countryCode} (${AppConstants.languages[index].languageName})',style: textSemiBold.copyWith(fontSize: Dimensions.fontSizeDefault)),

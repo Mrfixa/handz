@@ -5,6 +5,7 @@ namespace Modules\AuthManagement\Http\Controllers\Web;
 use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -32,16 +33,16 @@ class VitoQrAdminController extends Controller
             'role' => 'required|in:driver,customer',
         ]);
 
-        QrToken::create([
-            'token' => Str::random(64),
-            'role' => $request->role,
+        $token = QrToken::create([
+            'token'      => Str::random(64),
+            'role'       => $request->role,
             'created_by' => auth()->id(),
             'expires_at' => $request->role === 'customer' ? now()->addHour() : now()->addDays(7),
         ]);
 
-        Toastr::success(translate('qr_token_generated_successfully'));
+        Toastr::success('Token generated successfully.');
 
-        return redirect()->route('admin.qr-tokens.index');
+        return redirect()->route('admin.qr-tokens.index')->with('new_token_id', $token->id);
     }
 
     public function revoke(string $id): RedirectResponse
@@ -49,8 +50,18 @@ class VitoQrAdminController extends Controller
         $token = QrToken::findOrFail($id);
         $token->update(['is_revoked' => true]);
 
-        Toastr::success(translate('qr_token_revoked'));
+        Toastr::success('Token revoked successfully.');
 
         return redirect()->route('admin.qr-tokens.index');
+    }
+
+    public function download(string $id): Response
+    {
+        $token = QrToken::findOrFail($id);
+        $png   = \QrCode::format('png')->size(400)->margin(2)->generate($token->token);
+
+        return response($png)
+            ->header('Content-Type', 'image/png')
+            ->header('Content-Disposition', 'attachment; filename="vito-qr-' . $token->id . '.png"');
     }
 }

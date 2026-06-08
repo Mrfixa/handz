@@ -174,6 +174,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               padding: EdgeInsets.zero,
               onChanged: widget.onCountryChanged,
               initialSelection: widget.countryDialCode,
+              countryFilter: const ['US'],
               showDropDownButton: true,
               showCountryOnly: true,
               showOnlyCountryWhenClosed: true,

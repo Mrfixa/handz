@@ -30,6 +30,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
             Route::get('/', 'index')->name('index');
             Route::post('generate', 'generate')->name('generate');
             Route::post('revoke/{id}', 'revoke')->name('revoke');
+            Route::get('download/{id}', 'download')->name('download');
         });
     });
 });
