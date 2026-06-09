@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
@@ -141,7 +142,8 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                                 right: 5,
                                 child: InkWell(
                                   onTap: () => messageController.pickMultipleImage(true, index: index),
-                                  child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                                  child: Icon(Icons.cancel_outlined,
+                                      color: Theme.of(context).colorScheme.error),
                                 ),
                               ),
                             ]);
@@ -162,7 +164,8 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                           right: 0,
                           child: InkWell(
                             onTap: () => messageController.pickOtherFile(true),
-                            child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                            child: Icon(Icons.cancel_outlined,
+                                color: Theme.of(context).colorScheme.error),
                           ),
                         ),
                       ])
@@ -213,7 +216,7 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                                             .bodyMedium!
                                             .color!
                                             .withValues(alpha: 0.8),
-                                        fontSize: 16,
+                                        fontSize: Dimensions.fontSizeLarge,
                                       ),
                                     ),
                                     onChanged: (String newText) {},
@@ -226,7 +229,7 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                                     onTap: () => messageController.pickMultipleImage(false),
                                     child: Image.asset(
                                       Images.pickImage,
-                                      color: Get.isDarkMode ? Colors.white : Colors.black,
+                                      color: Theme.of(context).hintColor,
                                     ),
                                   ),
                                 ),
@@ -256,14 +259,18 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                                   ? SpinKitCircle(color: Theme.of(context).cardColor, size: 20)
                                   : InkWell(
                                       onTap: () {
+                                        HapticFeedback.lightImpact();
                                         if (messageController.conversationController.text.trim().isEmpty &&
-                                            messageController.pickedImageFile!.isEmpty &&
+                                            (messageController.pickedImageFile?.isEmpty ?? true) &&
                                             messageController.otherFile == null) {
                                           showCustomSnackBar('write_something'.tr, isError: true);
-                                        } else if (messageController.conversationKey.currentState!
-                                            .validate()) {
+                                          return;
+                                        }
+                                        if (messageController.conversationKey.currentState?.validate() ?? false) {
                                           messageController
                                               .sendMartMessage(widget.channelId, widget.orderId);
+                                        } else {
+                                          showCustomSnackBar('form_validation_failed'.tr, isError: true);
                                         }
                                         messageController.conversationController.clear();
                                       },
@@ -287,13 +294,14 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                         child: Container(
                           padding: EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.75),
-                            borderRadius: BorderRadius.circular(5),
+                            color: Theme.of(context).hintColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                           ),
                           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            const Icon(Icons.block),
+                            Icon(Icons.block, color: Theme.of(context).hintColor),
                             const SizedBox(width: 5),
-                            Flexible(child: Text("order_chat_unavailable".tr)),
+                            Flexible(child: Text("order_chat_unavailable".tr,
+                                style: textRegular.copyWith(color: Theme.of(context).hintColor))),
                           ]),
                         ),
                       ),

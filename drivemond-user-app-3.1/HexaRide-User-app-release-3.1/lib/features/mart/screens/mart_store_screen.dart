@@ -28,14 +28,17 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
 
   final List<String> _categories = ['all', 'food', 'drinks', 'snacks', 'essentials'];
 
-  // B16: running total for FAB
-  double get _cartTotal => _cartItems.fold(
-        0.0,
-        (sum, item) =>
-            sum +
-            (double.tryParse(item['price']?.toString() ?? '0') ?? 0.0) *
-                (item['quantity'] as int? ?? 1),
-      );
+  // B16: running total for FAB — guards against malformed/negative values
+  double get _cartTotal {
+    double total = 0.0;
+    for (final item in _cartItems) {
+      final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
+      final qty = item['quantity'] as int? ?? 1;
+      if (price <= 0 || qty <= 0) continue;
+      total += price * qty;
+    }
+    return total;
+  }
 
   @override
   void initState() {
@@ -88,7 +91,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'vito_mart'.tr),
+      appBar: AppBarWidget(title: 'vito_mart', showLogo: true),
       body: _isOffline ? _buildOfflineBody(context) : _buildBody(context),
       // B16: FAB shows count + running total
       floatingActionButton: _cartItems.isNotEmpty
@@ -98,10 +101,10 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
                 _navigateToCart();
               },
               backgroundColor: Theme.of(context).primaryColor,
-              icon: const Icon(Icons.shopping_cart, color: Colors.white),
+              icon: Icon(Icons.shopping_cart, color: Theme.of(context).colorScheme.onPrimary),
               label: Text(
                 '${'cart'.tr} (${_cartItems.length}) • \$${_cartTotal.toStringAsFixed(2)}',
-                style: textMedium.copyWith(color: Colors.white),
+                style: textMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary),
               ),
             )
           : null,
@@ -114,12 +117,12 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-          color: Colors.orange,
+          color: Colors.amber.shade700,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
+              const Icon(Icons.wifi_off, color: Colors.white, size: Dimensions.iconSizeMedium),
+              const SizedBox(width: Dimensions.paddingSizeExtraSmall),
               Text('you_are_offline'.tr, style: textMedium.copyWith(color: Colors.white)),
             ],
           ),
@@ -150,9 +153,21 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
       child: TextField(
         controller: _searchController,
+        onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
           hintText: 'search_products'.tr,
           prefixIcon: const Icon(Icons.search),
+          suffixIcon: AnimatedOpacity(
+            opacity: _searchController.text.isEmpty ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: _searchController.text.isEmpty ? null : () {
+                _searchController.clear();
+                setState(() {});
+              },
+            ),
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
@@ -193,23 +208,32 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     );
   }
 
-  // B12: AnimatedSwitcher keyed by category
+  // B12: AnimatedSwitcher keyed by category + live search query
   Widget _buildAnimatedContent(BuildContext context) {
-    final filtered = _selectedCategory == 'all'
-        ? _products
+    final query = _searchController.text.trim().toLowerCase();
+    var filtered = _selectedCategory == 'all'
+        ? List<Map<String, dynamic>>.from(_products)
         : _products.where((p) => p['category'] == _selectedCategory).toList();
 
+    if (query.isNotEmpty) {
+      filtered = filtered
+          .where((p) => (p['name']?.toString().toLowerCase() ?? '').contains(query))
+          .toList();
+    }
+
+    final stateKey = '${_selectedCategory}_$query';
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
       child: filtered.isEmpty
-          ? _buildEmptyState(context, key: ValueKey('empty_$_selectedCategory'))
-          : _buildProductGrid(context, filtered, key: ValueKey('grid_$_selectedCategory')),
+          ? _buildEmptyState(context, key: ValueKey('empty_$stateKey'))
+          : _buildProductGrid(context, filtered, key: ValueKey('grid_$stateKey')),
     );
   }
 
   // B18: shimmer skeleton loading grid
   Widget _buildShimmerGrid(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GridView.builder(
       padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -219,13 +243,13 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         mainAxisSpacing: Dimensions.paddingSizeSmall,
       ),
       itemCount: 6,
-      itemBuilder: (context, index) => Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+      itemBuilder: (ctx, index) => Shimmer.fromColors(
+        baseColor: isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0),
+        highlightColor: isDark ? const Color(0xFF404040) : const Color(0xFFF5F5F5),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0),
+            borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
         ),
       ),
@@ -238,9 +262,11 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-          const SizedBox(height: 8),
-          Text('something_went_wrong'.tr),
+          Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
+          Text('something_went_wrong'.tr,
+              style: textMedium.copyWith(fontSize: Dimensions.fontSizeDefault)),
+          const SizedBox(height: Dimensions.paddingSizeExtraSmall),
           TextButton(onPressed: _loadProducts, child: Text('retry'.tr)),
         ],
       ),
@@ -339,11 +365,15 @@ class _ProductCard extends StatefulWidget {
 class _ProductCardState extends State<_ProductCard> {
   bool _isAdding = false;
 
-  // B15: out-of-stock check
+  // B15: out-of-stock check — both fields must agree; missing field defaults to safe (in-stock)
   bool get _isOutOfStock {
-    final stock = widget.product['stock'] as int? ?? 1;
-    final isActive = widget.product['is_active'] as bool? ?? true;
-    return stock <= 0 || !isActive;
+    final stock = widget.product['stock'] as int?;
+    final isActive = widget.product['is_active'] as bool?;
+    // If stock is unknown, treat as available; if explicitly 0 or less, it's out.
+    final stockEmpty = stock != null && stock <= 0;
+    // If is_active is explicitly false the item is unavailable regardless of stock.
+    final inactive = isActive != null && !isActive;
+    return stockEmpty || inactive;
   }
 
   void _handleAdd() {
@@ -386,7 +416,7 @@ class _ProductCardState extends State<_ProductCard> {
                       imageUrl: imageUrl,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey[200]),
+                      placeholder: (_, __) => Container(color: Theme.of(context).hintColor.withValues(alpha: 0.1)),
                       errorWidget: (_, __, ___) => Container(
                         color: Theme.of(context).hintColor.withValues(alpha: 0.1),
                         child: Center(
@@ -438,7 +468,10 @@ class _ProductCardState extends State<_ProductCard> {
                       _isOutOfStock
                           ? Text(
                               'out_of_stock'.tr,
-                              style: TextStyle(color: Colors.red[400], fontSize: 12),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: Dimensions.fontSizeSmall,
+                              ),
                             )
                           : AnimatedScale(
                               scale: _isAdding ? 0.88 : 1.0,
@@ -454,7 +487,7 @@ class _ProductCardState extends State<_ProductCard> {
                                       borderRadius:
                                           BorderRadius.circular(Dimensions.radiusSmall),
                                     ),
-                                    child: const Icon(Icons.add, color: Colors.white, size: 18),
+                                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: Dimensions.iconSizeSmall),
                                   ),
                                 ),
                               ),
@@ -574,6 +607,15 @@ class _MartCartScreenState extends State<MartCartScreen> {
               color: Theme.of(context).hintColor,
             ),
           ),
+          const SizedBox(height: Dimensions.paddingSizeDefault),
+          TextButton.icon(
+            onPressed: () => Get.back(),
+            icon: Icon(Icons.storefront_outlined, color: Theme.of(context).primaryColor),
+            label: Text(
+              'browse_products'.tr,
+              style: textMedium.copyWith(color: Theme.of(context).primaryColor),
+            ),
+          ),
         ],
       ),
     );
@@ -587,12 +629,27 @@ class _MartCartScreenState extends State<MartCartScreen> {
     return Dismissible(
       key: Key(item['id']?.toString() ?? item['product_id']?.toString() ?? '$index'),
       direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        color: Colors.red[400],
-        child: const Icon(Icons.delete_outline, color: Colors.white),
+      background: Builder(
+        builder: (ctx) => Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 16),
+          color: Theme.of(ctx).colorScheme.error,
+          child: const Icon(Icons.delete_outline, color: Colors.white),
+        ),
       ),
+      confirmDismiss: (_) async {
+        return await Get.dialog<bool>(
+              AlertDialog(
+                title: Text('remove_item'.tr),
+                content: Text('remove_item_confirmation'.tr),
+                actions: [
+                  TextButton(onPressed: () => Get.back(result: false), child: Text('no'.tr)),
+                  TextButton(onPressed: () => Get.back(result: true), child: Text('yes'.tr)),
+                ],
+              ),
+            ) ??
+            false;
+      },
       onDismissed: (_) {
         setState(() {
           final id = item['id'];
@@ -615,7 +672,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
                     child: CachedNetworkImage(
                       imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey[200]),
+                      placeholder: (_, __) => Container(color: Theme.of(context).hintColor.withValues(alpha: 0.1)),
                       errorWidget: (_, __, ___) =>
                           Icon(Icons.inventory_2_outlined, color: Theme.of(context).hintColor),
                     ),
@@ -674,18 +731,19 @@ class _MartCartScreenState extends State<MartCartScreen> {
               Container(
                 padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '${'promo_applied'.tr}: $_appliedPromoCode (-\$${_discount.toStringAsFixed(2)})',
                         style: textMedium.copyWith(
-                            color: Colors.green, fontSize: Dimensions.fontSizeSmall),
+                            color: Theme.of(context).colorScheme.tertiary,
+                            fontSize: Dimensions.fontSizeSmall),
                       ),
                     ),
                     IconButton(
@@ -732,14 +790,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
                         ),
                       ),
                       child: _isApplyingPromo
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                                  strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary))
                           : Text('apply'.tr,
                               style: textMedium.copyWith(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                   fontSize: Dimensions.fontSizeSmall)),
                     ),
                   ),
@@ -774,14 +832,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
                 final isSelected = _tipAmount == tip;
                 return Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeThree),
                     child: GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();
                         setState(() => _tipAmount = tip);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Theme.of(context).primaryColor
@@ -798,7 +856,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
                             tip == 0 ? 'no_tip'.tr : '\$${tip.toInt()}',
                             style: textMedium.copyWith(
                               color:
-                                  isSelected ? Colors.white : Theme.of(context).primaryColor,
+                                  isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).primaryColor,
                               fontSize: Dimensions.fontSizeSmall,
                             ),
                           ),
@@ -822,7 +880,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).hintColor.withValues(alpha: 0.12),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -901,19 +959,23 @@ class _MartCartScreenState extends State<MartCartScreen> {
           // B27: checkout error banner
           if (_checkoutError != null)
             Container(
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+              margin: const EdgeInsets.only(bottom: Dimensions.paddingSizeSmall),
               decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8)),
+                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red[700], size: 16),
+                  Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 16),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       _checkoutError!,
-                      style: TextStyle(color: Colors.red[700], fontSize: 12),
+                      style: textRegular.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: Dimensions.fontSizeSmall,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -936,22 +998,22 @@ class _MartCartScreenState extends State<MartCartScreen> {
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
                 ),
               ),
               child: _isOrdering
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
                     )
                   : Text('place_order'.tr,
                       style: textBold.copyWith(
                           fontSize: Dimensions.fontSizeDefault,
-                          color: Colors.white)),
+                          color: Theme.of(context).colorScheme.onPrimary)),
             ),
           ),
         ],
@@ -971,7 +1033,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
             '${isDiscount ? '-' : ''}\$${amount.abs().toStringAsFixed(2)}',
             style: textMedium.copyWith(
               fontSize: Dimensions.fontSizeSmall,
-              color: isDiscount ? Colors.green : null,
+              color: isDiscount ? Theme.of(context).colorScheme.tertiary : null,
             ),
           ),
         ],
@@ -1000,7 +1062,10 @@ class _MartCartScreenState extends State<MartCartScreen> {
           _promoController.clear();
         });
       } else {
-        Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
+        // Surface the backend reason (expired, min-spend, invalid) when present.
+        Get.snackbar('error'.tr, _extractErrorMessage(response.body) == 'order_failed'.tr
+            ? 'invalid_promo_code'.tr
+            : _extractErrorMessage(response.body));
       }
     } catch (e) {
       debugPrint('Mart error: $e');
@@ -1011,10 +1076,15 @@ class _MartCartScreenState extends State<MartCartScreen> {
   }
 
   Future<void> _placeOrder() async {
-    if (_addressController.text.isEmpty) {
+    if (widget.cartItems.isEmpty) {
+      Get.snackbar('error'.tr, 'cart_is_empty'.tr);
+      return;
+    }
+    if (_addressController.text.trim().isEmpty) {
       Get.snackbar('error'.tr, 'please_enter_delivery_address'.tr);
       return;
     }
+    if (_isOrdering) return; // guard against double submit
 
     setState(() {
       _isOrdering = true;
@@ -1047,16 +1117,17 @@ class _MartCartScreenState extends State<MartCartScreen> {
       if (!mounted) return;
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.body['data'];
-        final orderId = data?['id'] ?? data?['order_id'] ?? '';
+        final orderId = (data?['id'] ?? data?['order_id'] ?? '').toString();
+        // Validate the order id BEFORE popping so the flow never dead-ends.
+        if (orderId.isEmpty) {
+          setState(() => _checkoutError = 'invalid_order_response'.tr);
+          return;
+        }
         Get.back();
         Get.snackbar('success'.tr, 'order_placed_successfully'.tr);
-        if (orderId.toString().isNotEmpty) {
-          Get.to(() => MartOrderTrackingScreen(orderId: orderId.toString()));
-        }
+        Get.to(() => MartOrderTrackingScreen(orderId: orderId));
       } else {
-        final message =
-            response.body['errors']?.first?['message'] ?? 'order_failed'.tr;
-        setState(() => _checkoutError = message.toString());
+        setState(() => _checkoutError = _extractErrorMessage(response.body));
       }
     } catch (e) {
       debugPrint('Mart error: $e');
@@ -1065,5 +1136,24 @@ class _MartCartScreenState extends State<MartCartScreen> {
     } finally {
       if (mounted) setState(() => _isOrdering = false);
     }
+  }
+
+  // Pulls a human-readable message out of any backend error shape.
+  String _extractErrorMessage(dynamic body) {
+    try {
+      if (body is Map) {
+        final errors = body['errors'];
+        if (errors is List && errors.isNotEmpty) {
+          final first = errors.first;
+          if (first is Map && first['message'] != null) {
+            return first['message'].toString();
+          }
+        }
+        if (body['message'] is String && (body['message'] as String).isNotEmpty) {
+          return body['message'];
+        }
+      }
+    } catch (_) {/* fall through to default */}
+    return 'order_failed'.tr;
   }
 }

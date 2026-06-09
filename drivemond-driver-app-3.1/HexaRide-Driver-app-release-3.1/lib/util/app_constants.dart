@@ -169,7 +169,7 @@ class AppConstants {
 
   static List<LanguageModel> languages = [
     LanguageModel(imageUrl: Images.unitedKingdom, languageName: 'English', countryCode: 'US', languageCode: 'en'),
-    LanguageModel(imageUrl: Images.saudi, languageName: 'عربي', countryCode: 'SA', languageCode: 'ar'),
+    LanguageModel(imageUrl: 'flags/es.png', imagePackage: 'country_code_picker', languageName: 'Español', countryCode: 'ES', languageCode: 'es'),
   ];
 
   static const int imageQuality = 80;

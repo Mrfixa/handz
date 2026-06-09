@@ -157,6 +157,7 @@ class _TextFieldWidgetState extends State<TextFieldWidget> {
                     padding: EdgeInsets.zero,
                     onChanged: widget.onCountryChanged,
                     initialSelection: widget.countryDialCode,
+                    countryFilter: const ['US'],
                     showDropDownButton: true,
                     showCountryOnly: true,
                     showOnlyCountryWhenClosed: true,

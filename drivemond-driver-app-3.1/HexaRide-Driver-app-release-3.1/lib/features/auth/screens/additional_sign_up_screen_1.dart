@@ -45,7 +45,7 @@ class _AdditionalSignUpScreen1State extends State<AdditionalSignUpScreen1> {
                   child: Column(children: [
                     const SizedBox(height: Dimensions.paddingSizeSignUp),
 
-                    Text('provide_basic_info'.tr, style: textBold.copyWith(fontSize: 22)),
+                    Text('provide_basic_info'.tr, style: textBold.copyWith(fontSize: Dimensions.fontSizeOverLarge)),
                     const SizedBox(height: Dimensions.paddingSizeSmall),
 
                     Text('enter_your_information'.tr, style: textRegular.copyWith(

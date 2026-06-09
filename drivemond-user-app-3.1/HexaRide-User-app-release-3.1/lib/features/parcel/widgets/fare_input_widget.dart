@@ -57,7 +57,7 @@ class _FareInputWidgetState extends State<FareInputWidget> {
                       overflow: TextOverflow.ellipsis,
                       style: textRegular.copyWith(
                         fontSize: Dimensions.fontSizeLarge,
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha:0.9),
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
                   )),
@@ -67,11 +67,11 @@ class _FareInputWidgetState extends State<FareInputWidget> {
                     child: Text(
                       PriceConverter.convertPrice(
                         (widget.discountAmount ?? 0) > 0 ?
-                        widget.discountFare! : double.tryParse(widget.fare)!,
+                        widget.discountFare! : double.tryParse(widget.fare) ?? 0,
                       ),
-                      style: textRobotoMedium.copyWith(
+                      style: textBold.copyWith(
                         fontSize: Dimensions.fontSizeLarge,
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha:0.9),
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
                   ),
@@ -94,7 +94,7 @@ class _FareInputWidgetState extends State<FareInputWidget> {
                 Divider(color: Theme.of(context).hintColor.withValues(alpha:0.5)),
 
                 TripFareSummery(
-                  tripFare: double.tryParse(widget.fare)!, fromParcel: false,
+                  tripFare: double.tryParse(widget.fare) ?? 0, fromParcel: false,
                   discountFare: widget.discountFare!,
                   discountAmount: widget.discountAmount,
                 ),

@@ -48,7 +48,7 @@ class HomeReferralViewWidget extends StatelessWidget {
                         borderRadius: BorderRadius.circular(Dimensions.paddingSizeOverLarge)
                     ),
                     child: Center(child: Text('invite_friends'.tr,
-                      style: textRegular.copyWith(color: Colors.white, fontSize: Dimensions.fontSizeSmall),
+                      style: textRegular.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontSize: Dimensions.fontSizeSmall),
                     )),
                   ),
                 );

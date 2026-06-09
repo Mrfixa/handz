@@ -140,7 +140,7 @@ class _ParcelOtpBottomSheetWidgetState extends State<ParcelOtpBottomSheetWidget>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
             child: Text(
-              Get.find<TripController>().parcelCancellationReasonList!.data!.acceptedRide!.length > 1 ?
+              (Get.find<TripController>().parcelCancellationReasonList?.data?.acceptedRide?.length ?? 0) > 1 ?
               'please_select_your_cancel_reason'.tr : 'please_write_your_cancel_reason'.tr,
                 style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault),
             ),

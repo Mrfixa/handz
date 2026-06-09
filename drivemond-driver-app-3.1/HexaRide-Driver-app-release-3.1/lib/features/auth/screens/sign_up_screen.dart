@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
@@ -51,7 +52,7 @@ class SignUpScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: Dimensions.paddingSizeSignUp),
 
-                  Text('choose_service'.tr,style: textBold.copyWith(fontSize: 22)),
+                  Text('choose_service'.tr,style: textBold.copyWith(fontSize: Dimensions.fontSizeOverLarge)),
                   const SizedBox(height: Dimensions.paddingSizeSmall),
 
                   Padding(
@@ -88,7 +89,7 @@ class SignUpScreen extends StatelessWidget {
                           authController.updateServiceType(true);
                         },
                         activeColor: Theme.of(context).primaryColor,
-                        checkColor: Colors.white,
+                        checkColor: Theme.of(context).colorScheme.onPrimary,
                         side: BorderSide(color: Theme.of(context).hintColor.withValues(alpha: 0.5)),
                         subtitle: Text('service_provide_text1'.tr,style: textRegular.copyWith(
                           color: authController.isRideShare ?
@@ -126,7 +127,7 @@ class SignUpScreen extends StatelessWidget {
                           authController.updateServiceType(false);
                         },
                         activeColor: Theme.of(context).primaryColor,
-                        checkColor: Colors.white,
+                        checkColor: Theme.of(context).colorScheme.onPrimary,
                         side: BorderSide(color: Theme.of(context).hintColor.withValues(alpha: 0.5)),
                         subtitle: Text('service_provide_text2'.tr, style: textRegular.copyWith(
                             color: authController.isParcelShare ?
@@ -152,6 +153,7 @@ class SignUpScreen extends StatelessWidget {
                   radius: Dimensions.radiusExtraLarge,
                   buttonText: 'next'.tr,
                   onPressed: (){
+                    HapticFeedback.mediumImpact();
                     if(!authController.isRideShare && !authController.isParcelShare){
                       showCustomSnackBar('required_to_select_service'.tr);
                     }else{

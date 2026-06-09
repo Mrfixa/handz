@@ -57,7 +57,7 @@ class _WhoWillPayButtonState extends State<WhoWillPayButton> {
                     Get.isDarkMode ?
                     Theme.of(context).textTheme.bodyMedium!.color!.withValues(alpha:0.5) :
                     Theme.of(context).textTheme.bodyMedium!.color :
-                    Colors.white,
+                    Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               ),
@@ -87,7 +87,7 @@ class _WhoWillPayButtonState extends State<WhoWillPayButton> {
                   Get.isDarkMode ?
                   Theme.of(context).textTheme.bodyMedium!.color!.withValues(alpha:0.5) :
                   Theme.of(context).textTheme.bodyMedium!.color :
-                  Colors.white,
+                  Theme.of(context).colorScheme.onPrimary,
                 ),
                 ),
               ),

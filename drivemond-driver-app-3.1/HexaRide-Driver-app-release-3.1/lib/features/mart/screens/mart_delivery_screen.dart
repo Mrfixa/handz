@@ -12,6 +12,7 @@ import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
+import 'package:ride_sharing_user_app/helper/price_converter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -68,7 +69,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'delivery_details'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'delivery_details'.tr, regularAppbar: true, showLogo: true),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
           : Column(
@@ -108,12 +109,12 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-      color: Colors.orange,
+      color: Colors.amber.shade700,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
+          const Icon(Icons.wifi_off, color: Colors.white, size: Dimensions.iconSizeMedium),
+          const SizedBox(width: Dimensions.paddingSizeExtraSmall),
           Text(
             'you_are_offline'.tr,
             style: textMedium.copyWith(color: Colors.white),
@@ -147,17 +148,17 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                     '${'order'.tr} #${widget.orderId.length > 8 ? widget.orderId.substring(0, 8) : widget.orderId}',
                     style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Dimensions.paddingSizeThree),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeExtraSmall, vertical: Dimensions.paddingSizeThree),
                     decoration: BoxDecoration(
-                      color: _getStatusColor().withValues(alpha: 0.1),
+                      color: _getStatusColor(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                     ),
                     child: Text(
                       _statusTranslationKey(_orderStatus).tr,
                       style: textMedium.copyWith(
-                        color: _getStatusColor(),
+                        color: _getStatusColor(context),
                         fontSize: Dimensions.fontSizeSmall,
                       ),
                     ),
@@ -167,7 +168,10 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
             ),
             if (_orderData['total_amount'] != null)
               Text(
-                '\$${_orderData['total_amount']}',
+                PriceConverter.convertPrice(
+                  context,
+                  double.tryParse(_orderData['total_amount']?.toString() ?? '0') ?? 0,
+                ),
                 style: textBold.copyWith(
                   fontSize: Dimensions.fontSizeLarge,
                   color: Theme.of(context).primaryColor,
@@ -331,7 +335,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   fontSize: Dimensions.fontSizeDefault,
                 )),
                 if (_hasSignature)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 20),
               ],
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
@@ -353,10 +357,10 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 40),
                             const SizedBox(height: 8),
                             Text('signature_captured'.tr, style: textMedium.copyWith(
-                              color: Colors.green,
+                              color: Theme.of(context).colorScheme.tertiary,
                             )),
                           ],
                         ),
@@ -402,7 +406,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   fontSize: Dimensions.fontSizeDefault,
                 )),
                 if (_hasDeliveryPhoto)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 20),
               ],
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
@@ -431,10 +435,10 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 40),
                             const SizedBox(height: 8),
                             Text('photo_captured'.tr, style: textMedium.copyWith(
-                              color: Colors.green,
+                              color: Theme.of(context).colorScheme.tertiary,
                             )),
                           ],
                         ),
@@ -484,7 +488,17 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
             ? null
             : () {
                 HapticFeedback.mediumImpact();
-                _markAsDelivered();
+                Get.dialog(AlertDialog(
+                  title: Text('confirm_delivery'.tr),
+                  content: Text('confirm_delivery_message'.tr),
+                  actions: [
+                    TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
+                    TextButton(
+                      onPressed: () { Get.back(); _markAsDelivered(); },
+                      child: Text('confirm'.tr),
+                    ),
+                  ],
+                ));
               };
         break;
       default:
@@ -499,19 +513,19 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         onPressed: _isUpdating ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
         ),
         child: _isUpdating
-            ? const SizedBox(
+            ? SizedBox(
                 width: 24, height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
               )
             : Text(buttonText, style: textBold.copyWith(
                 fontSize: Dimensions.fontSizeDefault,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               )),
       ),
     );
@@ -624,18 +638,18 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     return keys[status] ?? status;
   }
 
-  Color _getStatusColor() {
+  Color _getStatusColor(BuildContext context) {
     switch (_orderStatus) {
       case 'accepted':
-        return Colors.blue;
+        return Theme.of(context).primaryColor;
       case 'picked_up':
-        return Colors.indigo;
+        return Theme.of(context).primaryColor;
       case 'delivered':
-        return Colors.green;
+        return Theme.of(context).colorScheme.tertiary;
       case 'cancelled':
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       default:
-        return Colors.grey;
+        return Theme.of(context).hintColor;
     }
   }
 }
@@ -680,7 +694,8 @@ class _SignatureDialogState extends State<SignatureDialog> {
     final picture = recorder.endRecording();
     final image = await picture.toImage(_canvasWidth.toInt(), _canvasHeight.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+    if (byteData == null) throw Exception('Failed to encode signature image');
+    return byteData.buffer.asUint8List();
   }
 
   @override
@@ -701,8 +716,8 @@ class _SignatureDialogState extends State<SignatureDialog> {
             height: _canvasHeight,
             margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              color: Theme.of(context).colorScheme.surface,
+              border: Border.all(color: Theme.of(context).hintColor.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
             ),
             child: GestureDetector(
@@ -748,8 +763,9 @@ class _SignatureDialogState extends State<SignatureDialog> {
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
-                  child: Text('save'.tr, style: const TextStyle(color: Colors.white)),
+                  child: Text('save'.tr, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             ),

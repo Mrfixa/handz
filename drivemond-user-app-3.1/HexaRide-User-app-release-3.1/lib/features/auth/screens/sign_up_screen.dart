@@ -1,5 +1,6 @@
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
@@ -55,6 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _submit(AuthController authController) {
+    HapticFeedback.mediumImpact();
     final fName = authController.fNameController.text.trim();
     final phone = authController.phoneController.text.trim();
     final password = authController.passwordController.text;

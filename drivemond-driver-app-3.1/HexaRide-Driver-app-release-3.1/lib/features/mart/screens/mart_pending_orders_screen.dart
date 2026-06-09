@@ -19,7 +19,7 @@ class MartPendingOrdersScreen extends StatefulWidget {
 class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   List<dynamic> _orders = [];
   bool _isLoading = true;
-  bool _isAccepting = false;
+  String? _acceptingOrderId; // tracks which specific order is being accepted
   Timer? _refreshTimer;
 
   @override
@@ -57,8 +57,8 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   }
 
   Future<void> _acceptOrder(String orderId) async {
-    if (_isAccepting) return;
-    setState(() => _isAccepting = true);
+    if (_acceptingOrderId != null) return; // another acceptance in progress
+    setState(() => _acceptingOrderId = orderId);
     try {
       final response = await Get.find<ApiClient>().postData(
         AppConstants.martAcceptOrder,
@@ -75,18 +75,19 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
       debugPrint('Mart accept error: $e');
       if (mounted) showCustomSnackBar('something_went_wrong'.tr);
     } finally {
-      if (mounted) setState(() => _isAccepting = false);
+      if (mounted) setState(() => _acceptingOrderId = null);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'pending_mart_orders'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'pending_mart_orders'.tr, regularAppbar: true, showLogo: true),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
           : RefreshIndicator(
               onRefresh: _fetchOrders,
+              color: Theme.of(context).primaryColor,
               child: _orders.isEmpty
                   ? ListView(
                       children: [
@@ -97,6 +98,15 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
                           'no_pending_orders'.tr,
                           textAlign: TextAlign.center,
                           style: textMedium.copyWith(color: Theme.of(context).hintColor),
+                        ),
+                        const SizedBox(height: Dimensions.paddingSizeSmall),
+                        Text(
+                          'new_orders_appear_here'.tr,
+                          textAlign: TextAlign.center,
+                          style: textRegular.copyWith(
+                            color: Theme.of(context).hintColor,
+                            fontSize: Dimensions.fontSizeSmall,
+                          ),
                         ),
                       ],
                     )
@@ -131,7 +141,7 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
                 Text('${'order'.tr} #$refId',
                     style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall, vertical: Dimensions.paddingSizeExtraSmall),
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
@@ -170,17 +180,17 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
 
             SizedBox(
               width: double.infinity,
-              child: _isAccepting
+              child: _acceptingOrderId == orderId
                   ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
                   : ElevatedButton(
-                      onPressed: () => _acceptOrder(orderId),
+                      onPressed: _acceptingOrderId != null ? null : () => _acceptOrder(orderId),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(Dimensions.radiusDefault)),
                       ),
                       child: Text('accept_order'.tr,
-                          style: textBold.copyWith(color: Colors.white)),
+                          style: textBold.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
                     ),
             ),
           ],

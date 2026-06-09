@@ -25,6 +25,7 @@ class ParcelItem extends StatelessWidget {
       return GetBuilder<RideController>(builder: (rideController) {
         return InkWell(
           onTap: (){
+            if(parcelController.isLoading) return; // guard re-entrancy
             parcelController.setParcelLoadingActive(index);
             if(rideRequest.currentStatus == AppConstants.accepted){
               Get.find<RideController>().getRideDetails(rideRequest.id!).then((value){

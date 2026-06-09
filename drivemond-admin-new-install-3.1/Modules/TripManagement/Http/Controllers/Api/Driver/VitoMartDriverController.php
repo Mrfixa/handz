@@ -16,6 +16,11 @@ class VitoMartDriverController extends Controller
 {
     public function pendingOrders(Request $request): JsonResponse
     {
+        $driver = $request->user()->driverDetails;
+        if (!$driver || !$driver->is_approved) {
+            return response()->json(responseFormatter(DEFAULT_403), 403);
+        }
+
         $orders = MartOrder::where('status', 'pending')
             ->with('items.product', 'customer')
             ->orderByDesc('created_at')
@@ -205,6 +210,12 @@ class VitoMartDriverController extends Controller
             }
             $decoded = base64_decode($base64, strict: true);
             if ($decoded !== false && strlen($decoded) > 0) {
+                if (strlen($decoded) > 5242880) {
+                    return response()->json(responseFormatter(DEFAULT_400, null, null, 'Signature too large'), 400);
+                }
+                if (@getimagesizefromstring($decoded) === false) {
+                    return response()->json(responseFormatter(DEFAULT_400, null, null, 'Invalid image data'), 400);
+                }
                 $filename = 'mart/signatures/' . $order->id . '_' . time() . '.png';
                 Storage::disk('public')->put($filename, $decoded);
                 $updateData['signature_image'] = $filename;
