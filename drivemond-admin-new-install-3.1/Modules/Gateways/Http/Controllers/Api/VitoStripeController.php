@@ -90,10 +90,10 @@ class VitoStripeController extends Controller
             if ($stripeWebhookSecret) {
                 $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, $stripeWebhookSecret);
             } else {
-                return response()->json(['error' => 'Webhook secret not configured'], 500);
+                return response()->json(responseFormatter(DEFAULT_400, null, null, 'Webhook secret not configured'), 500);
             }
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Invalid signature'], 400);
+            return response()->json(responseFormatter(DEFAULT_400, null, null, 'Invalid signature'), 400);
         }
 
         // Check Stripe event ID idempotency first — if we have already stored a
@@ -106,7 +106,7 @@ class VitoStripeController extends Controller
                 ->where('status', 'succeeded')
                 ->exists();
             if ($alreadyProcessed) {
-                return response()->json(['status' => 'already_processed']);
+                return response()->json(responseFormatter(DEFAULT_200, ['status' => 'already_processed']));
             }
         }
 
@@ -160,6 +160,6 @@ class VitoStripeController extends Controller
             });
         }
 
-        return response()->json(['status' => 'ok']);
+        return response()->json(responseFormatter(DEFAULT_200));
     }
 }

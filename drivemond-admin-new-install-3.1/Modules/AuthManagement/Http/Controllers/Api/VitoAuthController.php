@@ -131,7 +131,7 @@ class VitoAuthController extends Controller
     public function pinRegister(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|min:3|max:50|unique:users,username',
+            'username' => 'required|string|min:3|max:50|regex:/^[a-zA-Z0-9_-]+$/|unique:users,username',
             'pin' => 'required|string|digits:6|confirmed',
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
