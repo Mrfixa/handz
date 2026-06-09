@@ -1,6 +1,7 @@
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/enums/verification_from_enum.dart';
@@ -150,6 +151,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ButtonWidget(
               buttonText: 'log_in'.tr,
               onPressed: () {
+                HapticFeedback.mediumImpact();
                 String phone = phoneController.text.trim();
                 String password = passwordController.text.trim();
 

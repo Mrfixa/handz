@@ -1077,5 +1077,6 @@
   "remove_item": "Remove Item",
   "remove_item_confirmation": "Remove this item from your cart?",
   "select_country_code": "Please select a country code",
-  "confirm_delivery_message": "Mark this order as delivered? This cannot be undone."
+  "confirm_delivery_message": "Mark this order as delivered? This cannot be undone.",
+  "browse_products": "Browse Products"
 }

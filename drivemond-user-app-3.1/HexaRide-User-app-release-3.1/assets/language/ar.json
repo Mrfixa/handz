@@ -1013,5 +1013,6 @@
   "remove_item_confirmation": "إزالة هذا العنصر من سلة التسوق؟",
   "select_country_code": "يرجى اختيار رمز الدولة",
   "confirm_delivery": "تأكيد التسليم",
-  "confirm_delivery_message": "هل تريد تعليم هذا الطلب بأنه تم تسليمه؟ لا يمكن التراجع عن ذلك."
+  "confirm_delivery_message": "هل تريد تعليم هذا الطلب بأنه تم تسليمه؟ لا يمكن التراجع عن ذلك.",
+  "browse_products": "تصفح المنتجات"
 }

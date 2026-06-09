@@ -157,15 +157,17 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         decoration: InputDecoration(
           hintText: 'search_products'.tr,
           prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchController.text.isEmpty
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {});
-                  },
-                ),
+          suffixIcon: AnimatedOpacity(
+            opacity: _searchController.text.isEmpty ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: _searchController.text.isEmpty ? null : () {
+                _searchController.clear();
+                setState(() {});
+              },
+            ),
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
@@ -231,6 +233,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
 
   // B18: shimmer skeleton loading grid
   Widget _buildShimmerGrid(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GridView.builder(
       padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -240,13 +243,13 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         mainAxisSpacing: Dimensions.paddingSizeSmall,
       ),
       itemCount: 6,
-      itemBuilder: (context, index) => Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+      itemBuilder: (ctx, index) => Shimmer.fromColors(
+        baseColor: isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0),
+        highlightColor: isDark ? const Color(0xFF404040) : const Color(0xFFF5F5F5),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0),
+            borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
         ),
       ),
@@ -259,9 +262,11 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-          const SizedBox(height: 8),
-          Text('something_went_wrong'.tr),
+          Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
+          Text('something_went_wrong'.tr,
+              style: textMedium.copyWith(fontSize: Dimensions.fontSizeDefault)),
+          const SizedBox(height: Dimensions.paddingSizeExtraSmall),
           TextButton(onPressed: _loadProducts, child: Text('retry'.tr)),
         ],
       ),
@@ -411,7 +416,7 @@ class _ProductCardState extends State<_ProductCard> {
                       imageUrl: imageUrl,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey[200]),
+                      placeholder: (_, __) => Container(color: Theme.of(context).hintColor.withValues(alpha: 0.1)),
                       errorWidget: (_, __, ___) => Container(
                         color: Theme.of(context).hintColor.withValues(alpha: 0.1),
                         child: Center(
@@ -463,7 +468,10 @@ class _ProductCardState extends State<_ProductCard> {
                       _isOutOfStock
                           ? Text(
                               'out_of_stock'.tr,
-                              style: TextStyle(color: Colors.red[400], fontSize: 12),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: Dimensions.fontSizeSmall,
+                              ),
                             )
                           : AnimatedScale(
                               scale: _isAdding ? 0.88 : 1.0,
@@ -599,6 +607,15 @@ class _MartCartScreenState extends State<MartCartScreen> {
               color: Theme.of(context).hintColor,
             ),
           ),
+          const SizedBox(height: Dimensions.paddingSizeDefault),
+          TextButton.icon(
+            onPressed: () => Get.back(),
+            icon: Icon(Icons.storefront_outlined, color: Theme.of(context).primaryColor),
+            label: Text(
+              'browse_products'.tr,
+              style: textMedium.copyWith(color: Theme.of(context).primaryColor),
+            ),
+          ),
         ],
       ),
     );
@@ -612,11 +629,13 @@ class _MartCartScreenState extends State<MartCartScreen> {
     return Dismissible(
       key: Key(item['id']?.toString() ?? item['product_id']?.toString() ?? '$index'),
       direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        color: Colors.red[400],
-        child: const Icon(Icons.delete_outline, color: Colors.white),
+      background: Builder(
+        builder: (ctx) => Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 16),
+          color: Theme.of(ctx).colorScheme.error,
+          child: const Icon(Icons.delete_outline, color: Colors.white),
+        ),
       ),
       confirmDismiss: (_) async {
         return await Get.dialog<bool>(
@@ -653,7 +672,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
                     child: CachedNetworkImage(
                       imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey[200]),
+                      placeholder: (_, __) => Container(color: Theme.of(context).hintColor.withValues(alpha: 0.1)),
                       errorWidget: (_, __, ___) =>
                           Icon(Icons.inventory_2_outlined, color: Theme.of(context).hintColor),
                     ),
@@ -712,18 +731,19 @@ class _MartCartScreenState extends State<MartCartScreen> {
               Container(
                 padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '${'promo_applied'.tr}: $_appliedPromoCode (-\$${_discount.toStringAsFixed(2)})',
                         style: textMedium.copyWith(
-                            color: Colors.green, fontSize: Dimensions.fontSizeSmall),
+                            color: Theme.of(context).colorScheme.tertiary,
+                            fontSize: Dimensions.fontSizeSmall),
                       ),
                     ),
                     IconButton(
@@ -860,7 +880,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).hintColor.withValues(alpha: 0.12),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -939,19 +959,23 @@ class _MartCartScreenState extends State<MartCartScreen> {
           // B27: checkout error banner
           if (_checkoutError != null)
             Container(
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+              margin: const EdgeInsets.only(bottom: Dimensions.paddingSizeSmall),
               decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8)),
+                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red[700], size: 16),
+                  Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 16),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       _checkoutError!,
-                      style: TextStyle(color: Colors.red[700], fontSize: 12),
+                      style: textRegular.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: Dimensions.fontSizeSmall,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -1009,7 +1033,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
             '${isDiscount ? '-' : ''}\$${amount.abs().toStringAsFixed(2)}',
             style: textMedium.copyWith(
               fontSize: Dimensions.fontSizeSmall,
-              color: isDiscount ? Colors.green : null,
+              color: isDiscount ? Theme.of(context).colorScheme.tertiary : null,
             ),
           ),
         ],

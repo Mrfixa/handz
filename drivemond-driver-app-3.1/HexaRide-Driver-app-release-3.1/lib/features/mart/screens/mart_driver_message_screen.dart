@@ -132,7 +132,8 @@ class _MartDriverMessageScreenState extends State<MartDriverMessageScreen> {
                             Positioned(
                               right: 5,
                               child: InkWell(
-                                child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                                child: Icon(Icons.cancel_outlined,
+                                    color: Theme.of(context).colorScheme.error),
                                 onTap: () => chatController.pickMultipleImage(true, index: index),
                               ),
                             ),
@@ -154,7 +155,8 @@ class _MartDriverMessageScreenState extends State<MartDriverMessageScreen> {
                         top: 0,
                         right: 0,
                         child: InkWell(
-                          child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                          child: Icon(Icons.cancel_outlined,
+                              color: Theme.of(context).colorScheme.error),
                           onTap: () => chatController.pickOtherFile(true),
                         ),
                       ),
@@ -213,7 +215,7 @@ class _MartDriverMessageScreenState extends State<MartDriverMessageScreen> {
                                           .bodyMedium!
                                           .color!
                                           .withValues(alpha: 0.8),
-                                      fontSize: 16,
+                                      fontSize: Dimensions.fontSizeLarge,
                                     ),
                                   ),
                                   onChanged: (String newText) {},
@@ -300,13 +302,14 @@ class _MartDriverMessageScreenState extends State<MartDriverMessageScreen> {
                       child: Container(
                         padding: EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(5),
+                          color: Theme.of(context).hintColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                         ),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Icon(Icons.block),
+                          Icon(Icons.block, color: Theme.of(context).hintColor),
                           const SizedBox(width: 5),
-                          Flexible(child: Text("order_chat_unavailable".tr)),
+                          Flexible(child: Text("order_chat_unavailable".tr,
+                              style: textRegular.copyWith(color: Theme.of(context).hintColor))),
                         ]),
                       ),
                     ),

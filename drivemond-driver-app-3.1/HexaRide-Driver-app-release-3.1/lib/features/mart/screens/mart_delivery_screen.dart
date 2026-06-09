@@ -152,13 +152,13 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _getStatusColor().withValues(alpha: 0.1),
+                      color: _getStatusColor(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                     ),
                     child: Text(
                       _statusTranslationKey(_orderStatus).tr,
                       style: textMedium.copyWith(
-                        color: _getStatusColor(),
+                        color: _getStatusColor(context),
                         fontSize: Dimensions.fontSizeSmall,
                       ),
                     ),
@@ -169,6 +169,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
             if (_orderData['total_amount'] != null)
               Text(
                 PriceConverter.convertPrice(
+                  context,
                   double.tryParse(_orderData['total_amount']?.toString() ?? '0') ?? 0,
                 ),
                 style: textBold.copyWith(
@@ -334,7 +335,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   fontSize: Dimensions.fontSizeDefault,
                 )),
                 if (_hasSignature)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 20),
               ],
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
@@ -356,10 +357,10 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 40),
                             const SizedBox(height: 8),
                             Text('signature_captured'.tr, style: textMedium.copyWith(
-                              color: Colors.green,
+                              color: Theme.of(context).colorScheme.tertiary,
                             )),
                           ],
                         ),
@@ -405,7 +406,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                   fontSize: Dimensions.fontSizeDefault,
                 )),
                 if (_hasDeliveryPhoto)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 20),
               ],
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
@@ -434,10 +435,10 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.tertiary, size: 40),
                             const SizedBox(height: 8),
                             Text('photo_captured'.tr, style: textMedium.copyWith(
-                              color: Colors.green,
+                              color: Theme.of(context).colorScheme.tertiary,
                             )),
                           ],
                         ),
@@ -637,18 +638,18 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     return keys[status] ?? status;
   }
 
-  Color _getStatusColor() {
+  Color _getStatusColor(BuildContext context) {
     switch (_orderStatus) {
       case 'accepted':
-        return Colors.blue;
+        return Theme.of(context).primaryColor;
       case 'picked_up':
-        return Colors.indigo;
+        return Theme.of(context).primaryColor;
       case 'delivered':
-        return Colors.green;
+        return Theme.of(context).colorScheme.tertiary;
       case 'cancelled':
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       default:
-        return Colors.grey;
+        return Theme.of(context).hintColor;
     }
   }
 }

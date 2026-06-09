@@ -226,9 +226,9 @@ class AdditionalSignUpScreen2 extends StatelessWidget {
                               Padding(
                                 padding: const EdgeInsets.only(bottom: Dimensions.paddingSizeSmall),
                                 child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: const BorderRadius.all(Radius.circular(20)),
                                   ),
                                   child: ClipRRect(
                                     borderRadius: const BorderRadius.all(
@@ -249,15 +249,16 @@ class AdditionalSignUpScreen2 extends StatelessWidget {
                                 child: InkWell(
                                   onTap :() => authController.removeImage(index),
                                   child: Container(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.all(Radius.circular(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: const BorderRadius.all(Radius.circular(
                                         Dimensions.paddingSizeDefault,
                                       )),
                                     ),
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(4.0),
-                                      child: Icon(Icons.delete_forever_rounded,color: Colors.red,size: 15),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: Icon(Icons.delete_forever_rounded,
+                                          color: Theme.of(context).colorScheme.error, size: 15),
                                     ),
                                   ),
                                 ),
@@ -347,9 +348,10 @@ class AdditionalSignUpScreen2 extends StatelessWidget {
 
                                       InkWell(
                                         onTap :() => authController.removeFile(index),
-                                        child: const Padding(
-                                          padding: EdgeInsets.all(4.0),
-                                          child: Icon(Icons.highlight_remove_outlined,color: Colors.red,size: 24),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Icon(Icons.highlight_remove_outlined,
+                                              color: Theme.of(context).colorScheme.error, size: 24),
                                         ),
                                       ),
                                     ]),

@@ -228,10 +228,14 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
         ...(_tokenHistory.take(5).map((entry) => ListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            entry['valid'] == true ? Icons.check_circle : Icons.cancel,
-            color: entry['valid'] == true ? Colors.green : Colors.red,
-            size: 20,
+          leading: Builder(
+            builder: (ctx) => Icon(
+              entry['valid'] == true ? Icons.check_circle : Icons.cancel,
+              color: entry['valid'] == true
+                  ? Theme.of(ctx).colorScheme.tertiary
+                  : Theme.of(ctx).colorScheme.error,
+              size: 20,
+            ),
           ),
           title: Text(entry['token'] ?? '', style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall)),
           subtitle: Text(

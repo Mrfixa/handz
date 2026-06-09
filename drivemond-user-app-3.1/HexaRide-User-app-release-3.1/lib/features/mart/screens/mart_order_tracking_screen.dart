@@ -196,10 +196,10 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: _getStatusColor().withValues(alpha: 0.1),
+                color: _getStatusColor(context).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
               ),
-              child: Icon(Icons.receipt_long, color: _getStatusColor()),
+              child: Icon(Icons.receipt_long, color: _getStatusColor(context)),
             ),
             const SizedBox(width: Dimensions.paddingSizeDefault),
             Expanded(
@@ -211,17 +211,21 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                     style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor().withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
-                    ),
-                    child: Text(
-                      _currentStatus.tr,
-                      style: textMedium.copyWith(
-                        color: _getStatusColor(),
-                        fontSize: Dimensions.fontSizeSmall,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      key: ValueKey(_currentStatus),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(context).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                      ),
+                      child: Text(
+                        _currentStatus.tr,
+                        style: textMedium.copyWith(
+                          color: _getStatusColor(context),
+                          fontSize: Dimensions.fontSizeSmall,
+                        ),
                       ),
                     ),
                   ),
@@ -462,11 +466,11 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                         icon: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.1),
+                            color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.phone,
-                              color: Colors.green, size: 20),
+                          child: Icon(Icons.phone,
+                              color: Theme.of(context).colorScheme.tertiary, size: 20),
                         ),
                       ),
                     IconButton(
@@ -522,22 +526,27 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (deliveryPhoto != null && deliveryPhoto.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: Dimensions.paddingSizeDefault),
           Text('delivery_proof'.tr,
-              style: textBold.copyWith(fontSize: 14)),
-          const SizedBox(height: 8),
+              style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
           GestureDetector(
             onTap: () => _showLightbox(context, deliveryPhoto),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                deliveryPhoto,
+              borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+              child: CachedNetworkImage(
+                imageUrl: deliveryPhoto,
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (_, __) => Container(
                   height: 150,
-                  color: Colors.grey[200],
+                  color: Theme.of(context).hintColor.withValues(alpha: 0.1),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  height: 150,
+                  color: Theme.of(context).hintColor.withValues(alpha: 0.1),
                   child: const Icon(Icons.image_not_supported_outlined),
                 ),
               ),
@@ -545,22 +554,27 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
           ),
         ],
         if (signatureImage != null && signatureImage.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: Dimensions.paddingSizeDefault),
           Text('customer_signature'.tr,
-              style: textBold.copyWith(fontSize: 14)),
-          const SizedBox(height: 8),
+              style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
           GestureDetector(
             onTap: () => _showLightbox(context, signatureImage),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                signatureImage,
+              borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+              child: CachedNetworkImage(
+                imageUrl: signatureImage,
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (_, __) => Container(
                   height: 120,
-                  color: Colors.grey[200],
+                  color: Theme.of(context).hintColor.withValues(alpha: 0.1),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  height: 120,
+                  color: Theme.of(context).hintColor.withValues(alpha: 0.1),
                   child: const Icon(Icons.draw_outlined),
                 ),
               ),
@@ -659,20 +673,20 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
     );
   }
 
-  Color _getStatusColor() {
+  Color _getStatusColor(BuildContext context) {
     switch (_currentStatus) {
       case 'pending':
-        return Colors.orange;
+        return Theme.of(context).primaryColor;
       case 'accepted':
-        return Colors.blue;
+        return Theme.of(context).primaryColor;
       case 'picked_up':
-        return Colors.indigo;
+        return Theme.of(context).primaryColor;
       case 'delivered':
-        return Colors.green;
+        return Theme.of(context).colorScheme.tertiary;
       case 'cancelled':
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       default:
-        return Colors.grey;
+        return Theme.of(context).hintColor;
     }
   }
 }

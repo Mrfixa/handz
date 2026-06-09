@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
@@ -152,6 +153,7 @@ class SignUpScreen extends StatelessWidget {
                   radius: Dimensions.radiusExtraLarge,
                   buttonText: 'next'.tr,
                   onPressed: (){
+                    HapticFeedback.mediumImpact();
                     if(!authController.isRideShare && !authController.isParcelShare){
                       showCustomSnackBar('required_to_select_service'.tr);
                     }else{
