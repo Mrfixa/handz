@@ -87,7 +87,7 @@ class _ProfileStatusCardWidgetState extends State<ProfileStatusCardWidget> {
                       child: Text(
                         'on_hold'.tr,
                         style: textRegular.copyWith(
-                          color: Colors.white, fontSize: Dimensions.fontSizeDefault,
+                          color: Theme.of(context).colorScheme.onPrimary, fontSize: Dimensions.fontSizeDefault,
                         ),
                       ),
                     ),
@@ -118,7 +118,7 @@ class _ProfileStatusCardWidgetState extends State<ProfileStatusCardWidget> {
                       (widget.profileController.profileInfo?.isVerified ?? false) ?
                       'verified'.tr : 'unverified'.tr,
                       style: textRegular.copyWith(
-                        color: Colors.white, fontSize: Dimensions.fontSizeDefault,
+                        color: Theme.of(context).colorScheme.onPrimary, fontSize: Dimensions.fontSizeDefault,
                       ),
                     ),
                   ),
@@ -158,13 +158,13 @@ class _ProfileStatusCardWidgetState extends State<ProfileStatusCardWidget> {
               borderRadius: 30.0,
               padding: 3,
               activeColor: Theme.of(context).primaryColor.withValues(alpha: .1),
-              toggleBorder: Border.all(width: 5, color: Colors.white.withValues(alpha: .75)),
+              toggleBorder: Border.all(width: 5, color: Theme.of(context).cardColor.withValues(alpha: 0.75)),
               activeText: 'online'.tr,
               inactiveText: 'offline'.tr,
               activeTextColor: Theme.of(context).primaryColor,
               showOnOff: true,
               activeTextFontWeight: FontWeight.w700,
-              toggleColor: Colors.green,
+              toggleColor: Theme.of(context).colorScheme.tertiary,
               onToggle: (val) async {
                 int ridingCount = Get.find<RideController>().ongoingRideList?.length ?? 0;
                 int parcelCount = Get.find<RideController>().parcelListModel?.totalSize ?? 0;

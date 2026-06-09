@@ -28,7 +28,7 @@ class CustomMenuDrivingStatusWidget extends StatelessWidget {
             child: SizedBox(
               width: Dimensions.iconSizeExtraLarge,height: Dimensions.iconSizeLarge,
               child: Center(child: Image.asset(
-                icon ,color: index == selectedIndex ? Colors.white : Theme.of(context).hintColor,
+                icon, color: index == selectedIndex ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).hintColor,
               )),
             ),
           ),
