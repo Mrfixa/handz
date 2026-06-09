@@ -227,6 +227,10 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
         ButtonWidget(buttonText: "next".tr,
           onPressed: () {
+            if(parcelController.getSenderCountryCode == null){
+              showCustomSnackBar('select_country_code'.tr);
+              return;
+            }
             PhoneNumber senderNumber = PhoneNumber.parse('${parcelController.getSenderCountryCode}${parcelController.senderContactController.text}');
 
 

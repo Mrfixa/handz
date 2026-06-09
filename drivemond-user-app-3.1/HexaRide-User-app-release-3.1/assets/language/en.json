@@ -1062,5 +1062,15 @@
   "profile_incomplete": "Please complete your profile",
   "create_your_account": "Create Your Account",
   "enter_your_first_name": "Enter your first name",
-  "enter_your_last_name": "Enter your last name"
+  "enter_your_last_name": "Enter your last name",
+  "channel_creation_failed": "Failed to open chat",
+  "form_validation_failed": "Please fix the errors before sending",
+  "invalid_order_response": "Order response was invalid, please contact support",
+  "no_active_parcels": "No active parcels",
+  "order_already_completed": "This order is already completed",
+  "remove_item": "Remove Item",
+  "remove_item_confirmation": "Remove this item from your cart?",
+  "select_country_code": "Please select a country code",
+  "confirm_delivery": "Confirm Delivery",
+  "confirm_delivery_message": "Mark this order as delivered? This cannot be undone."
 }

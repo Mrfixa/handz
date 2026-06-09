@@ -1066,5 +1066,16 @@
   "parcel_job_details": "Parcel Details",
   "weight_kg": "Weight (kg)",
   "client_name": "Client",
-  "distance_to_pickup": "Distance to Pickup"
+  "distance_to_pickup": "Distance to Pickup",
+  "cart_is_empty": "Your cart is empty",
+  "channel_creation_failed": "Failed to open chat",
+  "checkout_error": "Checkout failed, please try again",
+  "form_validation_failed": "Please fix the errors before sending",
+  "invalid_order_response": "Order response was invalid, please contact support",
+  "no_active_parcels": "No active parcels",
+  "order_already_completed": "This order is already completed",
+  "remove_item": "Remove Item",
+  "remove_item_confirmation": "Remove this item from your cart?",
+  "select_country_code": "Please select a country code",
+  "confirm_delivery_message": "Mark this order as delivered? This cannot be undone."
 }

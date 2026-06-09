@@ -25,6 +25,7 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   final bool showTripHistoryFilter;
   final bool showDiscountHint;
   final bool showBonusHint;
+  final bool showLogo;
   const AppBarWidget({
     super.key,
     required this.title,
@@ -37,7 +38,8 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
     this.showTripHistoryFilter = false,
     this.fontSize,
     this.showDiscountHint = false,
-    this.showBonusHint = false
+    this.showBonusHint = false,
+    this.showLogo = false,
   });
 
   @override
@@ -77,7 +79,10 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
                 ),
 
                 Row(mainAxisAlignment: _getAlignment(), children: [
-                  const SizedBox(),
+                  if (showLogo) ...[
+                    Image.asset(Images.logo, height: 24, width: 24),
+                    const SizedBox(width: 6),
+                  ],
 
                   Flexible(
                     child: Text(

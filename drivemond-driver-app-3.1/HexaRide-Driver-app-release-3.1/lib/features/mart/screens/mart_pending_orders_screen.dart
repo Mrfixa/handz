@@ -19,7 +19,7 @@ class MartPendingOrdersScreen extends StatefulWidget {
 class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   List<dynamic> _orders = [];
   bool _isLoading = true;
-  bool _isAccepting = false;
+  String? _acceptingOrderId; // tracks which specific order is being accepted
   Timer? _refreshTimer;
 
   @override
@@ -57,8 +57,8 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   }
 
   Future<void> _acceptOrder(String orderId) async {
-    if (_isAccepting) return;
-    setState(() => _isAccepting = true);
+    if (_acceptingOrderId != null) return; // another acceptance in progress
+    setState(() => _acceptingOrderId = orderId);
     try {
       final response = await Get.find<ApiClient>().postData(
         AppConstants.martAcceptOrder,
@@ -75,14 +75,14 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
       debugPrint('Mart accept error: $e');
       if (mounted) showCustomSnackBar('something_went_wrong'.tr);
     } finally {
-      if (mounted) setState(() => _isAccepting = false);
+      if (mounted) setState(() => _acceptingOrderId = null);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'pending_mart_orders'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'pending_mart_orders'.tr, regularAppbar: true, showLogo: true),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
           : RefreshIndicator(
@@ -170,10 +170,10 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
 
             SizedBox(
               width: double.infinity,
-              child: _isAccepting
+              child: _acceptingOrderId == orderId
                   ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
                   : ElevatedButton(
-                      onPressed: () => _acceptOrder(orderId),
+                      onPressed: _acceptingOrderId != null ? null : () => _acceptOrder(orderId),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         shape: RoundedRectangleBorder(

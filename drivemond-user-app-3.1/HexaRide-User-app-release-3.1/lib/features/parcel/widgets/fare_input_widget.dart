@@ -67,7 +67,7 @@ class _FareInputWidgetState extends State<FareInputWidget> {
                     child: Text(
                       PriceConverter.convertPrice(
                         (widget.discountAmount ?? 0) > 0 ?
-                        widget.discountFare! : double.tryParse(widget.fare)!,
+                        widget.discountFare! : double.tryParse(widget.fare) ?? 0,
                       ),
                       style: textRobotoMedium.copyWith(
                         fontSize: Dimensions.fontSizeLarge,
@@ -94,7 +94,7 @@ class _FareInputWidgetState extends State<FareInputWidget> {
                 Divider(color: Theme.of(context).hintColor.withValues(alpha:0.5)),
 
                 TripFareSummery(
-                  tripFare: double.tryParse(widget.fare)!, fromParcel: false,
+                  tripFare: double.tryParse(widget.fare) ?? 0, fromParcel: false,
                   discountFare: widget.discountFare!,
                   discountAmount: widget.discountAmount,
                 ),

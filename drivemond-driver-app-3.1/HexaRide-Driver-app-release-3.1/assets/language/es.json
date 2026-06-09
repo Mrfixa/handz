@@ -1066,5 +1066,16 @@
   "parcel_job_details": "Detalles del Paquete",
   "weight_kg": "Peso (kg)",
   "client_name": "Cliente",
-  "distance_to_pickup": "Distancia hasta Recogida"
+  "distance_to_pickup": "Distancia hasta Recogida",
+  "cart_is_empty": "Tu carrito está vacío",
+  "channel_creation_failed": "No se pudo abrir el chat",
+  "checkout_error": "El pago falló, por favor intenta de nuevo",
+  "form_validation_failed": "Corrige los errores antes de enviar",
+  "invalid_order_response": "La respuesta del pedido no fue válida, contacta soporte",
+  "no_active_parcels": "Sin paquetes activos",
+  "order_already_completed": "Este pedido ya está completado",
+  "remove_item": "Eliminar artículo",
+  "remove_item_confirmation": "¿Eliminar este artículo de tu carrito?",
+  "select_country_code": "Por favor selecciona un código de país",
+  "confirm_delivery_message": "¿Marcar este pedido como entregado? Esta acción no se puede deshacer."
 }

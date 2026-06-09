@@ -11,7 +11,8 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   final Function()? onBackPressed;
   final Function()? onTap;
   final bool regularAppbar;
-  const AppBarWidget({super.key, required this.title, this.showBackButton = true, this.onBackPressed, this.onTap,  this.regularAppbar = false});
+  final bool showLogo;
+  const AppBarWidget({super.key, required this.title, this.showBackButton = true, this.onBackPressed, this.onTap, this.regularAppbar = false, this.showLogo = false});
 
   @override
   Widget build(BuildContext context) {
@@ -19,10 +20,16 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
       height: regularAppbar ? 100 : GetPlatform.isAndroid ? 120 : 150,
       color: Theme.of(context).cardColor,
       child: AppBar(
-        title: Text(title, style: textSemiBold.copyWith(
-          fontSize: Dimensions.fontSizeExtraLarge,
-          color: Theme.of(context).textTheme.bodyMedium?.color,
-        )),
+        title: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (showLogo) ...[
+            Image.asset(Images.logo, height: 24, width: 24),
+            const SizedBox(width: 6),
+          ],
+          Text(title, style: textSemiBold.copyWith(
+            fontSize: Dimensions.fontSizeExtraLarge,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          )),
+        ]),
         centerTitle: true,
         leading: showBackButton ? IconButton(
           icon: const Icon(Icons.arrow_back),

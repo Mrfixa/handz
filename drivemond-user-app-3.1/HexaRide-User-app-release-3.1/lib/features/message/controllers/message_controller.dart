@@ -176,9 +176,14 @@ class MessageController extends GetxController implements GetxService{
     Response response = await messageServiceInterface.createMartChannel(driverId, orderId);
     if (response.statusCode == 200) {
       isLoading = false;
-      Map map = response.body;
-      String channelId = map['data']['channel']['id'];
-      String oId = map['data']['channel']['trip_id'] ?? orderId;
+      final channel = response.body['data']?['channel'];
+      if (channel == null || channel['id'] == null) {
+        update();
+        showCustomSnackBar('channel_creation_failed'.tr, isError: true);
+        return;
+      }
+      String channelId = channel['id'].toString();
+      String oId = (channel['trip_id'] ?? orderId).toString();
       Get.to(() => MartMessageScreen(channelId: channelId, orderId: oId, userName: driverName));
     } else {
       isLoading = false;

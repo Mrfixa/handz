@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -121,6 +122,10 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
       }
     } catch (e) {
       debugPrint('Mart tracking error: $e');
+      // Stop the 15s poll while offline so we don't drain battery/data;
+      // a manual refresh restarts it.
+      _pollTimer?.cancel();
+      if (!mounted) return;
       setState(() {
         _isOffline = true;
         _isLoading = false;
@@ -573,7 +578,15 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
       builder: (_) => Dialog(
         backgroundColor: Colors.black,
         child: InteractiveViewer(
-          child: Image.network(imageUrl, fit: BoxFit.contain),
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.contain,
+            progressIndicatorBuilder: (_, __, ___) =>
+                const Center(child: CircularProgressIndicator()),
+            errorWidget: (_, __, ___) => const Center(
+              child: Icon(Icons.image_not_supported_outlined, color: Colors.white, size: 48),
+            ),
+          ),
         ),
       ),
     );
@@ -602,6 +615,11 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   }
 
   void _showCancelConfirmation(BuildContext context) {
+    // Guard against acting on a stale status (e.g. screen reopened offline).
+    if (_currentStatus == 'delivered' || _currentStatus == 'cancelled') {
+      Get.snackbar('error'.tr, 'order_already_completed'.tr);
+      return;
+    }
     Get.dialog(
       AlertDialog(
         title: Text('cancel_order'.tr),

@@ -63,7 +63,7 @@ class _ParcelScreenState extends State<ParcelScreen> {
       child: Scaffold(
         body: Stack(children: [
           BodyWidget(
-            appBar: AppBarWidget(title: 'parcel_delivery'.tr),
+            appBar: AppBarWidget(title: 'parcel_delivery', showLogo: true),
             body: Padding(padding: const EdgeInsets.all(Dimensions.paddingSizeDefault), child: Column(children: [
 
               if (_isOffline)

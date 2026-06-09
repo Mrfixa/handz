@@ -213,7 +213,10 @@ class ChatController extends GetxController implements GetxService{
     }
     else if(response.statusCode == 400){
       isSending = false;
-      String message = response.body['errors'][0]['message'];
+      final errors = response.body['errors'];
+      String message = (errors is List && errors.isNotEmpty && errors[0] is Map && errors[0]['message'] != null)
+          ? errors[0]['message'].toString()
+          : 'failed_to_upload';
       if(message.contains("png  jpg  jpeg  csv  txt  xlx  xls  pdf")){
         message = "the_files_types_must_be";
       }
@@ -282,9 +285,17 @@ class ChatController extends GetxController implements GetxService{
         _rideChannel = channel;
 
         channel.bind("driver-ride-chat.$id").listen((event) {
-          if(id == jsonDecode(event.data!)['channel_conversation']['channel']['trip_id']){
-            messageModel!.data!.insert(0,Message.fromJson(jsonDecode(event.data!)['channel_conversation']));
-            update();
+          try {
+            final decoded = jsonDecode(event.data!);
+            final conv = decoded['channel_conversation'];
+            if (conv != null && id == conv['channel']?['trip_id']) {
+              if (messageModel?.data != null) {
+                messageModel!.data!.insert(0, Message.fromJson(conv));
+                update();
+              }
+            }
+          } catch (e) {
+            debugPrint('Ride chat event error: $e');
           }
         });
       } else {
@@ -320,11 +331,16 @@ class ChatController extends GetxController implements GetxService{
         martChannel.subscribe();
         _martChannel = martChannel;
         martChannel.bind("driver-mart-chat.$orderId").listen((event) {
-          final data = jsonDecode(event.data!);
-          final eventOrderId = data['order_id'] ?? data['channel_conversation']?['channel']?['trip_id'];
-          if (eventOrderId == orderId) {
-            messageModel!.data!.insert(0, Message.fromJson(data['channel_conversation']));
-            update();
+          try {
+            final data = jsonDecode(event.data!);
+            final eventOrderId = data['order_id'] ?? data['channel_conversation']?['channel']?['trip_id'];
+            final conv = data['channel_conversation'];
+            if (eventOrderId == orderId && conv != null && messageModel?.data != null) {
+              messageModel!.data!.insert(0, Message.fromJson(conv));
+              update();
+            }
+          } catch (e) {
+            debugPrint('Mart chat event error: $e');
           }
         });
       } else {
@@ -373,12 +389,16 @@ class ChatController extends GetxController implements GetxService{
   bool get channelRideStatus => _channelRideStatus;
   void findChannelRideStatus(String channelId) async{
     Response response = await chatServiceInterface.findChannelRideStatus(channelId);
-     if(response.body['data'] == "cancelled" || response.body['data'] == 'completed'){
-       _channelRideStatus = false;
-     }else{
-       _channelRideStatus = true;
-     }
-     update();
+    if(response.statusCode == 200 && response.body['data'] != null) {
+      if(response.body['data'] == "cancelled" || response.body['data'] == 'completed'){
+        _channelRideStatus = false;
+      }else{
+        _channelRideStatus = true;
+      }
+    } else {
+      _channelRideStatus = true; // default to enabled if check fails
+    }
+    update();
   }
 
 

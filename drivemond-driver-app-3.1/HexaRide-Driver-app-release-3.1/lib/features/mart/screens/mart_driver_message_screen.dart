@@ -267,13 +267,14 @@ class _MartDriverMessageScreenState extends State<MartDriverMessageScreen> {
                                 : chatController.isPickedImage
                                     ? SpinKitCircle(color: Theme.of(context).primaryColor, size: 20)
                                     : InkWell(
-                                        onTap: () {
+                                        onTap: chatController.isSending ? null : () {
                                           if (chatController.conversationController.text.trim().isEmpty &&
-                                              chatController.pickedImageFile!.isEmpty &&
+                                              (chatController.pickedImageFile?.isEmpty ?? true) &&
                                               chatController.otherFile == null) {
                                             showCustomSnackBar('write_something'.tr, isError: true);
-                                          } else if (chatController.conversationKey.currentState!
-                                              .validate()) {
+                                            return;
+                                          }
+                                          if (chatController.conversationKey.currentState?.validate() ?? false) {
                                             chatController.sendMartMessage(
                                                 widget.channelId, widget.orderId);
                                           }

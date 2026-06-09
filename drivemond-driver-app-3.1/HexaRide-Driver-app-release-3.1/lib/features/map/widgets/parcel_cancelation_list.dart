@@ -90,9 +90,13 @@ class _ParcelCancellationListState extends State<ParcelCancellationList> {
                 hintText: 'type_here_your_cancel_reason'.tr,
                 hintStyle: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).hintColor),
               ),
-              readOnly: (widget.isOngoing ?
-              tripController.parcelCancellationCauseList!.data!.ongoingRide!.length-1 :
-              tripController.parcelCancellationCauseList!.data!.acceptedRide!.length -1) != tripController.parcelCancellationCurrentIndex,
+              readOnly: (() {
+                final list = widget.isOngoing
+                    ? (tripController.parcelCancellationCauseList?.data?.ongoingRide ?? [])
+                    : (tripController.parcelCancellationCauseList?.data?.acceptedRide ?? []);
+                if (list.isEmpty) return false;
+                return (list.length - 1) != tripController.parcelCancellationCurrentIndex;
+              })(),
               maxLines: 2,
               style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall),
               onTap: () => Get.find<RideController>().focusOnBottomSheet(widget.expandableKey),

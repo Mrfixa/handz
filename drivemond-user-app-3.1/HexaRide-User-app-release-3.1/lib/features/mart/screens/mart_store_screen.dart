@@ -28,14 +28,17 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
 
   final List<String> _categories = ['all', 'food', 'drinks', 'snacks', 'essentials'];
 
-  // B16: running total for FAB
-  double get _cartTotal => _cartItems.fold(
-        0.0,
-        (sum, item) =>
-            sum +
-            (double.tryParse(item['price']?.toString() ?? '0') ?? 0.0) *
-                (item['quantity'] as int? ?? 1),
-      );
+  // B16: running total for FAB — guards against malformed/negative values
+  double get _cartTotal {
+    double total = 0.0;
+    for (final item in _cartItems) {
+      final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
+      final qty = item['quantity'] as int? ?? 1;
+      if (price <= 0 || qty <= 0) continue;
+      total += price * qty;
+    }
+    return total;
+  }
 
   @override
   void initState() {
@@ -88,7 +91,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'vito_mart'.tr),
+      appBar: AppBarWidget(title: 'vito_mart', showLogo: true),
       body: _isOffline ? _buildOfflineBody(context) : _buildBody(context),
       // B16: FAB shows count + running total
       floatingActionButton: _cartItems.isNotEmpty
@@ -150,9 +153,19 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
       child: TextField(
         controller: _searchController,
+        onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
           hintText: 'search_products'.tr,
           prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
@@ -193,18 +206,26 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     );
   }
 
-  // B12: AnimatedSwitcher keyed by category
+  // B12: AnimatedSwitcher keyed by category + live search query
   Widget _buildAnimatedContent(BuildContext context) {
-    final filtered = _selectedCategory == 'all'
-        ? _products
+    final query = _searchController.text.trim().toLowerCase();
+    var filtered = _selectedCategory == 'all'
+        ? List<Map<String, dynamic>>.from(_products)
         : _products.where((p) => p['category'] == _selectedCategory).toList();
 
+    if (query.isNotEmpty) {
+      filtered = filtered
+          .where((p) => (p['name']?.toString().toLowerCase() ?? '').contains(query))
+          .toList();
+    }
+
+    final stateKey = '${_selectedCategory}_$query';
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
       child: filtered.isEmpty
-          ? _buildEmptyState(context, key: ValueKey('empty_$_selectedCategory'))
-          : _buildProductGrid(context, filtered, key: ValueKey('grid_$_selectedCategory')),
+          ? _buildEmptyState(context, key: ValueKey('empty_$stateKey'))
+          : _buildProductGrid(context, filtered, key: ValueKey('grid_$stateKey')),
     );
   }
 
@@ -339,11 +360,15 @@ class _ProductCard extends StatefulWidget {
 class _ProductCardState extends State<_ProductCard> {
   bool _isAdding = false;
 
-  // B15: out-of-stock check
+  // B15: out-of-stock check — both fields must agree; missing field defaults to safe (in-stock)
   bool get _isOutOfStock {
-    final stock = widget.product['stock'] as int? ?? 1;
-    final isActive = widget.product['is_active'] as bool? ?? true;
-    return stock <= 0 || !isActive;
+    final stock = widget.product['stock'] as int?;
+    final isActive = widget.product['is_active'] as bool?;
+    // If stock is unknown, treat as available; if explicitly 0 or less, it's out.
+    final stockEmpty = stock != null && stock <= 0;
+    // If is_active is explicitly false the item is unavailable regardless of stock.
+    final inactive = isActive != null && !isActive;
+    return stockEmpty || inactive;
   }
 
   void _handleAdd() {
@@ -593,6 +618,19 @@ class _MartCartScreenState extends State<MartCartScreen> {
         color: Colors.red[400],
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
+      confirmDismiss: (_) async {
+        return await Get.dialog<bool>(
+              AlertDialog(
+                title: Text('remove_item'.tr),
+                content: Text('remove_item_confirmation'.tr),
+                actions: [
+                  TextButton(onPressed: () => Get.back(result: false), child: Text('no'.tr)),
+                  TextButton(onPressed: () => Get.back(result: true), child: Text('yes'.tr)),
+                ],
+              ),
+            ) ??
+            false;
+      },
       onDismissed: (_) {
         setState(() {
           final id = item['id'];
@@ -1000,7 +1038,10 @@ class _MartCartScreenState extends State<MartCartScreen> {
           _promoController.clear();
         });
       } else {
-        Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
+        // Surface the backend reason (expired, min-spend, invalid) when present.
+        Get.snackbar('error'.tr, _extractErrorMessage(response.body) == 'order_failed'.tr
+            ? 'invalid_promo_code'.tr
+            : _extractErrorMessage(response.body));
       }
     } catch (e) {
       debugPrint('Mart error: $e');
@@ -1011,10 +1052,15 @@ class _MartCartScreenState extends State<MartCartScreen> {
   }
 
   Future<void> _placeOrder() async {
-    if (_addressController.text.isEmpty) {
+    if (widget.cartItems.isEmpty) {
+      Get.snackbar('error'.tr, 'cart_is_empty'.tr);
+      return;
+    }
+    if (_addressController.text.trim().isEmpty) {
       Get.snackbar('error'.tr, 'please_enter_delivery_address'.tr);
       return;
     }
+    if (_isOrdering) return; // guard against double submit
 
     setState(() {
       _isOrdering = true;
@@ -1047,16 +1093,17 @@ class _MartCartScreenState extends State<MartCartScreen> {
       if (!mounted) return;
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.body['data'];
-        final orderId = data?['id'] ?? data?['order_id'] ?? '';
+        final orderId = (data?['id'] ?? data?['order_id'] ?? '').toString();
+        // Validate the order id BEFORE popping so the flow never dead-ends.
+        if (orderId.isEmpty) {
+          setState(() => _checkoutError = 'invalid_order_response'.tr);
+          return;
+        }
         Get.back();
         Get.snackbar('success'.tr, 'order_placed_successfully'.tr);
-        if (orderId.toString().isNotEmpty) {
-          Get.to(() => MartOrderTrackingScreen(orderId: orderId.toString()));
-        }
+        Get.to(() => MartOrderTrackingScreen(orderId: orderId));
       } else {
-        final message =
-            response.body['errors']?.first?['message'] ?? 'order_failed'.tr;
-        setState(() => _checkoutError = message.toString());
+        setState(() => _checkoutError = _extractErrorMessage(response.body));
       }
     } catch (e) {
       debugPrint('Mart error: $e');
@@ -1065,5 +1112,24 @@ class _MartCartScreenState extends State<MartCartScreen> {
     } finally {
       if (mounted) setState(() => _isOrdering = false);
     }
+  }
+
+  // Pulls a human-readable message out of any backend error shape.
+  String _extractErrorMessage(dynamic body) {
+    try {
+      if (body is Map) {
+        final errors = body['errors'];
+        if (errors is List && errors.isNotEmpty) {
+          final first = errors.first;
+          if (first is Map && first['message'] != null) {
+            return first['message'].toString();
+          }
+        }
+        if (body['message'] is String && (body['message'] as String).isNotEmpty) {
+          return body['message'];
+        }
+      }
+    } catch (_) {/* fall through to default */}
+    return 'order_failed'.tr;
   }
 }

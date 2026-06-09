@@ -12,6 +12,7 @@ import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
+import 'package:ride_sharing_user_app/helper/price_converter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -68,7 +69,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'delivery_details'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'delivery_details'.tr, regularAppbar: true, showLogo: true),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
           : Column(
@@ -167,7 +168,9 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
             ),
             if (_orderData['total_amount'] != null)
               Text(
-                '\$${_orderData['total_amount']}',
+                PriceConverter.convertPrice(
+                  double.tryParse(_orderData['total_amount']?.toString() ?? '0') ?? 0,
+                ),
                 style: textBold.copyWith(
                   fontSize: Dimensions.fontSizeLarge,
                   color: Theme.of(context).primaryColor,
@@ -484,7 +487,17 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
             ? null
             : () {
                 HapticFeedback.mediumImpact();
-                _markAsDelivered();
+                Get.dialog(AlertDialog(
+                  title: Text('confirm_delivery'.tr),
+                  content: Text('confirm_delivery_message'.tr),
+                  actions: [
+                    TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
+                    TextButton(
+                      onPressed: () { Get.back(); _markAsDelivered(); },
+                      child: Text('confirm'.tr),
+                    ),
+                  ],
+                ));
               };
         break;
       default:
@@ -680,7 +693,8 @@ class _SignatureDialogState extends State<SignatureDialog> {
     final picture = recorder.endRecording();
     final image = await picture.toImage(_canvasWidth.toInt(), _canvasHeight.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+    if (byteData == null) throw Exception('Failed to encode signature image');
+    return byteData.buffer.asUint8List();
   }
 
   @override

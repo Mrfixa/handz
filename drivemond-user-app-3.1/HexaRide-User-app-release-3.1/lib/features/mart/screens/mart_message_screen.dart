@@ -257,13 +257,16 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                                   : InkWell(
                                       onTap: () {
                                         if (messageController.conversationController.text.trim().isEmpty &&
-                                            messageController.pickedImageFile!.isEmpty &&
+                                            (messageController.pickedImageFile?.isEmpty ?? true) &&
                                             messageController.otherFile == null) {
                                           showCustomSnackBar('write_something'.tr, isError: true);
-                                        } else if (messageController.conversationKey.currentState!
-                                            .validate()) {
+                                          return;
+                                        }
+                                        if (messageController.conversationKey.currentState?.validate() ?? false) {
                                           messageController
                                               .sendMartMessage(widget.channelId, widget.orderId);
+                                        } else {
+                                          showCustomSnackBar('form_validation_failed'.tr, isError: true);
                                         }
                                         messageController.conversationController.clear();
                                       },

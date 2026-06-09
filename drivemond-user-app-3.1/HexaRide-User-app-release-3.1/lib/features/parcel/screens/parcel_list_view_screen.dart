@@ -23,8 +23,8 @@ class _ParcelListViewScreenState extends State<ParcelListViewScreen> {
         body: BodyWidget(
           appBar: AppBarWidget(title: widget.title.tr),
           body: GetBuilder<ParcelController>(builder: (parcelController){
-            return parcelController.parcelListModel == null || parcelController.parcelListModel!.data!.isEmpty ?
-            const NoDataWidget(title: 'no_trip_found') :
+            return parcelController.parcelListModel == null || (parcelController.parcelListModel!.data?.isEmpty ?? true) ?
+            const NoDataWidget(title: 'no_active_parcels') :
               ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
