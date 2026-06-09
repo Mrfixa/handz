@@ -52,7 +52,7 @@ class SignUpScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: Dimensions.paddingSizeSignUp),
 
-                  Text('choose_service'.tr,style: textBold.copyWith(fontSize: 22)),
+                  Text('choose_service'.tr,style: textBold.copyWith(fontSize: Dimensions.fontSizeOverLarge)),
                   const SizedBox(height: Dimensions.paddingSizeSmall),
 
                   Padding(
@@ -89,7 +89,7 @@ class SignUpScreen extends StatelessWidget {
                           authController.updateServiceType(true);
                         },
                         activeColor: Theme.of(context).primaryColor,
-                        checkColor: Colors.white,
+                        checkColor: Theme.of(context).colorScheme.onPrimary,
                         side: BorderSide(color: Theme.of(context).hintColor.withValues(alpha: 0.5)),
                         subtitle: Text('service_provide_text1'.tr,style: textRegular.copyWith(
                           color: authController.isRideShare ?
@@ -127,7 +127,7 @@ class SignUpScreen extends StatelessWidget {
                           authController.updateServiceType(false);
                         },
                         activeColor: Theme.of(context).primaryColor,
-                        checkColor: Colors.white,
+                        checkColor: Theme.of(context).colorScheme.onPrimary,
                         side: BorderSide(color: Theme.of(context).hintColor.withValues(alpha: 0.5)),
                         subtitle: Text('service_provide_text2'.tr, style: textRegular.copyWith(
                             color: authController.isParcelShare ?

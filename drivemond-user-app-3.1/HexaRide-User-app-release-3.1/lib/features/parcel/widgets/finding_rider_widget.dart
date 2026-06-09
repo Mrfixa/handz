@@ -58,21 +58,21 @@ class _FindingRiderWidgetState extends State<FindingRiderWidget> {
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               SizedBox(width: MediaQuery.of(context).size.width *0.27,
                   child: LinearProgressIndicator(
-                    backgroundColor: Colors.grey.withValues(alpha:.50),
+                    backgroundColor: Theme.of(context).hintColor.withValues(alpha: 0.4),
                     color: Theme.of(context).primaryColor,value: rideController.firstCount,
                   ),
               ),
 
               SizedBox(width: MediaQuery.of(context).size.width *0.27,
                   child: LinearProgressIndicator(
-                    backgroundColor: Colors.grey.withValues(alpha:.50),
+                    backgroundColor: Theme.of(context).hintColor.withValues(alpha: 0.4),
                     color: Theme.of(context).primaryColor,value: rideController.secondCount,
                   ),
               ),
 
               SizedBox(width: MediaQuery.of(context).size.width *0.27,
                   child: LinearProgressIndicator(
-                    backgroundColor: Colors.grey.withValues(alpha:.50),
+                    backgroundColor: Theme.of(context).hintColor.withValues(alpha: 0.4),
                     color: Theme.of(context).primaryColor,value: rideController.thirdCount,
                   ),
               ),
@@ -122,9 +122,9 @@ class _FindingRiderWidgetState extends State<FindingRiderWidget> {
                     widget.expandableKey.currentState?.contract();
                     rideController.initCountingTimeStates(isRestart: true);
                   },
-                  backgroundColor: Colors.grey.withValues(alpha:0.25),
+                  backgroundColor: Theme.of(context).hintColor.withValues(alpha: 0.2),
                   radius: 10,
-                  textColor: Get.isDarkMode ? Colors.white : Colors.black,
+                  textColor: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
 
@@ -175,7 +175,7 @@ class _FindingRiderWidgetState extends State<FindingRiderWidget> {
                       Get.find<LocalizationController>().isLtr ?
                       Icons.arrow_forward_ios_rounded :
                       Icons.keyboard_arrow_left,
-                      color: Colors.grey, size: 20.0,
+                      color: Theme.of(context).hintColor, size: 20.0,
                     )),
                 )),
                 isLtr: Get.find<LocalizationController>().isLtr,
@@ -218,9 +218,9 @@ class _FindingRiderWidgetState extends State<FindingRiderWidget> {
                     setState(() {});
                     rideController.initCountingTimeStates(isRestart: true);
                   },
-                  backgroundColor: Colors.grey.withValues(alpha:0.25),
+                  backgroundColor: Theme.of(context).hintColor.withValues(alpha: 0.2),
                   radius: 10,
-                  textColor: Get.isDarkMode ? Colors.white : Colors.black,
+                  textColor: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
 
@@ -297,10 +297,10 @@ class _ParcelProgressStepper extends StatelessWidget {
               color: done ? Theme.of(context).primaryColor : Theme.of(context).hintColor.withValues(alpha: 0.2),
               border: active ? Border.all(color: Theme.of(context).primaryColor, width: 2) : null,
             ),
-            child: done ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
+            child: done ? Icon(Icons.check, color: Theme.of(context).colorScheme.onPrimary, size: Dimensions.fontSizeDefault) : null,
           ),
-          const SizedBox(height: 4),
-          Text(step['label']! as String, style: textRegular.copyWith(fontSize: 10, color: done ? Theme.of(context).primaryColor : Theme.of(context).hintColor)),
+          const SizedBox(height: Dimensions.paddingSizeThree),
+          Text(step['label']! as String, style: textRegular.copyWith(fontSize: Dimensions.fontSizeExtraSmall, color: done ? Theme.of(context).primaryColor : Theme.of(context).hintColor)),
         ]);
       }),
     );

@@ -97,7 +97,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
                 const SizedBox(height: Dimensions.paddingSizeSmall),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeLarge),
                   child: Text(
                     'scan_qr_or_enter_token'.tr,
                     style: textRegular.copyWith(
@@ -122,8 +122,8 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
                         },
                       ));
                     },
-                    icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-                    label: Text('scan_qr_code'.tr, style: textBold.copyWith(color: Colors.white)),
+                    icon: Icon(Icons.qr_code_scanner, color: Theme.of(context).colorScheme.onPrimary),
+                    label: Text('scan_qr_code'.tr, style: textBold.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,
                       shape: RoundedRectangleBorder(

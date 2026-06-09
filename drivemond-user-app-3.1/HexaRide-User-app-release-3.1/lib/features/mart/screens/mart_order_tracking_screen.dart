@@ -174,12 +174,12 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-      color: Colors.orange,
+      color: Colors.amber.shade700,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
+          const Icon(Icons.wifi_off, color: Colors.white, size: Dimensions.iconSizeMedium),
+          const SizedBox(width: Dimensions.paddingSizeExtraSmall),
           Text('you_are_offline'.tr, style: textMedium.copyWith(color: Colors.white)),
         ],
       ),
@@ -210,12 +210,12 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                     '${'order'.tr} #${widget.orderId.length > 8 ? widget.orderId.substring(0, 8) : widget.orderId}',
                     style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Dimensions.paddingSizeThree),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Container(
                       key: ValueKey(_currentStatus),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeExtraSmall, vertical: Dimensions.paddingSizeThree),
                       decoration: BoxDecoration(
                         color: _getStatusColor(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
@@ -287,8 +287,8 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                         ),
                         child: Icon(
                           step['icon'] as IconData,
-                          color: isCompleted ? Colors.white : Theme.of(context).hintColor,
-                          size: 18,
+                          color: isCompleted ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).hintColor,
+                          size: Dimensions.iconSizeMedium,
                         ),
                       ),
                       const SizedBox(width: Dimensions.paddingSizeDefault),

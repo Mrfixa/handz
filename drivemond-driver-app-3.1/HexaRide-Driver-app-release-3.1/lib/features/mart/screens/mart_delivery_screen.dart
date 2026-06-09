@@ -109,12 +109,12 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-      color: Colors.orange,
+      color: Colors.amber.shade700,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
+          const Icon(Icons.wifi_off, color: Colors.white, size: Dimensions.iconSizeMedium),
+          const SizedBox(width: Dimensions.paddingSizeExtraSmall),
           Text(
             'you_are_offline'.tr,
             style: textMedium.copyWith(color: Colors.white),
@@ -148,9 +148,9 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                     '${'order'.tr} #${widget.orderId.length > 8 ? widget.orderId.substring(0, 8) : widget.orderId}',
                     style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Dimensions.paddingSizeThree),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeExtraSmall, vertical: Dimensions.paddingSizeThree),
                     decoration: BoxDecoration(
                       color: _getStatusColor(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
@@ -513,19 +513,19 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         onPressed: _isUpdating ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
         ),
         child: _isUpdating
-            ? const SizedBox(
+            ? SizedBox(
                 width: 24, height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
               )
             : Text(buttonText, style: textBold.copyWith(
                 fontSize: Dimensions.fontSizeDefault,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               )),
       ),
     );
@@ -716,8 +716,8 @@ class _SignatureDialogState extends State<SignatureDialog> {
             height: _canvasHeight,
             margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              color: Theme.of(context).colorScheme.surface,
+              border: Border.all(color: Theme.of(context).hintColor.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
             ),
             child: GestureDetector(
@@ -763,8 +763,9 @@ class _SignatureDialogState extends State<SignatureDialog> {
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
-                  child: Text('save'.tr, style: const TextStyle(color: Colors.white)),
+                  child: Text('save'.tr, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             ),

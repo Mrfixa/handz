@@ -101,10 +101,10 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
                 _navigateToCart();
               },
               backgroundColor: Theme.of(context).primaryColor,
-              icon: const Icon(Icons.shopping_cart, color: Colors.white),
+              icon: Icon(Icons.shopping_cart, color: Theme.of(context).colorScheme.onPrimary),
               label: Text(
                 '${'cart'.tr} (${_cartItems.length}) • \$${_cartTotal.toStringAsFixed(2)}',
-                style: textMedium.copyWith(color: Colors.white),
+                style: textMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary),
               ),
             )
           : null,
@@ -117,12 +117,12 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-          color: Colors.orange,
+          color: Colors.amber.shade700,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
+              const Icon(Icons.wifi_off, color: Colors.white, size: Dimensions.iconSizeMedium),
+              const SizedBox(width: Dimensions.paddingSizeExtraSmall),
               Text('you_are_offline'.tr, style: textMedium.copyWith(color: Colors.white)),
             ],
           ),
@@ -487,7 +487,7 @@ class _ProductCardState extends State<_ProductCard> {
                                       borderRadius:
                                           BorderRadius.circular(Dimensions.radiusSmall),
                                     ),
-                                    child: const Icon(Icons.add, color: Colors.white, size: 18),
+                                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: Dimensions.iconSizeSmall),
                                   ),
                                 ),
                               ),
@@ -790,14 +790,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
                         ),
                       ),
                       child: _isApplyingPromo
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                                  strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary))
                           : Text('apply'.tr,
                               style: textMedium.copyWith(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                   fontSize: Dimensions.fontSizeSmall)),
                     ),
                   ),
@@ -832,14 +832,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
                 final isSelected = _tipAmount == tip;
                 return Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeThree),
                     child: GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();
                         setState(() => _tipAmount = tip);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Theme.of(context).primaryColor
@@ -856,7 +856,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
                             tip == 0 ? 'no_tip'.tr : '\$${tip.toInt()}',
                             style: textMedium.copyWith(
                               color:
-                                  isSelected ? Colors.white : Theme.of(context).primaryColor,
+                                  isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).primaryColor,
                               fontSize: Dimensions.fontSizeSmall,
                             ),
                           ),
@@ -998,22 +998,22 @@ class _MartCartScreenState extends State<MartCartScreen> {
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
                 ),
               ),
               child: _isOrdering
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
                     )
                   : Text('place_order'.tr,
                       style: textBold.copyWith(
                           fontSize: Dimensions.fontSizeDefault,
-                          color: Colors.white)),
+                          color: Theme.of(context).colorScheme.onPrimary)),
             ),
           ),
         ],

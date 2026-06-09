@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
@@ -258,6 +259,7 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
                                   ? SpinKitCircle(color: Theme.of(context).cardColor, size: 20)
                                   : InkWell(
                                       onTap: () {
+                                        HapticFeedback.lightImpact();
                                         if (messageController.conversationController.text.trim().isEmpty &&
                                             (messageController.pickedImageFile?.isEmpty ?? true) &&
                                             messageController.otherFile == null) {
