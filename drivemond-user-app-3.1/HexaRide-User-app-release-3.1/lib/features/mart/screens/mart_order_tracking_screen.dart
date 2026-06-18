@@ -312,8 +312,55 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
     );
   }
 
+  Widget _buildCancelledCard(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
+      child: Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+              ),
+              child: Icon(Icons.cancel_outlined,
+                  color: Theme.of(context).colorScheme.error, size: 28),
+            ),
+            const SizedBox(width: Dimensions.paddingSizeDefault),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'order_cancelled_title'.tr,
+                    style: textBold.copyWith(
+                        color: Theme.of(context).colorScheme.error),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'order_cancelled'.tr,
+                    style: textRegular.copyWith(
+                      color: Theme.of(context).hintColor,
+                      fontSize: Dimensions.fontSizeSmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // B29: richer status timeline
   Widget _buildStatusTimeline(BuildContext context) {
+    if (_currentStepIndex == -1) {
+      return _buildCancelledCard(context);
+    }
     final steps = _statusSteps;
     return Card(
       child: Padding(

@@ -976,6 +976,7 @@
   "no_tip": "No tip",
   "order": "Order",
   "order_cancelled": "Order cancelled",
+  "order_cancelled_title": "Order Cancelled",
   "order_failed": "Order failed",
   "promo_applied": "Promo applied",
   "promo_validation_failed": "Promo validation failed",

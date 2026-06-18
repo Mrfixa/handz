@@ -20,6 +20,7 @@ class MartPendingOrdersScreen extends StatefulWidget {
 class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   List<dynamic> _orders = [];
   bool _isLoading = true;
+  bool _hasError = false;
   String? _acceptingOrderId; // tracks which specific order is being accepted
   Timer? _refreshTimer;
 
@@ -39,6 +40,7 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   }
 
   Future<void> _fetchOrders() async {
+    if (mounted) setState(() => _hasError = false);
     try {
       final response = await Get.find<ApiClient>().getData(AppConstants.martPendingOrders);
       if (!mounted) return;
@@ -53,7 +55,7 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
       }
     } catch (e) {
       debugPrint('Mart pending orders error: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _hasError = true; });
     }
   }
 
@@ -87,7 +89,20 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
       appBar: AppBarWidget(title: 'pending_mart_orders'.tr, regularAppbar: true, showLogo: true),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
-          : RefreshIndicator(
+          : _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+                      const SizedBox(height: Dimensions.paddingSizeSmall),
+                      Text('something_went_wrong'.tr),
+                      const SizedBox(height: Dimensions.paddingSizeSmall),
+                      TextButton(onPressed: _fetchOrders, child: Text('retry'.tr)),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
               onRefresh: _fetchOrders,
               color: Theme.of(context).primaryColor,
               child: _orders.isEmpty

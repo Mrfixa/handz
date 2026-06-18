@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,7 +60,7 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(myBackgroundMessageHandler);
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  await FlutterDownloader.initialize(debug: true, ignoreSsl: true);
+  await FlutterDownloader.initialize(debug: kDebugMode, ignoreSsl: false);
 
 
   runApp(MyApp(languages: languages, notificationData: remoteMessage?.data));

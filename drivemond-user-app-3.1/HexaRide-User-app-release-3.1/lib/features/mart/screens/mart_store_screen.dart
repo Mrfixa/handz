@@ -38,7 +38,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
       if (price <= 0 || qty <= 0) continue;
       total += price * qty;
     }
-    return total;
+    return total.clamp(0.0, 999999.99);
   }
 
   @override

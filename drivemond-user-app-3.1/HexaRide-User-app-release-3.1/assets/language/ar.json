@@ -925,6 +925,7 @@
   "no_tip": "بدون إكرامية",
   "order": "طلب",
   "order_cancelled": "تم إلغاء الطلب",
+  "order_cancelled_title": "تم إلغاء الطلب",
   "order_failed": "فشل الطلب",
   "order_notes": "ملاحظات الطلب",
   "order_placed_successfully": "تم تقديم الطلب بنجاح",

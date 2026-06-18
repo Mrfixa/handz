@@ -976,6 +976,7 @@
   "no_tip": "Sin propina",
   "order": "Pedido",
   "order_cancelled": "Pedido cancelado",
+  "order_cancelled_title": "Pedido Cancelado",
   "order_failed": "Pedido fallido",
   "promo_applied": "Promo aplicada",
   "promo_validation_failed": "Validación de promo fallida",
