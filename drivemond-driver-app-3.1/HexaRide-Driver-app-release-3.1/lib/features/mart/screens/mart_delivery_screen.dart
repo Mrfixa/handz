@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:convert';
+import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -71,7 +72,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     return Scaffold(
       appBar: AppBarWidget(title: 'delivery_details'.tr, regularAppbar: true, showLogo: true),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
+          ? _buildLoadingSkeleton(context)
           : Column(
               children: [
                 if (_isOffline) _buildOfflineBanner(context),
@@ -102,6 +103,42 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0);
+    final highlight = isDark ? const Color(0xFF404040) : const Color(0xFFF5F5F5);
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _shimmerBox(context, height: 100),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _shimmerBox(context, height: 80),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _shimmerBox(context, height: 70),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _shimmerBox(context, height: 120),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerBox(BuildContext context, {required double height}) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+      ),
     );
   }
 

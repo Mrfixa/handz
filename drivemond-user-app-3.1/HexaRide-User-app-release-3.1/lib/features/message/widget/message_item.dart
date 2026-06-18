@@ -55,7 +55,7 @@ class MessageItem extends StatelessWidget {
 
               unReadCount != 0 ?
               Container(height: 20, width: 20, decoration: BoxDecoration(
-                color: Colors.green,
+                color: Theme.of(context).colorScheme.tertiary,
                 borderRadius: BorderRadius.circular(10)),
                 child: Center(child: Text(unReadCount.toString(), style: textRegular.copyWith(color: Theme.of(context).cardColor)))) : const SizedBox()
 

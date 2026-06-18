@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/message/controllers/message_controller.dart';
@@ -138,7 +139,7 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
     return Scaffold(
       appBar: AppBarWidget(title: 'order_tracking'.tr),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor))
+          ? _buildLoadingSkeleton(context)
           : Column(
               children: [
                 if (_isOffline) _buildOfflineBanner(context),
@@ -167,6 +168,42 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0);
+    final highlight = isDark ? const Color(0xFF404040) : const Color(0xFFF5F5F5);
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _shimmerBox(context, height: 90),
+            const SizedBox(height: Dimensions.paddingSizeLarge),
+            _shimmerBox(context, height: 140),
+            const SizedBox(height: Dimensions.paddingSizeLarge),
+            _shimmerBox(context, height: 80),
+            const SizedBox(height: Dimensions.paddingSizeLarge),
+            _shimmerBox(context, height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerBox(BuildContext context, {required double height}) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+      ),
     );
   }
 
