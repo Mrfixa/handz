@@ -245,9 +245,9 @@ class ClientOtpAuthController extends Controller
             $from  = env('TWILIO_FROM_NUMBER');
 
             if ($sid && $token && $from) {
-                // Use Twilio if configured
+                // Use Twilio if configured; retry up to 3 times on transient network failures.
                 $client = new \Twilio\Rest\Client($sid, $token);
-                $client->messages->create($phone, ['from' => $from, 'body' => $message]);
+                retry(3, fn() => $client->messages->create($phone, ['from' => $from, 'body' => $message]), 1000);
             } else {
                 // Fallback: log only (works in dev / testing)
                 Log::info("OTP SMS to {$phone}: {$message}");

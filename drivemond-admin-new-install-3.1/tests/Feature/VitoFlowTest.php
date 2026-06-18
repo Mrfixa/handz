@@ -2181,6 +2181,7 @@ class VitoFlowTest extends TestCase
             'status' => 'picked_up', 'total_amount' => 15.00, 'tip_amount' => 0,
             'discount_amount' => 0, 'payment_status' => 'unpaid',
             'delivery_address' => 'Paid St',
+            'delivery_photo' => 'mart/photos/test.jpg', // proof required before delivery
         ]);
 
         Passport::actingAs($driver, ['AccessToDriver']);
@@ -2575,5 +2576,172 @@ class VitoFlowTest extends TestCase
         $names = collect($resp->json('data.data'))->pluck('name')->toArray();
         $this->assertContains('Active Product', $names);
         $this->assertNotContains('Inactive Product', $names);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 3 — Health endpoint
+    // -------------------------------------------------------------------------
+
+    public function test_health_endpoint_returns_ok(): void
+    {
+        $resp = $this->getJson('/api/health');
+        $resp->assertOk();
+        $resp->assertJsonPath('status', 'ok');
+        $this->assertArrayHasKey('checks', $resp->json());
+        $this->assertArrayHasKey('timestamp', $resp->json());
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 2 — Idempotency-Key middleware replays cached response
+    // -------------------------------------------------------------------------
+
+    public function test_idempotency_key_replays_cached_response(): void
+    {
+        $this->seedUserLevel('customer');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        Passport::actingAs($customer, ['AccessToCustomer']);
+
+        $product = MartProduct::create([
+            'id' => Str::uuid(), 'name' => 'Test Item', 'price' => 5.00,
+            'stock' => 10, 'is_active' => true,
+        ]);
+
+        if (!Schema::hasTable('business_settings')) {
+            Schema::create('business_settings', function (Blueprint $table) {
+                $table->string('key_name')->primary();
+                $table->text('value')->nullable();
+                $table->string('settings_type')->nullable();
+            });
+        }
+        DB::table('business_settings')->insertOrIgnore([
+            'key_name' => 'vito_mart_enabled', 'value' => '1', 'settings_type' => 'vito',
+        ]);
+
+        $idempotencyKey = Str::uuid()->toString();
+        $payload = ['items' => [['product_id' => $product->id, 'quantity' => 1]], 'delivery_address' => '123 Test St'];
+
+        // First request — processed
+        $first = $this->postJson('/api/customer/mart/order', $payload, ['Idempotency-Key' => $idempotencyKey]);
+        // Second request with the same key — must replay the cached response, not create a duplicate
+        $second = $this->postJson('/api/customer/mart/order', $payload, ['Idempotency-Key' => $idempotencyKey]);
+
+        // Both should have the same status code
+        $this->assertEquals($first->status(), $second->status(), 'Idempotent replay must return the same status');
+
+        // The replayed response must carry the Idempotency-Replayed header
+        if ($first->status() === 200) {
+            $this->assertEquals('true', $second->headers->get('Idempotency-Replayed'),
+                'Second call with same idempotency key should carry Idempotency-Replayed header');
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 1 — RFC 7807 error shape
+    // -------------------------------------------------------------------------
+
+    public function test_404_response_includes_rfc7807_fields(): void
+    {
+        $resp = $this->getJson('/api/nonexistent-vito-endpoint-xyz');
+        $resp->assertStatus(404);
+        $body = $resp->json();
+        // RFC 7807 additive keys must be present
+        $this->assertArrayHasKey('type', $body, 'RFC 7807 type field missing from 404 response');
+        $this->assertArrayHasKey('title', $body, 'RFC 7807 title field missing from 404 response');
+        $this->assertArrayHasKey('status', $body, 'RFC 7807 status field missing from 404 response');
+        $this->assertEquals(404, $body['status']);
+    }
+
+    // ========================================================================
+    // Tier 5a — new tests added by the audit
+    // ========================================================================
+
+    public function test_profile_verified_requires_both_names(): void
+    {
+        // Both null → 0
+        $user = new User();
+        $user->first_name = null;
+        $user->last_name = null;
+        $this->assertEquals(0, $user->isProfileVerified(), 'Both null must return 0');
+
+        // Only first_name set → 0 (last_name is null)
+        $user->first_name = 'Alice';
+        $user->last_name = null;
+        $this->assertEquals(0, $user->isProfileVerified(), 'Only first_name should return 0');
+
+        // Only last_name set → 0 (first_name is null)
+        $user->first_name = null;
+        $user->last_name = 'Smith';
+        $this->assertEquals(0, $user->isProfileVerified(), 'Only last_name should return 0');
+
+        // Both set → 1
+        $user->first_name = 'Alice';
+        $user->last_name = 'Smith';
+        $this->assertEquals(1, $user->isProfileVerified(), 'Both set must return 1');
+    }
+
+    public function test_ride_atomic_accept_rejects_parcel_trip_id(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        $driver = $this->createUser('driver', ['username' => 'rideatomicdriver']);
+        $this->createUserAccount($driver);
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(),
+            'last_ride_completed_at' => now(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        // Create a parcel trip (NOT a ride_request)
+        $parcelId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $parcelId, 'customer_id' => $customer->id,
+            'current_status' => 'pending', 'driver_id' => null,
+            'type' => 'parcel',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        // Sending a parcel ID to the ride endpoint must be rejected (404)
+        $resp = $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $parcelId]);
+        $resp->assertStatus(404);
+    }
+
+    public function test_mart_delivered_requires_proof(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        $driver = $this->createUser('driver', ['username' => 'proofdriver']);
+        $this->createUserAccount($driver);
+
+        // Order is in picked_up state with NO delivery proof
+        $order = MartOrder::create([
+            'id' => Str::uuid(), 'ref_id' => 'REF-PROOF-01',
+            'customer_id' => $customer->id, 'driver_id' => $driver->id,
+            'status' => 'picked_up', 'total_amount' => 20.00, 'tip_amount' => 0,
+            'discount_amount' => 0, 'payment_status' => 'unpaid',
+            'delivery_address' => 'Proof St',
+            'delivery_photo' => null,
+            'signature_image' => null,
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $resp = $this->putJson('/api/driver/mart/update-status', [
+            'order_id' => $order->id,
+            'status' => 'delivered',
+        ]);
+
+        // Must be rejected — proof required before marking delivered
+        $resp->assertStatus(422);
+        $body = $resp->json();
+        $this->assertNotEmpty($body['errors'] ?? [], 'Error message must be present');
     }
 }

@@ -39,20 +39,21 @@ class _SignInScreenState extends State<SignInScreen> {
   void initState() {
     super.initState();
 
-    if(Get.find<AuthController>().getUserNumber(false).isNotEmpty) {
-      phoneController.text =  Get.find<AuthController>().getUserNumber(false);
-    }
-    passwordController.text = Get.find<AuthController>().getUserPassword(false);
-
-    if(passwordController.text.isNotEmpty) {
-      Get.find<AuthController>().setRememberMe();
+    if (Get.find<AuthController>().getUserNumber(false).isNotEmpty) {
+      phoneController.text = Get.find<AuthController>().getUserNumber(false);
     }
 
-    if(Get.find<AuthController>().getLoginCountryCode(false).isNotEmpty) {
+    Get.find<AuthController>().getUserPassword(false).then((pwd) {
+      if (mounted && pwd.isNotEmpty) {
+        passwordController.text = pwd;
+        Get.find<AuthController>().setRememberMe();
+      }
+    });
+
+    if (Get.find<AuthController>().getLoginCountryCode(false).isNotEmpty) {
       Get.find<AuthController>().countryDialCode = Get.find<AuthController>().getLoginCountryCode(false);
-    }else if(Get.find<ConfigController>().config!.countryCode != null){
+    } else if (Get.find<ConfigController>().config!.countryCode != null) {
       Get.find<AuthController>().countryDialCode = CountryCode.fromCountryCode(Get.find<ConfigController>().config!.countryCode!).dialCode!;
-
     }
   }
 
@@ -164,8 +165,8 @@ class _SignInScreenState extends State<SignInScreen> {
                 }else if(password.isEmpty) {
                   showCustomSnackBar('password_is_required'.tr);
                   FocusScope.of(context).requestFocus(passwordNode);
-                }else if(password.length < 8) {
-                  showCustomSnackBar('minimum_password_length_is_8'.tr);
+                }else if(!RegExp(r'^\d{6}$').hasMatch(password)) {
+                  showCustomSnackBar('pin_must_be_6_digits'.tr);
                 }else {
                   authController.login(authController.countryDialCode, phone, password);
                 }

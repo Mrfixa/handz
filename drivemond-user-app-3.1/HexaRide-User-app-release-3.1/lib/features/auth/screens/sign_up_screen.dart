@@ -58,6 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void _submit(AuthController authController) {
     HapticFeedback.mediumImpact();
     final fName = authController.fNameController.text.trim();
+    final lName = authController.lNameController.text.trim();
     final phone = authController.phoneController.text.trim();
     final password = authController.passwordController.text;
     final confirmPassword = authController.confirmPasswordController.text;
@@ -65,14 +66,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (fName.isEmpty) {
       showCustomSnackBar('first_name_is_required'.tr);
       FocusScope.of(context).requestFocus(_fNameNode);
+    } else if (lName.isEmpty) {
+      showCustomSnackBar('last_name_is_required'.tr);
+      FocusScope.of(context).requestFocus(_lNameNode);
     } else if (!GetUtils.isPhoneNumber(authController.countryDialCode + phone)) {
       showCustomSnackBar('phone_number_is_not_valid'.tr);
       FocusScope.of(context).requestFocus(_phoneNode);
     } else if (password.isEmpty) {
       showCustomSnackBar('password_is_required'.tr);
       FocusScope.of(context).requestFocus(_passwordNode);
-    } else if (password.length < 8) {
-      showCustomSnackBar('minimum_password_length_is_8'.tr);
+    } else if (!RegExp(r'^\d{6}$').hasMatch(password)) {
+      showCustomSnackBar('pin_must_be_6_digits'.tr);
       FocusScope.of(context).requestFocus(_passwordNode);
     } else if (confirmPassword.isEmpty) {
       showCustomSnackBar('confirm_password_is_required'.tr);
@@ -98,6 +102,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           } else {
             showCustomSnackBar('sms_gateway_not_integrate'.tr);
           }
+        } else {
+          showCustomSnackBar('something_went_wrong'.tr);
         }
       });
     }

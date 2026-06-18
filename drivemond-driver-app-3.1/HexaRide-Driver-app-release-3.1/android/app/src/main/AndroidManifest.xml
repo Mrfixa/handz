@@ -65,8 +65,8 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:host="YOUR_DOMAIN_HERE" android:scheme="http"/>
-                <data android:host="YOUR_DOMAIN_HERE" android:scheme="https"/>
+                <data android:host="dacatlon.store" android:scheme="http"/>
+                <data android:host="dacatlon.store" android:scheme="https"/>
                 <data android:pathPrefix="/locate-driver" />
             </intent-filter>
         </activity>

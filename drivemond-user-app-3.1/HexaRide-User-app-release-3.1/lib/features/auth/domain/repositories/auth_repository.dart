@@ -197,20 +197,21 @@ class AuthRepository implements AuthRepositoryInterface{
 
   @override
   Future<void> saveUserNumberAndPassword(String code, String number, String password, bool externalUser) async {
-    if(externalUser){
+    if (externalUser) {
       try {
-        await sharedPreferences.setString(AppConstants.externalUserPassword, password);
+        await Get.find<FlutterSecureStorage>().write(key: AppConstants.externalUserPassword, value: password);
+        await sharedPreferences.remove(AppConstants.externalUserPassword);
         await sharedPreferences.setString(AppConstants.externalUserPhone, number);
         await sharedPreferences.setString(AppConstants.externalUserCountryCode, code);
       } catch (e) {
         rethrow;
       }
-    }else{
+    } else {
       try {
-        await sharedPreferences.setString(AppConstants.userPassword, password);
+        await Get.find<FlutterSecureStorage>().write(key: AppConstants.userPassword, value: password);
+        await sharedPreferences.remove(AppConstants.userPassword);
         await sharedPreferences.setString(AppConstants.userNumber, number);
         await sharedPreferences.setString(AppConstants.loginCountryCode, code);
-
       } catch (e) {
         rethrow;
       }
@@ -238,11 +239,11 @@ class AuthRepository implements AuthRepositoryInterface{
 
 
   @override
-  String getUserPassword(bool externalUser) {
-    if(externalUser){
-      return sharedPreferences.getString(AppConstants.externalUserPassword) ?? "";
-    }else{
-      return sharedPreferences.getString(AppConstants.userPassword) ?? "";
+  Future<String> getUserPassword(bool externalUser) async {
+    if (externalUser) {
+      return await Get.find<FlutterSecureStorage>().read(key: AppConstants.externalUserPassword) ?? "";
+    } else {
+      return await Get.find<FlutterSecureStorage>().read(key: AppConstants.userPassword) ?? "";
     }
   }
 
@@ -250,6 +251,8 @@ class AuthRepository implements AuthRepositoryInterface{
 
   @override
   Future<bool> clearUserNumberAndPassword() async {
+    await Get.find<FlutterSecureStorage>().delete(key: AppConstants.userPassword);
+    await Get.find<FlutterSecureStorage>().delete(key: AppConstants.externalUserPassword);
     await sharedPreferences.remove(AppConstants.userPassword);
     return await sharedPreferences.remove(AppConstants.userNumber);
   }

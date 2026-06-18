@@ -976,6 +976,7 @@
   "no_tip": "No tip",
   "order": "Order",
   "order_cancelled": "Order cancelled",
+  "order_cancelled_title": "Order Cancelled",
   "order_failed": "Order failed",
   "promo_applied": "Promo applied",
   "promo_validation_failed": "Promo validation failed",
@@ -1034,6 +1035,8 @@
   "pay_with_card": "Pay with Card",
   "select_payment": "Select Payment",
   "location_permission_denied": "Location permission denied",
+  "location_service_disabled": "Location services are disabled. Please enable GPS.",
+  "location_fetch_failed": "Could not get current location. Please try again.",
   "enable_location_settings": "Enable in Settings",
   "go_to_settings": "Go to Settings",
   "parcel_request_submitted": "Parcel request submitted!",
@@ -1074,5 +1077,8 @@
   "confirm_delivery": "Confirm Delivery",
   "confirm_delivery_message": "Mark this order as delivered? This cannot be undone.",
   "browse_products": "Browse Products",
-  "tap_to_select": "Tap to select"
+  "tap_to_select": "Tap to select",
+  "order_in_transit_cannot_cancel": "Order is in transit and cannot be cancelled",
+  "rate_your_delivery": "Rate Your Delivery",
+  "optional_comment": "Leave a comment (optional)"
 }

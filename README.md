@@ -83,15 +83,45 @@ cd drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
 flutter test test/vito_flows_test.dart
 ```
 
+## Production Checklist
+
+| Item | Status | Notes |
+|---|---|---|
+| Payment / wallet atomicity | ✅ Done | Triple-layer: app logic + DB unique + webhook dedup |
+| Stripe idempotency | ✅ Done | `stripe_event_id` unique constraint + IdempotencyKey middleware |
+| PIN + QR auth (Passport) | ✅ Done | 6-digit PIN, bcrypt, 5-attempt lockout |
+| RFC 7807 error responses | ✅ Done | Additive — legacy keys preserved for Flutter clients |
+| Structured logging + Request-ID | ✅ Done | `json_stderr` channel, `X-Request-Id` header propagation |
+| Backend Sentry | ⚙️ Needs `SENTRY_LARAVEL_DSN` secret | No-op without DSN |
+| Health endpoint `GET /api/health` | ✅ Done | Unauthenticated, throttled; checks DB + cache |
+| Business metrics `GET /api/admin/metrics` | ✅ Done | Admin-only, 60s cache |
+| Idempotency replay (POST/PUT/PATCH) | ✅ Done | Works with file cache; Redis recommended for multi-node |
+| External call retry (Stripe, Twilio) | ✅ Done | `retry(3, …, 500ms backoff)` |
+| Ride-timeout auto-cancel job | ⚙️ Needs queue worker + Redis | `QUEUE_CONNECTION=redis` |
+| Flutter offline action queue | ✅ Done | SQLite-backed, flushes on reconnect |
+| Flutter Crashlytics | ✅ Done | Both apps wired; user app added parity with driver app |
+| Security headers middleware | ✅ Done | X-Content-Type-Options, X-Frame-Options, Referrer-Policy |
+| `security.txt` | ✅ Done | `public/.well-known/security.txt` |
+| PIN validation (client) | ✅ Done | Fixed: `^\d{6}$` regex matches backend `digits:6` rule |
+| Dark/light theme consistency | ✅ Done | Hardcoded colors replaced with theme tokens |
+| Shimmer skeleton loaders | ✅ Done | Mart tracking + delivery screens |
+| EN/ES/AR localization parity | ✅ Done | Test enforces parity across all three files |
+| CI coverage artifacts | ✅ Done | PHP (clover) + Flutter (lcov) uploaded; ratcheted floor |
+| 80% test coverage gate | ⬜ Deferred | Ratchet `PHP_COVERAGE_FLOOR`/`FLUTTER_COVERAGE_FLOOR` upward as tests grow |
+| K6 load test | ⬜ Deferred | Needs target infra; scripts can be written against `/api/health` |
+
+See `PRODUCTION_DEPLOYMENT.md` for rollout steps, required secrets, and rollback procedures.
+
 ## CI/CD
 
 The GitHub Actions workflow (`.github/workflows/vito-ci.yml`) runs on every push/PR to `master`:
 
-- PHPStan static analysis on VITO-specific controllers
-- PHPUnit tests (8 VITO flow tests)
+- PHPStan static analysis (level 0) on all 8 Vito controllers
+- PHPUnit tests (73 Vito flow tests) with Xdebug coverage artifact
 - Flutter analyze on both apps
-- Flutter tests on both apps
-- Debug APK builds (uploaded as artifacts)
+- Flutter tests with lcov coverage artifact
+- Debug APK builds (uploaded as artifacts, 14-day retention)
+- Ratcheted coverage floor check (raise `PHP_COVERAGE_FLOOR`/`FLUTTER_COVERAGE_FLOOR` as coverage grows)
 
 ## Environment Secrets (GitHub Actions)
 
@@ -102,4 +132,4 @@ The GitHub Actions workflow (`.github/workflows/vito-ci.yml`) runs on every push
 
 ## Localization
 
-Both apps support EN, ES, and AR translations. Translation files are in `assets/language/`. All Vito-specific strings are translated in all supported languages.
+Both apps support EN, ES, and AR translations. Translation files are in `assets/language/`. All Vito-specific strings are translated in all supported languages. Language picker shows EN + ES only; AR translations are maintained for parity but not surfaced in the picker.

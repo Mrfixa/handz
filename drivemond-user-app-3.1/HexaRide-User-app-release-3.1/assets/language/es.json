@@ -976,6 +976,7 @@
   "no_tip": "Sin propina",
   "order": "Pedido",
   "order_cancelled": "Pedido cancelado",
+  "order_cancelled_title": "Pedido Cancelado",
   "order_failed": "Pedido fallido",
   "promo_applied": "Promo aplicada",
   "promo_validation_failed": "Validación de promo fallida",
@@ -1034,6 +1035,8 @@
   "pay_with_card": "Pagar con Tarjeta",
   "select_payment": "Seleccionar Pago",
   "location_permission_denied": "Permiso de ubicación denegado",
+  "location_service_disabled": "Los servicios de ubicación están desactivados. Por favor, activa el GPS.",
+  "location_fetch_failed": "No se pudo obtener la ubicación actual. Por favor, inténtalo de nuevo.",
   "enable_location_settings": "Activar en Configuración",
   "go_to_settings": "Ir a Configuración",
   "parcel_request_submitted": "¡Solicitud de paquete enviada!",
@@ -1074,5 +1077,8 @@
   "confirm_delivery": "Confirmar entrega",
   "confirm_delivery_message": "¿Marcar este pedido como entregado? Esta acción no se puede deshacer.",
   "browse_products": "Explorar productos",
-  "tap_to_select": "Toca para seleccionar"
+  "tap_to_select": "Toca para seleccionar",
+  "order_in_transit_cannot_cancel": "El pedido está en camino y no puede cancelarse",
+  "rate_your_delivery": "Califica tu entrega",
+  "optional_comment": "Deja un comentario (opcional)"
 }

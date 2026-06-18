@@ -38,15 +38,17 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   void initState() {
+    super.initState();
     final savedUsername = Get.find<AuthController>().getUserNumber();
-    if(savedUsername.isNotEmpty){
+    if (savedUsername.isNotEmpty) {
       usernameController.text = savedUsername;
     }
-    pinController.text = Get.find<AuthController>().getUserPassword();
-    if(pinController.text != ''){
-      Get.find<AuthController>().setRememberMe();
-    }
-    super.initState();
+    Get.find<AuthController>().getUserPassword().then((pwd) {
+      if (mounted && pwd.isNotEmpty) {
+        pinController.text = pwd;
+        Get.find<AuthController>().setRememberMe();
+      }
+    });
   }
 
   @override

@@ -114,9 +114,9 @@ Route::post('ride/store-screenshot', [NewDriverTripController::class, 'storeScre
 */
 Route::group(['prefix' => 'driver', 'middleware' => ['auth:api', 'maintenance_mode', 'scope:AccessToDriver']], function () {
     Route::group(['prefix' => 'ride'], function () {
-        Route::post('atomic-accept', [\Modules\TripManagement\Http\Controllers\Api\Driver\VitoTripController::class, 'atomicAccept']);
+        Route::middleware('idempotent')->post('atomic-accept', [\Modules\TripManagement\Http\Controllers\Api\Driver\VitoTripController::class, 'atomicAccept']);
     });
     Route::group(['prefix' => 'parcel'], function () {
-        Route::post('atomic-accept', [\Modules\TripManagement\Http\Controllers\Api\Driver\VitoParcelController::class, 'atomicAcceptParcel']);
+        Route::middleware('idempotent')->post('atomic-accept', [\Modules\TripManagement\Http\Controllers\Api\Driver\VitoParcelController::class, 'atomicAcceptParcel']);
     });
 });

@@ -62,16 +62,18 @@ class ApiClient extends GetxService {
     }
   }
 
-  Future<Response> postData(String uri, dynamic body, {Map<String, String>? headers}) async {
+  Future<Response> postData(String uri, dynamic body, {Map<String, String>? headers, String? idempotencyKey}) async {
     try {
       if(kDebugMode) {
         log('====> API Call: $uri\nHeader: $_mainHeaders');
         log('====> API Body: $body');
       }
+      final effectiveHeaders = Map<String, String>.from(headers ?? _mainHeaders);
+      if (idempotencyKey != null) effectiveHeaders['Idempotency-Key'] = idempotencyKey;
       http.Response response = await http.post(
         Uri.parse(appBaseUrl+uri),
         body: jsonEncode(body),
-        headers: headers ?? _mainHeaders,
+        headers: effectiveHeaders,
       ).timeout(Duration(seconds: timeoutInSeconds));
       return handleResponse(response, uri);
     } catch (e) {
@@ -240,7 +242,13 @@ class ApiClient extends GetxService {
       headers: response.headers, statusCode: response.statusCode, statusText: response.reasonPhrase,
     );
     if(localResponse.statusCode != 200 && localResponse.body != null && localResponse.body is !String) {
-      if(localResponse.body.toString().startsWith('{errors: [{code:')) {
+      // Prefer RFC 7807 `title`/`detail` when present (additive backend fields); fall back to legacy format.
+      final title = localResponse.body['title'];
+      final detail = localResponse.body['detail'];
+      if (title != null) {
+        final text = (detail != null && detail.toString().isNotEmpty) ? detail.toString() : title.toString();
+        localResponse = Response(statusCode: localResponse.statusCode, body: localResponse.body, statusText: text);
+      } else if(localResponse.body.toString().startsWith('{errors: [{code:')) {
         ErrorResponse errorResponse = ErrorResponse.fromJson(localResponse.body);
         localResponse = Response(statusCode: localResponse.statusCode, body: localResponse.body, statusText: errorResponse.errors![0].message);
       }else if(localResponse.body.toString().startsWith('{message')) {

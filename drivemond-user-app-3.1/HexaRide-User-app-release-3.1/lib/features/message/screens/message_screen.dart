@@ -122,7 +122,7 @@ class _MessageScreenState extends State<MessageScreen> {
                         ),
                         Positioned(right: 5, child: InkWell(
                           onTap: () => messageController.pickMultipleImage(true,index: index),
-                          child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                          child: Icon(Icons.cancel_outlined, color: Theme.of(context).colorScheme.error),
                         )),
                       ]);
                     },
@@ -138,7 +138,7 @@ class _MessageScreenState extends State<MessageScreen> {
                   Positioned(top: 0, right: 0,
                     child: InkWell(
                       onTap: () => messageController.pickOtherFile(true),
-                      child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                      child: Icon(Icons.cancel_outlined, color: Theme.of(context).colorScheme.error),
                     ),
                   ),
                 ]) :
@@ -246,7 +246,7 @@ class _MessageScreenState extends State<MessageScreen> {
                 SizedBox(height: 50, child: Container(
                   padding: EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha:0.75), borderRadius: BorderRadius.circular(5),
+                    color: Theme.of(context).hintColor.withValues(alpha:0.75), borderRadius: BorderRadius.circular(5),
                   ),
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(Icons.block),

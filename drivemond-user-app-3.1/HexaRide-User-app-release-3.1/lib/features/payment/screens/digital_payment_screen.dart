@@ -28,7 +28,7 @@ class DigitalPaymentScreen extends StatefulWidget {
 class DigitalPaymentScreenState extends State<DigitalPaymentScreen> {
   String? selectedUrl;
   double value = 0.0;
-  final bool _isLoading = true;
+  bool _isLoading = true;
 
 
   PullToRefreshController? pullToRefreshController;
@@ -56,6 +56,7 @@ class DigitalPaymentScreenState extends State<DigitalPaymentScreen> {
       urlRequest: URLRequest(url: WebUri(selectedUrl!)),
       settings: settings,
     );
+    if (mounted) setState(() => _isLoading = false);
   }
 
 

@@ -85,6 +85,7 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     tabController.dispose();
+    scrollController.dispose();
     super.dispose();
   }
 

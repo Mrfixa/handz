@@ -42,7 +42,7 @@ class AuthService implements AuthServiceInterface{
   }
 
   @override
-  String getUserPassword(bool externalUser) {
+  Future<String> getUserPassword(bool externalUser) async {
     return authRepositoryInterface.getUserPassword(externalUser);
   }
 
