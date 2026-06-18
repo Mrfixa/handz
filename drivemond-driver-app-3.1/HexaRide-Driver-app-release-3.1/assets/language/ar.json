@@ -1037,5 +1037,7 @@
   "confirm_delivery": "تأكيد التسليم",
   "confirm_delivery_message": "هل تريد تعليم هذا الطلب بأنه تم تسليمه؟ لا يمكن التراجع عن ذلك.",
   "browse_products": "تصفح المنتجات",
-  "new_orders_appear_here": "ستظهر الطلبات الجديدة هنا تلقائياً"
+  "new_orders_appear_here": "ستظهر الطلبات الجديدة هنا تلقائياً",
+  "retry_delivery": "إعادة محاولة التسليم",
+  "delivery_status_update_failed_retry": "تم رفع الدليل لكن تحديث الحالة فشل. اضغط إعادة المحاولة للمحاولة مجدداً."
 }

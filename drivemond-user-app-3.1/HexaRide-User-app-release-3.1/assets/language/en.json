@@ -1076,5 +1076,8 @@
   "confirm_delivery": "Confirm Delivery",
   "confirm_delivery_message": "Mark this order as delivered? This cannot be undone.",
   "browse_products": "Browse Products",
-  "tap_to_select": "Tap to select"
+  "tap_to_select": "Tap to select",
+  "order_in_transit_cannot_cancel": "Order is in transit and cannot be cancelled",
+  "rate_your_delivery": "Rate Your Delivery",
+  "optional_comment": "Leave a comment (optional)"
 }

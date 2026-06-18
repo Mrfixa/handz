@@ -49,7 +49,7 @@ class AuthService implements AuthServiceInterface{
   }
 
   @override
-  String getUserPassword() {
+  Future<String> getUserPassword() async {
     return authRepositoryInterface.getUserPassword();
   }
 

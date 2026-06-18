@@ -54,9 +54,8 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
   Future<void> _saveTokenToHistory(String token, bool isValid) async {
     final prefs = await SharedPreferences.getInstance();
     final entry = {
-      'token': token.length > 12 ? '${token.substring(0, 6)}...${token.substring(token.length - 6)}' : token,
-      'fullToken': token,
-      'timestamp': DateTime.now().toIso8601String(),
+      'token': '...${token.substring(token.length >= 8 ? token.length - 8 : 0)}',
+      'validated_at': DateTime.now().toIso8601String(),
       'valid': isValid,
     };
     _tokenHistory.insert(0, entry);
@@ -239,12 +238,9 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
           ),
           title: Text(entry['token'] ?? '', style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall)),
           subtitle: Text(
-            _formatTimestamp(entry['timestamp'] ?? ''),
+            _formatTimestamp(entry['validated_at'] ?? ''),
             style: textRegular.copyWith(fontSize: 10, color: Theme.of(context).hintColor),
           ),
-          onTap: () {
-            _tokenController.text = entry['fullToken'] ?? '';
-          },
         ))),
       ],
     );

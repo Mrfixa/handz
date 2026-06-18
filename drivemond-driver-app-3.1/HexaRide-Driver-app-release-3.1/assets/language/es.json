@@ -1079,5 +1079,7 @@
   "select_country_code": "Por favor selecciona un código de país",
   "confirm_delivery_message": "¿Marcar este pedido como entregado? Esta acción no se puede deshacer.",
   "browse_products": "Explorar productos",
-  "new_orders_appear_here": "Los nuevos pedidos aparecerán aquí automáticamente"
+  "new_orders_appear_here": "Los nuevos pedidos aparecerán aquí automáticamente",
+  "retry_delivery": "Reintentar entrega",
+  "delivery_status_update_failed_retry": "Prueba subida pero la actualización de estado falló. Toca Reintentar para volver a intentarlo."
 }

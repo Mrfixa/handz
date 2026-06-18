@@ -25,7 +25,7 @@ abstract class AuthServiceInterface{
   bool clearSharedData();
   Future<void> saveUserNumberAndPassword(String code, String number, String password, bool externalUser);
   String getUserNumber(bool externalUser);
-  String getUserPassword(bool externalUser);
+  Future<String> getUserPassword(bool externalUser);
   Future<bool> clearUserNumberAndPassword();
   bool clearSharedAddress();
   Future<dynamic> permanentlyDelete();

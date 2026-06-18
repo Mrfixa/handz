@@ -98,6 +98,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           } else {
             showCustomSnackBar('sms_gateway_not_integrate'.tr);
           }
+        } else {
+          showCustomSnackBar('something_went_wrong'.tr);
         }
       });
     }

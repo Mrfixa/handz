@@ -1018,5 +1018,8 @@
   "tap_to_select": "اضغط للاختيار",
   "location_permission_denied": "تم رفض إذن الموقع",
   "location_service_disabled": "خدمات الموقع معطلة. يرجى تفعيل GPS.",
-  "location_fetch_failed": "تعذر الحصول على الموقع الحالي. يرجى المحاولة مرة أخرى."
+  "location_fetch_failed": "تعذر الحصول على الموقع الحالي. يرجى المحاولة مرة أخرى.",
+  "order_in_transit_cannot_cancel": "الطلب في طريقه ولا يمكن إلغاؤه",
+  "rate_your_delivery": "قيّم توصيلتك",
+  "optional_comment": "اترك تعليقاً (اختياري)"
 }

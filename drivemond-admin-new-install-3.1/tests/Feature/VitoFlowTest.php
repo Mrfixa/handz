@@ -2651,4 +2651,97 @@ class VitoFlowTest extends TestCase
         $this->assertArrayHasKey('status', $body, 'RFC 7807 status field missing from 404 response');
         $this->assertEquals(404, $body['status']);
     }
+
+    // ========================================================================
+    // Tier 5a — new tests added by the audit
+    // ========================================================================
+
+    public function test_profile_verified_requires_both_names(): void
+    {
+        // Both null → 0
+        $user = new User();
+        $user->first_name = null;
+        $user->last_name = null;
+        $this->assertEquals(0, $user->isProfileVerified(), 'Both null must return 0');
+
+        // Only first_name set → 0 (last_name is null)
+        $user->first_name = 'Alice';
+        $user->last_name = null;
+        $this->assertEquals(0, $user->isProfileVerified(), 'Only first_name should return 0');
+
+        // Only last_name set → 0 (first_name is null)
+        $user->first_name = null;
+        $user->last_name = 'Smith';
+        $this->assertEquals(0, $user->isProfileVerified(), 'Only last_name should return 0');
+
+        // Both set → 1
+        $user->first_name = 'Alice';
+        $user->last_name = 'Smith';
+        $this->assertEquals(1, $user->isProfileVerified(), 'Both set must return 1');
+    }
+
+    public function test_ride_atomic_accept_rejects_parcel_trip_id(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        $driver = $this->createUser('driver', ['username' => 'rideatomicdriver']);
+        $this->createUserAccount($driver);
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(),
+            'last_ride_completed_at' => now(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        // Create a parcel trip (NOT a ride_request)
+        $parcelId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $parcelId, 'customer_id' => $customer->id,
+            'current_status' => 'pending', 'driver_id' => null,
+            'type' => 'parcel',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        // Sending a parcel ID to the ride endpoint must be rejected (404)
+        $resp = $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $parcelId]);
+        $resp->assertStatus(404);
+    }
+
+    public function test_mart_delivered_requires_proof(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        $driver = $this->createUser('driver', ['username' => 'proofdriver']);
+        $this->createUserAccount($driver);
+
+        // Order is in picked_up state with NO delivery proof
+        $order = MartOrder::create([
+            'id' => Str::uuid(), 'ref_id' => 'REF-PROOF-01',
+            'customer_id' => $customer->id, 'driver_id' => $driver->id,
+            'status' => 'picked_up', 'total_amount' => 20.00, 'tip_amount' => 0,
+            'discount_amount' => 0, 'payment_status' => 'unpaid',
+            'delivery_address' => 'Proof St',
+            'delivery_photo' => null,
+            'signature_image' => null,
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $resp = $this->putJson('/api/driver/mart/update-status', [
+            'order_id' => $order->id,
+            'status' => 'delivered',
+        ]);
+
+        // Must be rejected — proof required before marking delivered
+        $resp->assertStatus(422);
+        $body = $resp->json();
+        $this->assertNotEmpty($body['errors'] ?? [], 'Error message must be present');
+    }
 }

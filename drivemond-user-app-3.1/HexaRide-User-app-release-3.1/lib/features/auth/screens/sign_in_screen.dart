@@ -39,20 +39,21 @@ class _SignInScreenState extends State<SignInScreen> {
   void initState() {
     super.initState();
 
-    if(Get.find<AuthController>().getUserNumber(false).isNotEmpty) {
-      phoneController.text =  Get.find<AuthController>().getUserNumber(false);
-    }
-    passwordController.text = Get.find<AuthController>().getUserPassword(false);
-
-    if(passwordController.text.isNotEmpty) {
-      Get.find<AuthController>().setRememberMe();
+    if (Get.find<AuthController>().getUserNumber(false).isNotEmpty) {
+      phoneController.text = Get.find<AuthController>().getUserNumber(false);
     }
 
-    if(Get.find<AuthController>().getLoginCountryCode(false).isNotEmpty) {
+    Get.find<AuthController>().getUserPassword(false).then((pwd) {
+      if (mounted && pwd.isNotEmpty) {
+        passwordController.text = pwd;
+        Get.find<AuthController>().setRememberMe();
+      }
+    });
+
+    if (Get.find<AuthController>().getLoginCountryCode(false).isNotEmpty) {
       Get.find<AuthController>().countryDialCode = Get.find<AuthController>().getLoginCountryCode(false);
-    }else if(Get.find<ConfigController>().config!.countryCode != null){
+    } else if (Get.find<ConfigController>().config!.countryCode != null) {
       Get.find<AuthController>().countryDialCode = CountryCode.fromCountryCode(Get.find<ConfigController>().config!.countryCode!).dialCode!;
-
     }
   }
 

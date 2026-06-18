@@ -171,7 +171,8 @@ class AuthRepository implements AuthRepositoryInterface {
   @override
   Future<void> saveUserCredential(String code ,String number, String password) async {
     try {
-      await sharedPreferences.setString(AppConstants.userPassword, password);
+      await Get.find<FlutterSecureStorage>().write(key: AppConstants.userPassword, value: password);
+      await sharedPreferences.remove(AppConstants.userPassword);
       await sharedPreferences.setString(AppConstants.userNumber, number);
       await sharedPreferences.setString(AppConstants.loginCountryCode, code);
 
@@ -206,8 +207,8 @@ class AuthRepository implements AuthRepositoryInterface {
   }
 
   @override
-  String getUserPassword() {
-    return sharedPreferences.getString(AppConstants.userPassword) ?? "";
+  Future<String> getUserPassword() async {
+    return await Get.find<FlutterSecureStorage>().read(key: AppConstants.userPassword) ?? "";
   }
 
   @override
@@ -223,6 +224,7 @@ class AuthRepository implements AuthRepositoryInterface {
 
   @override
   Future<bool> clearUserCredential() async {
+    await Get.find<FlutterSecureStorage>().delete(key: AppConstants.userPassword);
     await sharedPreferences.remove(AppConstants.userPassword);
     return await sharedPreferences.remove(AppConstants.userNumber);
   }

@@ -362,7 +362,7 @@ class AuthController extends GetxController implements GetxService {
   String getLoginCountryCode(bool externalUser) {
     return authServiceInterface.getLoginCountryCode(externalUser);
   }
-  String getUserPassword(bool externalUser) {
+  Future<String> getUserPassword(bool externalUser) async {
     return authServiceInterface.getUserPassword(externalUser);
   }
 

@@ -1076,5 +1076,8 @@
   "confirm_delivery": "Confirmar entrega",
   "confirm_delivery_message": "¿Marcar este pedido como entregado? Esta acción no se puede deshacer.",
   "browse_products": "Explorar productos",
-  "tap_to_select": "Toca para seleccionar"
+  "tap_to_select": "Toca para seleccionar",
+  "order_in_transit_cannot_cancel": "El pedido está en camino y no puede cancelarse",
+  "rate_your_delivery": "Califica tu entrega",
+  "optional_comment": "Deja un comentario (opcional)"
 }

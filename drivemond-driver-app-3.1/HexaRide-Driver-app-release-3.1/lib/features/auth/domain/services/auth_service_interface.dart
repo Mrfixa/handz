@@ -24,7 +24,7 @@ abstract class AuthServiceInterface {
   String getDeviceToken();
   String getUserNumber();
   String getUserCountryCode();
-  String getUserPassword();
+  Future<String> getUserPassword();
   bool isNotificationActive();
   void toggleNotificationSound(bool isNotification);
   Future<bool> clearUserCredentials();

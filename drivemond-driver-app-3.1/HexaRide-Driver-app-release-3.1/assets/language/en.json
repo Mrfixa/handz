@@ -1079,5 +1079,7 @@
   "select_country_code": "Please select a country code",
   "confirm_delivery_message": "Mark this order as delivered? This cannot be undone.",
   "browse_products": "Browse Products",
-  "new_orders_appear_here": "New orders will appear here automatically"
+  "new_orders_appear_here": "New orders will appear here automatically",
+  "retry_delivery": "Retry Delivery",
+  "delivery_status_update_failed_retry": "Proof uploaded but status update failed. Tap Retry to try again."
 }

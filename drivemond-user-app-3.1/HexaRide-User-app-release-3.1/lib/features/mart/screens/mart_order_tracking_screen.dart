@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/message/controllers/message_controller.dart';
+import 'package:ride_sharing_user_app/features/payment/controllers/payment_controller.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -26,7 +28,9 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   String _currentStatus = 'pending';
   bool _isOffline = false;
   bool _isLoading = true;
+  bool _hasPromptedRating = false;
   Timer? _pollTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   int _pollCount = 0;
   static const int _maxPollCount = 240;
 
@@ -70,11 +74,21 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   void initState() {
     super.initState();
     _fetchOrderStatus();
+    _startPolling();
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      if (!results.contains(ConnectivityResult.none) && _isOffline) {
+        if (mounted) setState(() => _isOffline = false);
+        _startPolling();
+      }
+    });
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       _pollCount++;
       if (_pollCount >= _maxPollCount) {
         _pollTimer?.cancel();
-        debugPrint('Mart tracking: max poll count reached, stopping timer');
         return;
       }
       _fetchOrderStatus();
@@ -84,6 +98,7 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _connectivitySub?.cancel();
     super.dispose();
   }
 
@@ -117,6 +132,12 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
         });
         if (_currentStatus == 'delivered' || _currentStatus == 'cancelled') {
           _pollTimer?.cancel();
+        }
+        if (_currentStatus == 'delivered' && !_hasPromptedRating) {
+          _hasPromptedRating = true;
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) _showRatingBottomSheet();
+          });
         }
       } else {
         setState(() => _isLoading = false);
@@ -644,6 +665,38 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   }
 
   Widget _buildCancelButton(BuildContext context) {
+    final canCancel = _currentStatus == 'pending' || _currentStatus == 'accepted';
+
+    if (!canCancel) {
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: null,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).hintColor,
+                side: BorderSide(color: Theme.of(context).hintColor.withValues(alpha: 0.3)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+                ),
+              ),
+              child: Text('cancel_order'.tr),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'order_in_transit_cannot_cancel'.tr,
+            style: textRegular.copyWith(
+              fontSize: Dimensions.fontSizeSmall,
+              color: Theme.of(context).hintColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
@@ -708,6 +761,96 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
         ],
       ),
     );
+  }
+
+  void _showRatingBottomSheet() {
+    int selectedRating = 5;
+    final commentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: Dimensions.paddingSizeLarge,
+              right: Dimensions.paddingSizeLarge,
+              top: Dimensions.paddingSizeLarge,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + Dimensions.paddingSizeLarge,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('rate_your_delivery'.tr, style: textBold.copyWith(fontSize: Dimensions.fontSizeLarge)),
+                const SizedBox(height: Dimensions.paddingSizeDefault),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    final star = i + 1;
+                    return GestureDetector(
+                      onTap: () => setSheetState(() => selectedRating = star),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(
+                          star <= selectedRating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 36,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: Dimensions.paddingSizeDefault),
+                TextField(
+                  controller: commentController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'optional_comment'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: Dimensions.paddingSizeDefault),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text('skip'.tr),
+                      ),
+                    ),
+                    const SizedBox(width: Dimensions.paddingSizeSmall),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          try {
+                            await Get.find<PaymentController>().submitReview(
+                              widget.orderId,
+                              selectedRating,
+                              commentController.text,
+                            );
+                          } catch (_) {}
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        child: Text('submit'.tr),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    ).whenComplete(() => commentController.dispose());
   }
 
   Color _getStatusColor(BuildContext context) {

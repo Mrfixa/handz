@@ -33,6 +33,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   bool _hasDeliveryPhoto = false;
   bool _isOffline = false;
   bool _isLoading = true;
+  bool _deliveryProofUploaded = false;
 
   Map<String, dynamic> _orderData = {};
   String? _deliveryPhotoPath;
@@ -520,23 +521,33 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         };
         break;
       case 'picked_up':
-        buttonText = 'mark_as_delivered'.tr;
-        onPressed = (_isOffline || !_hasSignature || !_hasDeliveryPhoto)
-            ? null
-            : () {
-                HapticFeedback.mediumImpact();
-                Get.dialog(AlertDialog(
-                  title: Text('confirm_delivery'.tr),
-                  content: Text('confirm_delivery_message'.tr),
-                  actions: [
-                    TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
-                    TextButton(
-                      onPressed: () { Get.back(); _markAsDelivered(); },
-                      child: Text('confirm'.tr),
-                    ),
-                  ],
-                ));
-              };
+        if (_deliveryProofUploaded) {
+          // Proof already uploaded; only the status call needs to be retried.
+          buttonText = 'retry_delivery'.tr;
+          onPressed = _isOffline ? null : () {
+            HapticFeedback.mediumImpact();
+            setState(() => _isUpdating = true);
+            _submitDeliveredStatus();
+          };
+        } else {
+          buttonText = 'mark_as_delivered'.tr;
+          onPressed = (_isOffline || !_hasSignature || !_hasDeliveryPhoto)
+              ? null
+              : () {
+                  HapticFeedback.mediumImpact();
+                  Get.dialog(AlertDialog(
+                    title: Text('confirm_delivery'.tr),
+                    content: Text('confirm_delivery_message'.tr),
+                    actions: [
+                      TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
+                      TextButton(
+                        onPressed: () { Get.back(); _markAsDelivered(); },
+                        child: Text('confirm'.tr),
+                      ),
+                    ],
+                  ));
+                };
+        }
         break;
       default:
         buttonText = 'completed'.tr;
@@ -627,7 +638,19 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         if (mounted) showCustomSnackBar('upload_failed_try_again'.tr);
         return;
       }
+      // Proof is now stored on the server; cache this so a status-update retry
+      // can skip the upload step if the network drops between the two calls.
+      if (mounted) setState(() => _deliveryProofUploaded = true);
 
+      await _submitDeliveredStatus();
+    } catch (_) {
+      if (mounted) setState(() => _isUpdating = false);
+      if (mounted) Get.snackbar('error'.tr, 'network_error'.tr);
+    }
+  }
+
+  Future<void> _submitDeliveredStatus() async {
+    try {
       final response = await Get.find<ApiClient>().putData(
         AppConstants.martUpdateStatus,
         {
@@ -645,7 +668,8 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         Get.snackbar('success'.tr, 'delivery_completed'.tr);
       } else {
         if (mounted) setState(() => _isUpdating = false);
-        if (mounted) Get.snackbar('error'.tr, 'delivery_failed'.tr);
+        // Proof is already uploaded; show retry button for just the status call.
+        if (mounted) Get.snackbar('error'.tr, 'delivery_status_update_failed_retry'.tr);
       }
     } catch (_) {
       if (mounted) setState(() => _isUpdating = false);
@@ -703,8 +727,10 @@ class SignatureDialog extends StatefulWidget {
 
 class _SignatureDialogState extends State<SignatureDialog> {
   final List<Offset?> _points = [];
+  double _totalStrokeLength = 0.0;
   static const double _canvasWidth = 320;
   static const double _canvasHeight = 200;
+  static const double _minStrokeLength = 50.0;
   final GlobalKey _canvasKey = GlobalKey();
 
   Future<Uint8List> _renderToBytes() async {
@@ -762,8 +788,13 @@ class _SignatureDialogState extends State<SignatureDialog> {
               onPanUpdate: (details) {
                 final renderBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
                 if (renderBox == null) return;
+                final newPoint = renderBox.globalToLocal(details.globalPosition);
                 setState(() {
-                  _points.add(renderBox.globalToLocal(details.globalPosition));
+                  final prev = _points.isNotEmpty ? _points.last : null;
+                  if (prev != null) {
+                    _totalStrokeLength += (newPoint - prev).distance;
+                  }
+                  _points.add(newPoint);
                 });
               },
               onPanEnd: (_) {
@@ -781,7 +812,10 @@ class _SignatureDialogState extends State<SignatureDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => setState(() => _points.clear()),
+                  onPressed: () => setState(() {
+                    _points.clear();
+                    _totalStrokeLength = 0.0;
+                  }),
                   child: Text('clear'.tr),
                 ),
                 const SizedBox(width: Dimensions.paddingSizeSmall),
@@ -791,7 +825,7 @@ class _SignatureDialogState extends State<SignatureDialog> {
                 ),
                 const SizedBox(width: Dimensions.paddingSizeSmall),
                 ElevatedButton(
-                  onPressed: _points.isEmpty
+                  onPressed: _totalStrokeLength < _minStrokeLength
                       ? null
                       : () async {
                           HapticFeedback.lightImpact();
