@@ -267,7 +267,7 @@ class ChatController extends GetxController implements GetxService{
       id = tripId;
     }
 
-    if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
+    if (Get.find<SplashController>().pusherConnectionStatus != null && Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
       // Unsubscribe previous ride channel if any
       try { _rideChannel?.unsubscribe(); } catch (e) { debugPrint('Chat error: $e'); }
       channel = PusherHelper.pusherClient!.privateChannel("private-driver-ride-chat.$id", authorizationDelegate:

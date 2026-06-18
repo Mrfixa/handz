@@ -49,17 +49,17 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         '${AppConstants.martOrderDetails}${widget.orderId}',
       );
       if (response.statusCode == 200 && response.body['data'] != null) {
-        setState(() {
+        if (mounted) setState(() {
           _orderData = Map<String, dynamic>.from(response.body['data']);
           _orderStatus = _orderData['status'] ?? 'accepted';
           _isLoading = false;
           _isOffline = false;
         });
       } else {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     } catch (_) {
-      setState(() {
+      if (mounted) setState(() {
         _isOffline = true;
         _isLoading = false;
       });
@@ -544,21 +544,22 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
       );
 
       if (response.statusCode == 200) {
-        setState(() {
+        if (mounted) setState(() {
           _orderStatus = newStatus;
           _isUpdating = false;
         });
       } else {
-        setState(() => _isUpdating = false);
-        Get.snackbar('error'.tr, 'status_update_failed'.tr);
+        if (mounted) setState(() => _isUpdating = false);
+        if (mounted) Get.snackbar('error'.tr, 'status_update_failed'.tr);
       }
     } catch (_) {
-      setState(() => _isUpdating = false);
-      Get.snackbar('error'.tr, 'network_error'.tr);
+      if (mounted) setState(() => _isUpdating = false);
+      if (mounted) Get.snackbar('error'.tr, 'network_error'.tr);
     }
   }
 
   Future<void> _markAsDelivered() async {
+    HapticFeedback.mediumImpact();
     setState(() => _isUpdating = true);
 
     try {
@@ -585,8 +586,8 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
       );
 
       if (uploadResponse.statusCode != 200) {
-        setState(() => _isUpdating = false);
-        showCustomSnackBar('upload_failed_try_again'.tr);
+        if (mounted) setState(() => _isUpdating = false);
+        if (mounted) showCustomSnackBar('upload_failed_try_again'.tr);
         return;
       }
 
@@ -599,19 +600,19 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
       );
 
       if (response.statusCode == 200) {
-        setState(() {
+        if (mounted) setState(() {
           _orderStatus = 'delivered';
           _isUpdating = false;
         });
         Get.back();
         Get.snackbar('success'.tr, 'delivery_completed'.tr);
       } else {
-        setState(() => _isUpdating = false);
-        Get.snackbar('error'.tr, 'delivery_failed'.tr);
+        if (mounted) setState(() => _isUpdating = false);
+        if (mounted) Get.snackbar('error'.tr, 'delivery_failed'.tr);
       }
     } catch (_) {
-      setState(() => _isUpdating = false);
-      Get.snackbar('error'.tr, 'network_error'.tr);
+      if (mounted) setState(() => _isUpdating = false);
+      if (mounted) Get.snackbar('error'.tr, 'network_error'.tr);
     }
   }
 

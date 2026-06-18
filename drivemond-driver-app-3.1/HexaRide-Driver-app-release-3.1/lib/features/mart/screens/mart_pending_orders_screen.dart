@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_delivery_screen.dart';
@@ -57,6 +58,7 @@ class _MartPendingOrdersScreenState extends State<MartPendingOrdersScreen> {
   }
 
   Future<void> _acceptOrder(String orderId) async {
+    HapticFeedback.mediumImpact();
     if (_acceptingOrderId != null) return; // another acceptance in progress
     setState(() => _acceptingOrderId = orderId);
     try {
