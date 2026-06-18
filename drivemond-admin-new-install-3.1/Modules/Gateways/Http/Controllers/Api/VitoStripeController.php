@@ -46,17 +46,19 @@ class VitoStripeController extends Controller
             $amountCents = (int) round($request->amount * 100);
             $idempotencyKey = 'pi_' . $request->user()->id . '_walletTopup_' . date('Ymd') . '_' . $amountCents;
 
-            $paymentIntent = \Stripe\PaymentIntent::create(
-                [
-                    'amount' => $amountCents,
-                    'currency' => $request->input('currency', 'usd'),
-                    'metadata' => [
-                        'user_id' => $request->user()->id,
-                        'type' => 'wallet_topup',
+            $paymentIntent = retry(3, function () use ($amountCents, $request, $idempotencyKey) {
+                return \Stripe\PaymentIntent::create(
+                    [
+                        'amount'   => $amountCents,
+                        'currency' => $request->input('currency', 'usd'),
+                        'metadata' => [
+                            'user_id' => $request->user()->id,
+                            'type'    => 'wallet_topup',
+                        ],
                     ],
-                ],
-                ['idempotency_key' => $idempotencyKey],
-            );
+                    ['idempotency_key' => $idempotencyKey],
+                );
+            }, 500);
 
             StripeEvent::firstOrCreate(
                 ['stripe_event_id' => $paymentIntent->id],

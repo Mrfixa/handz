@@ -11,6 +11,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\{Authenticate,
     EncryptCookies,
     GlobalMiddleware,
+    IdempotencyKey,
     Localization,
     LocalizationMiddleware,
     MaintenanceModeMiddleware,
@@ -77,10 +78,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'verified' => EnsureEmailIsVerified::class,
 
             // Custom middlewares
-            'admin'=>AdminMiddleware::class,
+            'admin'       => AdminMiddleware::class,
             'maintenance_mode' => MaintenanceModeMiddleware::class,
-            'scope' => CheckScopes::class,
-            'scopes' => CheckForAnyScope::class,
+            'scope'       => CheckScopes::class,
+            'scopes'      => CheckForAnyScope::class,
+            'idempotent'  => IdempotencyKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

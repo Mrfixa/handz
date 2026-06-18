@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:ride_sharing_user_app/data/offline_queue.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/repositories/auth_repository_interface.dart';
@@ -283,6 +284,10 @@ Future<Map<String, Map<String, String>>> init() async {
   Get.lazyPut(()=> locationTrackingRepositoryInterface);
   LocationTrackingServiceInterface locationTrackingServiceInterface = LocationTrackingService(locationTrackingRepositoryInterface: Get.find());
   Get.lazyPut(()=> locationTrackingServiceInterface);
+
+  // Offline action queue — persists mutations when offline, flushes on reconnect.
+  Get.put(OfflineQueue(), permanent: true);
+
   // Retrieving localized data
   Map<String, Map<String, String>> languages = {};
   for(LanguageModel languageModel in AppConstants.languages) {

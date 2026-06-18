@@ -62,16 +62,18 @@ class ApiClient extends GetxService {
     }
   }
 
-  Future<Response> postData(String uri, dynamic body, {Map<String, String>? headers}) async {
+  Future<Response> postData(String uri, dynamic body, {Map<String, String>? headers, String? idempotencyKey}) async {
     try {
       if(kDebugMode) {
         log('====> API Call: $uri\nHeader: $_mainHeaders');
         log('====> API Body: $body');
       }
+      final effectiveHeaders = Map<String, String>.from(headers ?? _mainHeaders);
+      if (idempotencyKey != null) effectiveHeaders['Idempotency-Key'] = idempotencyKey;
       http.Response response = await http.post(
         Uri.parse(appBaseUrl+uri),
         body: jsonEncode(body),
-        headers: headers ?? _mainHeaders,
+        headers: effectiveHeaders,
       ).timeout(Duration(seconds: timeoutInSeconds));
       return handleResponse(response, uri);
     } catch (e) {

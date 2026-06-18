@@ -14,7 +14,7 @@ Route::group(['prefix' => 'customer/mart', 'middleware' => ['auth:api', 'mainten
         Route::get('products', 'products');
         Route::get('products/{id}', 'productDetails');
         Route::middleware('throttle:30,1')->post('apply-promo', 'applyPromo');
-        Route::middleware('throttle:10,1')->post('order', 'createOrder');
+        Route::middleware(['throttle:10,1', 'idempotent'])->post('order', 'createOrder');
         Route::get('orders', 'orderList');
         Route::get('orders/{id}', 'orderDetails');
         Route::put('orders/{id}/cancel', 'cancelOrder');
