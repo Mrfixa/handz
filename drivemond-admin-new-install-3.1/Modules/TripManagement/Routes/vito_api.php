@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\TripManagement\Http\Controllers\Api\Admin\VitoSystemController;
 use Modules\TripManagement\Http\Controllers\Api\Customer\VitoMartController;
 use Modules\TripManagement\Http\Controllers\Api\Driver\VitoMartDriverController;
 
@@ -52,3 +53,15 @@ Route::group(['prefix' => 'admin/mart', 'middleware' => ['auth:api', 'maintenanc
     Route::put('products/{id}', [\Modules\TripManagement\Http\Controllers\Api\Admin\VitoMartAdminApiController::class, 'update']);
     Route::delete('products/{id}', [\Modules\TripManagement\Http\Controllers\Api\Admin\VitoMartAdminApiController::class, 'destroy']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Vito System: Health & Metrics
+|--------------------------------------------------------------------------
+*/
+// Unauthenticated liveness probe (load balancers, k8s readiness)
+Route::middleware('throttle:60,1')->get('health', [VitoSystemController::class, 'health']);
+
+// Business metrics — admin only
+Route::middleware(['auth:api', 'maintenance_mode', 'scope:AccessToSuperAdmin'])
+    ->get('admin/metrics', [VitoSystemController::class, 'metrics']);

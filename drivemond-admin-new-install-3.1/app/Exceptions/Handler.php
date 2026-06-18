@@ -22,13 +22,18 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             Log::error($e->getMessage(), [
-                'exception' => get_class($e),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine(),
-                'user_id'   => optional(request()->user())->id,
-                'url'       => request()->fullUrl(),
+                'exception'  => get_class($e),
+                'file'       => $e->getFile(),
+                'line'       => $e->getLine(),
+                'user_id'    => optional(request()->user())->id,
+                'url'        => request()->fullUrl(),
                 'request_id' => request()->header('X-Request-Id'),
             ]);
+
+            // Forward to Sentry when SENTRY_LARAVEL_DSN is set; no-op otherwise.
+            if (app()->bound('sentry') && config('sentry.dsn')) {
+                \Sentry\captureException($e);
+            }
         });
 
         $this->renderable(function (NotFoundHttpException $e, $request) {

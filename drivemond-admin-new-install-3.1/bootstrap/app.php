@@ -16,6 +16,7 @@ use App\Http\Middleware\{Authenticate,
     LocalizationMiddleware,
     MaintenanceModeMiddleware,
     RedirectIfAuthenticated,
+    RequestId,
     VerifyCsrfToken};
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
@@ -59,7 +60,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 //           EnsureFrontendRequestsAreStateful::class,
             'throttle:1000,1',
             SubstituteBindings::class,
-            LocalizationMiddleware::class
+            LocalizationMiddleware::class,
+            RequestId::class,
         ]);
         /*
         |--------------------------------------------------------------------------
