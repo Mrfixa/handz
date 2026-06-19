@@ -1080,5 +1080,11 @@
   "tap_to_select": "Toca para seleccionar",
   "order_in_transit_cannot_cancel": "El pedido está en camino y no puede cancelarse",
   "rate_your_delivery": "Califica tu entrega",
-  "optional_comment": "Deja un comentario (opcional)"
+  "optional_comment": "Deja un comentario (opcional)",
+  "point_camera_at_qr": "Apunte la cámara al código QR",
+  "scan_qr_code": "Escanear código QR",
+  "order_chat_unavailable": "Chat no disponible hasta que se asigne un conductor",
+  "processing_payment": "Procesando pago...",
+  "order_payment": "Pago de pedido",
+  "loading": "Cargando..."
 }

@@ -1081,5 +1081,10 @@
   "browse_products": "Browse Products",
   "new_orders_appear_here": "New orders will appear here automatically",
   "retry_delivery": "Retry Delivery",
-  "delivery_status_update_failed_retry": "Proof uploaded but status update failed. Tap Retry to try again."
+  "delivery_status_update_failed_retry": "Proof uploaded but status update failed. Tap Retry to try again.",
+  "point_camera_at_qr": "Point camera at QR code",
+  "scan_qr_code": "Scan QR Code",
+  "token_history": "Token History",
+  "order_chat_unavailable": "Chat unavailable until driver is assigned",
+  "loading": "Loading..."
 }

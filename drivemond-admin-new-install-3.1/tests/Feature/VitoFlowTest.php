@@ -808,7 +808,7 @@ class VitoFlowTest extends TestCase
         $customer = $this->createUser('customer');
         Passport::actingAs($customer, ['AccessToCustomer']);
 
-        // Fixed discount promo
+        // Fixed discount promo (min_order_amount=20)
         MartPromoCode::create([
             'code' => 'SAVE5',
             'discount_type' => 'fixed',
@@ -817,25 +817,31 @@ class VitoFlowTest extends TestCase
             'is_active' => true,
         ]);
 
-        // Valid promo application
+        // Product priced at $15 — qty 2 = $30 subtotal (above minimum)
+        $product = MartProduct::create([
+            'id' => Str::uuid(), 'name' => 'Promo Test Item', 'price' => 15.00,
+            'stock' => 100, 'is_active' => true,
+        ]);
+
+        // Valid promo: 2×$15 = $30 >= $20 minimum → discount $5
         $response = $this->postJson('/api/customer/mart/apply-promo', [
-            'code' => 'SAVE5',
-            'subtotal' => 30.00,
+            'code'  => 'SAVE5',
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
         ]);
         $response->assertOk();
         $this->assertEquals(5.00, $response->json('data.discount'));
 
-        // Below minimum order amount
+        // Below minimum: 1×$15 = $15 < $20 → 400
         $response2 = $this->postJson('/api/customer/mart/apply-promo', [
-            'code' => 'SAVE5',
-            'subtotal' => 10.00,
+            'code'  => 'SAVE5',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
         ]);
         $response2->assertStatus(400);
 
         // Invalid code
         $response3 = $this->postJson('/api/customer/mart/apply-promo', [
-            'code' => 'NOTREAL',
-            'subtotal' => 50.00,
+            'code'  => 'NOTREAL',
+            'items' => [['product_id' => $product->id, 'quantity' => 3]],
         ]);
         $response3->assertStatus(404);
     }
@@ -2123,8 +2129,14 @@ class VitoFlowTest extends TestCase
             'is_active' => true, 'expires_at' => now()->subDay(),
         ]);
 
+        $product = MartProduct::create([
+            'id' => Str::uuid(), 'name' => 'Expired Promo Item', 'price' => 10.00,
+            'stock' => 10, 'is_active' => true,
+        ]);
+
         $resp = $this->postJson('/api/customer/mart/apply-promo', [
-            'code' => 'EXPIRED', 'subtotal' => 20,
+            'code'  => 'EXPIRED',
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
         ]);
         $resp->assertStatus(404);
     }
@@ -2166,7 +2178,7 @@ class VitoFlowTest extends TestCase
         $this->assertNotContains('Orange Soda', $names);
     }
 
-    public function test_delivery_status_sets_payment_paid(): void
+    public function test_delivery_status_transitions_to_delivered(): void
     {
         $this->seedUserLevel('customer');
         $this->seedUserLevel('driver');
@@ -2181,7 +2193,7 @@ class VitoFlowTest extends TestCase
             'status' => 'picked_up', 'total_amount' => 15.00, 'tip_amount' => 0,
             'discount_amount' => 0, 'payment_status' => 'unpaid',
             'delivery_address' => 'Paid St',
-            'delivery_photo' => 'mart/photos/test.jpg', // proof required before delivery
+            'delivery_photo' => 'mart/photos/test.jpg',
         ]);
 
         Passport::actingAs($driver, ['AccessToDriver']);
@@ -2189,7 +2201,10 @@ class VitoFlowTest extends TestCase
             'order_id' => $order->id, 'status' => 'delivered',
         ]);
         $resp->assertOk();
-        $this->assertEquals('paid', MartOrder::find($order->id)->payment_status);
+        $fresh = MartOrder::find($order->id);
+        $this->assertEquals('delivered', $fresh->status);
+        // payment_status remains 'unpaid' — set exclusively by Stripe webhook
+        $this->assertEquals('unpaid', $fresh->payment_status);
     }
 
     public function test_cancelled_order_restores_stock_and_promo(): void
@@ -2743,5 +2758,112 @@ class VitoFlowTest extends TestCase
         $resp->assertStatus(422);
         $body = $resp->json();
         $this->assertNotEmpty($body['errors'] ?? [], 'Error message must be present');
+    }
+
+    // ========================================================================
+    // New v2.0 tests
+    // ========================================================================
+
+    public function test_accept_order_requires_driver_approval(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        // Driver with is_approved = false
+        $driver = $this->createUser('driver', ['username' => 'unapproveddriver']);
+        $this->createUserAccount($driver);
+        DB::table('driver_details')->where('user_id', $driver->id)->update(['is_approved' => false]);
+
+        $order = MartOrder::create([
+            'id' => Str::uuid(), 'ref_id' => 'REF-APPROVAL-01',
+            'customer_id' => $customer->id, 'driver_id' => null,
+            'status' => 'pending', 'total_amount' => 10.00, 'tip_amount' => 0,
+            'discount_amount' => 0, 'payment_status' => 'unpaid',
+            'delivery_address' => 'Approval St',
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $resp = $this->postJson('/api/driver/mart/accept-order', ['order_id' => $order->id]);
+        $resp->assertStatus(403);
+    }
+
+    public function test_apply_promo_requires_items_array(): void
+    {
+        $this->seedUserLevel('customer');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        Passport::actingAs($customer, ['AccessToCustomer']);
+
+        MartPromoCode::create([
+            'id' => Str::uuid(), 'code' => 'ITEMSTEST', 'discount_type' => 'fixed',
+            'discount_value' => 5, 'min_order_amount' => 0, 'is_active' => true,
+        ]);
+
+        // Legacy subtotal-only payload must now be rejected
+        $resp = $this->postJson('/api/customer/mart/apply-promo', [
+            'code' => 'ITEMSTEST', 'subtotal' => 20,
+        ]);
+        $resp->assertStatus(422);
+    }
+
+    public function test_mart_order_payment_set_by_webhook_only(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        $driver = $this->createUser('driver', ['username' => 'webhookdriver']);
+        $this->createUserAccount($driver);
+
+        $order = MartOrder::create([
+            'id' => Str::uuid(), 'ref_id' => 'REF-WEBHOOK-01',
+            'customer_id' => $customer->id, 'driver_id' => $driver->id,
+            'status' => 'picked_up', 'total_amount' => 25.00, 'tip_amount' => 0,
+            'discount_amount' => 0, 'payment_status' => 'unpaid',
+            'delivery_address' => 'Webhook St',
+            'delivery_photo' => 'mart/photos/webhook.jpg',
+        ]);
+
+        // Driver marks delivered — payment_status must stay 'unpaid'
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $resp = $this->putJson('/api/driver/mart/update-status', [
+            'order_id' => $order->id, 'status' => 'delivered',
+        ]);
+        $resp->assertOk();
+        $this->assertEquals('unpaid', MartOrder::find($order->id)->payment_status);
+
+        // Simulate webhook setting paid directly (as the webhook handler does)
+        $intentId = 'pi_test_' . Str::random(16);
+        DB::table('stripe_events')->insert([
+            'id'                => Str::uuid(),
+            'stripe_event_id'   => 'evt_' . Str::random(16),
+            'payment_intent_id' => $intentId,
+            'type'              => 'payment_intent.created',
+            'user_id'           => $customer->id,
+            'amount'            => 25.00,
+            'currency'          => 'usd',
+            'status'            => 'pending',
+            'metadata'          => json_encode(['type' => 'order_payment', 'order_id' => $order->id]),
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        // Run the same logic the webhook handler executes
+        DB::transaction(function () use ($intentId, $order) {
+            $stripeEvent = DB::table('stripe_events')
+                ->where('payment_intent_id', $intentId)
+                ->lockForUpdate()
+                ->first();
+            if ($stripeEvent && $stripeEvent->status !== 'succeeded') {
+                DB::table('stripe_events')->where('id', $stripeEvent->id)->update(['status' => 'succeeded']);
+                $meta = json_decode($stripeEvent->metadata ?? '{}', true);
+                if (($meta['type'] ?? '') === 'order_payment' && !empty($meta['order_id'])) {
+                    MartOrder::where('id', $meta['order_id'])->update(['payment_status' => 'paid']);
+                }
+            }
+        });
+
+        $this->assertEquals('paid', MartOrder::find($order->id)->payment_status);
     }
 }

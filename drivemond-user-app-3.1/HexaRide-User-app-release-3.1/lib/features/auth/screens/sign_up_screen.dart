@@ -15,7 +15,9 @@ import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/custom_text_field.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final String? qrToken;
+
+  const SignUpScreen({super.key, this.qrToken});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -42,6 +44,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     authController.countryDialCode = CountryCode.fromCountryCode(
       Get.find<ConfigController>().config!.countryCode!,
     ).dialCode!;
+    // Store the QR token so it is forwarded into SignUpBody after OTP verification.
+    authController.pendingQrToken = widget.qrToken;
   }
 
   @override

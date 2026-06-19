@@ -26,7 +26,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
   bool _isValidating = false;
   List<Map<String, dynamic>> _tokenHistory = [];
 
-  static const String _tokenHistoryKey = 'token_history';
+  static const String _tokenHistoryKey = 'customer_token_history';
 
   @override
   void initState() {
@@ -69,7 +69,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: true,
       child: SafeArea(
       child: Scaffold(
         body: Center(
@@ -78,12 +78,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ColorFiltered(
-                  colorFilter: ColorFilter.mode(Theme.of(context).primaryColor, BlendMode.srcIn),
-                  child: Image.asset(Images.logo, height: 52, width: 52),
-                ),
-                const SizedBox(height: 6),
-                Text(AppConstants.appName, style: textBold.copyWith(fontSize: 20, color: Theme.of(context).primaryColor)),
+                Image.asset(Images.logoWithName, height: 60),
                 const SizedBox(height: Dimensions.paddingSizeExtraLarge),
 
                 Icon(
@@ -184,7 +179,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
                 const SizedBox(height: Dimensions.paddingSizeDefault),
 
                 TextButton(
-                  onPressed: () => Get.to(() => const SignInScreen()),
+                  onPressed: () => Get.off(() => const SignInScreen()),
                   child: Text(
                     'already_have_account'.tr,
                     style: textMedium.copyWith(
@@ -279,7 +274,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
 
       if (response.statusCode == 200 && response.body['data']?['valid'] == true) {
         await _saveTokenToHistory(token, true);
-        Get.off(() => SignUpScreen(qrToken: token));
+        Get.to(() => SignUpScreen(qrToken: token));
       } else {
         await _saveTokenToHistory(token, false);
         showCustomSnackBar('invalid_or_expired_token'.tr);
