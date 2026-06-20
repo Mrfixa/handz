@@ -145,14 +145,15 @@ class ChatController extends GetxController implements GetxService{
     try {
       Response response = await chatServiceInterface.createChannel(userId,tripId);
       if(response.statusCode == 200){
-        final channel = (response.body is Map) ? response.body['data']?['channel'] : null;
-        final channelId = channel?['id']?.toString();
+        final data = response.body is Map ? response.body['data'] : null;
+        final channel = data is Map ? data['channel'] : null;
+        final channelId = channel is Map ? channel['id']?.toString() : null;
         if (channelId == null) {
           showCustomSnackBar('something_went_wrong'.tr);
         } else {
-          final user = response.body['data']?['user'] ?? {};
+          final user = data['user'] is Map ? data['user'] : {};
           final userName = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
-          Get.to(()=> MessageScreen(channelId : channelId, tripId: channel?['trip_id']?.toString() ?? tripId, userName: userName));
+          Get.to(()=> MessageScreen(channelId : channelId, tripId: channel['trip_id']?.toString() ?? tripId, userName: userName));
         }
       }else{
         ApiChecker.checkApi(response);
@@ -171,12 +172,13 @@ class ChatController extends GetxController implements GetxService{
     try {
       Response response = await chatServiceInterface.createMartChannel(customerId, orderId);
       if (response.statusCode == 200) {
-        final channel = (response.body is Map) ? response.body['data']?['channel'] : null;
-        final channelId = channel?['id']?.toString();
+        final data = response.body is Map ? response.body['data'] : null;
+        final channel = data is Map ? data['channel'] : null;
+        final channelId = channel is Map ? channel['id']?.toString() : null;
         if (channelId == null) {
           showCustomSnackBar('something_went_wrong'.tr);
         } else {
-          final oId = channel?['trip_id']?.toString() ?? orderId;
+          final oId = channel['trip_id']?.toString() ?? orderId;
           Get.to(() => MartDriverMessageScreen(channelId: channelId, orderId: oId, userName: customerName));
         }
       } else {

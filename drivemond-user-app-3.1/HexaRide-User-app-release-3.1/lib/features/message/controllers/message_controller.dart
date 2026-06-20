@@ -160,13 +160,14 @@ class MessageController extends GetxController implements GetxService{
     Response response = await messageServiceInterface.createChannel(userId,tripId!);
     if(response.statusCode == 200){
       isLoading = false;
-      final channel = (response.body is Map) ? response.body['data']?['channel'] : null;
-      if (channel == null || channel['id'] == null) {
+      final data = response.body is Map ? response.body['data'] : null;
+      final channel = data is Map ? data['channel'] : null;
+      if (channel is! Map || channel['id'] == null) {
         update();
         showCustomSnackBar('channel_creation_failed'.tr, isError: true);
         return;
       }
-      final user = response.body['data']?['user'] ?? {};
+      final user = data['user'] is Map ? data['user'] : {};
       Get.to(()=> MessageScreen(channelId : channel['id'].toString(), tripId: (channel['trip_id'] ?? tripId).toString(), userName:  '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim()));
     }else{
       isLoading = false;
