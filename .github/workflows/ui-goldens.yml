@@ -1,9 +1,10 @@
 name: UI Goldens
 
-# Renders the design-system catalog to PNG goldens and uploads them as an
-# artifact so we get *visual* feedback on the UI without a local emulator.
-# Isolated from the release pipeline (build-apk.yml / vito-ci.yml never run this
-# test), so iterating here can never break a release build.
+# Renders each app's UI catalog (real shared components + patterns, SF Pro fonts
+# loaded so text is legible) to PNG goldens and uploads them as artifacts, so we
+# get *visual* feedback on the UI without a local emulator. Isolated from the
+# release pipeline (build-apk.yml / vito-ci.yml never run these tests), so
+# iterating here can never break a release build.
 
 on:
   workflow_dispatch:
@@ -11,16 +12,27 @@ on:
     branches:
       - master
     paths:
-      - 'drivemond-user-app-3.1/HexaRide-User-app-release-3.1/test/ui_catalog_golden_test.dart'
+      - '**/test/ui_catalog_golden_test.dart'
       - '.github/workflows/ui-goldens.yml'
 
 jobs:
   ui-goldens:
-    name: Generate UI catalog goldens
+    name: Generate UI catalog goldens (${{ matrix.app }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: user
+            dir: drivemond-user-app-3.1/HexaRide-User-app-release-3.1
+            artifact: vito-ui-catalog-user
+          - app: driver
+            dir: drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
+            artifact: vito-ui-catalog-driver
+
     defaults:
       run:
-        working-directory: drivemond-user-app-3.1/HexaRide-User-app-release-3.1
+        working-directory: ${{ matrix.dir }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +51,6 @@ jobs:
       - name: Upload UI catalog PNGs
         uses: actions/upload-artifact@v4
         with:
-          name: vito-ui-catalog
-          path: drivemond-user-app-3.1/HexaRide-User-app-release-3.1/test/goldens/*.png
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.dir }}/test/goldens/*.png
           if-no-files-found: warn
