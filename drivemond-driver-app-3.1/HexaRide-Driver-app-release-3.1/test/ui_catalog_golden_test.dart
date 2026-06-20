@@ -82,7 +82,7 @@ Widget _requestCard() => Container(
           const SizedBox(width: 8),
           Expanded(child: Text('Jl. Sudirman No. 21', style: textRegular.copyWith(fontSize: 13, color: _ink))),
         ]),
-        const Padding(padding: EdgeInsets.only(left: 7), child: SizedBox(height: 14, child: VerticalDivider(width: 2, thickness: 1))),
+        Container(margin: const EdgeInsets.only(left: 7), width: 2, height: 14, color: Colors.black12),
         Row(children: [
           const Icon(Icons.location_on, size: 16, color: Color(0xFFE53935)),
           const SizedBox(width: 8),
@@ -144,21 +144,21 @@ void main() {
               _sectionTitle('States'),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(
-                  child: Column(children: [
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.inbox, size: 34, color: Color(0xFFBABFC4)),
                     const SizedBox(height: 6),
                     Text('No requests', style: textMedium.copyWith(fontSize: 13, color: _muted)),
                   ]),
                 ),
                 Expanded(
-                  child: Column(children: [
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Container(height: 12, width: 120, decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(6))),
                     const SizedBox(height: 8),
                     Container(height: 12, width: 80, decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(6))),
                   ]),
                 ),
                 Expanded(
-                  child: Column(children: [
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.wifi_off, size: 34, color: Color(0xFFE53935)),
                     const SizedBox(height: 6),
                     Text('Tap to retry', style: textMedium.copyWith(fontSize: 13, color: _muted)),
