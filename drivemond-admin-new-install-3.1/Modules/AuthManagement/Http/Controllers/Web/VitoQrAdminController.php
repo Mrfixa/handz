@@ -58,10 +58,23 @@ class VitoQrAdminController extends Controller
     public function download(string $id): Response
     {
         $token = QrToken::findOrFail($id);
-        $png   = \QrCode::format('png')->size(400)->margin(2)->generate($token->token);
 
-        return response($png)
-            ->header('Content-Type', 'image/png')
-            ->header('Content-Disposition', 'attachment; filename="vito-qr-' . $token->id . '.png"');
+        // simple-qrcode's PNG backend requires the Imagick PHP extension. On the
+        // many servers that only ship GD, format('png') throws — so fall back to
+        // SVG (no extra extension needed) when Imagick is unavailable. The QR
+        // scans identically either way.
+        if (extension_loaded('imagick')) {
+            $image = \QrCode::format('png')->size(400)->margin(2)->generate($token->token);
+            $mime  = 'image/png';
+            $ext   = 'png';
+        } else {
+            $image = \QrCode::format('svg')->size(400)->margin(2)->generate($token->token);
+            $mime  = 'image/svg+xml';
+            $ext   = 'svg';
+        }
+
+        return response($image)
+            ->header('Content-Type', $mime)
+            ->header('Content-Disposition', 'attachment; filename="vito-qr-' . $token->id . '.' . $ext . '"');
     }
 }

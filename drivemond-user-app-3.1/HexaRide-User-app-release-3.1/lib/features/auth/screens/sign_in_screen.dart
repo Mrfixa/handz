@@ -91,29 +91,23 @@ class _SignInScreenState extends State<SignInScreen> {
             const SizedBox(height: Dimensions.paddingSizeSignUp),
 
             CustomTextField(
-              isCodePicker: true,
-              hintText: 'phone'.tr,
-              inputType: TextInputType.phone,
-              countryDialCode: authController.countryDialCode,
+              hintText: 'username'.tr,
+              inputType: TextInputType.text,
               controller: phoneController,
               focusNode: phoneNode,
               nextFocus: passwordNode,
               inputAction: TextInputAction.next,
-              onCountryChanged: (CountryCode countryCode) {
-                authController.countryDialCode = countryCode.dialCode!;
-                authController.setCountryCode(countryCode.dialCode!);
-                FocusScope.of(context).requestFocus(phoneNode);
-              },
               autoFocus: phoneController.text.isEmpty,
             ),
             const SizedBox(height: Dimensions.paddingSizeSmall),
 
             CustomTextField(
-              hintText: 'enter_password'.tr,
-              inputType: TextInputType.text,
+              hintText: 'enter_6_digit_pin'.tr,
+              inputType: TextInputType.number,
               prefixIcon: Images.lock,
               inputAction: TextInputAction.done,
               isPassword: true,
+              maxLength: 6,
               controller: passwordController,
               focusNode: passwordNode,
             ),
@@ -162,22 +156,22 @@ class _SignInScreenState extends State<SignInScreen> {
               buttonText: 'log_in'.tr,
               onPressed: () {
                 HapticFeedback.mediumImpact();
-                String phone = phoneController.text.trim();
-                String password = passwordController.text.trim();
+                String username = phoneController.text.trim();
+                String pin = passwordController.text.trim();
 
-                if(phone.isEmpty){
-                  showCustomSnackBar('phone_number_is_required'.tr);
+                if(username.isEmpty){
+                  showCustomSnackBar('username_is_required'.tr);
                   FocusScope.of(context).requestFocus(phoneNode);
-                }else if(!GetUtils.isPhoneNumber(authController.countryDialCode + phone)) {
-                  showCustomSnackBar('phone_number_is_not_valid'.tr);
+                }else if(username.length < 3){
+                  showCustomSnackBar('username_min_3_characters'.tr);
                   FocusScope.of(context).requestFocus(phoneNode);
-                }else if(password.isEmpty) {
-                  showCustomSnackBar('password_is_required'.tr);
+                }else if(pin.isEmpty) {
+                  showCustomSnackBar('pin_is_required'.tr);
                   FocusScope.of(context).requestFocus(passwordNode);
-                }else if(!RegExp(r'^\d{6}$').hasMatch(password)) {
+                }else if(!RegExp(r'^\d{6}$').hasMatch(pin)) {
                   showCustomSnackBar('pin_must_be_6_digits'.tr);
                 }else {
-                  authController.login(authController.countryDialCode, phone, password);
+                  authController.login('', username, pin);
                 }
               },
               radius: 50,

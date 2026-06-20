@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        // Guarded: an earlier migration (2026_05_26_000003_vito_create_otps_table)
+        // may already have created this identical table. Without this check a real
+        // `php artisan migrate` fails with "table already exists".
+        if (Schema::hasTable('vito_otps')) {
+            return;
+        }
+
         Schema::create('vito_otps', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('phone', 30)->index();

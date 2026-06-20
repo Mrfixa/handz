@@ -60,7 +60,7 @@ class ClientOtpAuthController extends Controller
             'updated_at' => now()->toDateTimeString(),
         ]);
 
-        $this->dispatchSms($phone, "Your VITO verification code is: {$otp}");
+        $this->dispatchSms($phone, $otp);
 
         $resp = ['message' => 'OTP sent successfully'];
 
@@ -237,23 +237,37 @@ class ClientOtpAuthController extends Controller
         ];
     }
 
-    private function dispatchSms(string $phone, string $message): void
+    private function dispatchSms(string $phone, string $otp): void
     {
+        // 1) Prefer the admin-configured SMS gateway (Admin → Business Settings →
+        //    SMS Gateway: Twilio / Nexmo / 2Factor / MSG91 / Releans). send()
+        //    formats the OTP into each gateway's template and returns 'success'.
+        try {
+            $status = \Modules\BusinessManagement\Lib\SMSGateway::send($phone, $otp);
+            if ($status === 'success') {
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Configured SMS gateway failed: ' . $e->getMessage());
+        }
+
+        // 2) Fallback: direct Twilio via env vars (TWILIO_ACCOUNT_SID / AUTH_TOKEN / FROM_NUMBER).
+        $message = "Your VITO verification code is: {$otp}";
         try {
             $sid   = env('TWILIO_ACCOUNT_SID');
             $token = env('TWILIO_AUTH_TOKEN');
             $from  = env('TWILIO_FROM_NUMBER');
 
             if ($sid && $token && $from) {
-                // Use Twilio if configured; retry up to 3 times on transient network failures.
                 $client = new \Twilio\Rest\Client($sid, $token);
                 retry(3, fn() => $client->messages->create($phone, ['from' => $from, 'body' => $message]), 1000);
-            } else {
-                // Fallback: log only (works in dev / testing)
-                Log::info("OTP SMS to {$phone}: {$message}");
+                return;
             }
         } catch (\Throwable $e) {
-            Log::warning('SMS dispatch failed: ' . $e->getMessage());
+            Log::warning('Twilio env SMS dispatch failed: ' . $e->getMessage());
         }
+
+        // 3) Last resort: log only (works in dev / testing, or when no gateway is configured).
+        Log::info("OTP SMS to {$phone}: {$message}");
     }
 }
