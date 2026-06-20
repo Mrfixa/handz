@@ -49,9 +49,21 @@ composer install --no-interaction --no-scripts --ignore-platform-reqs
 cp .env.example .env
 php artisan key:generate
 php artisan passport:keys --force
-php artisan migrate
+php artisan migrate --seed
 php artisan serve
 ```
+
+### Default Credentials
+
+`php artisan db:seed` (or `migrate --seed`) creates ready-to-use accounts. **Change these before production.**
+
+| Role | Where | Login | Secret |
+|---|---|---|---|
+| Admin | Admin panel (web) | `admin@admin.com` | `12345678` |
+| Customer | User app | username `customer` | PIN `123456` |
+| Driver | Driver app | username `driver` | PIN `123456` |
+
+The driver is seeded verified/approved so it can take VitoMart deliveries immediately. The seeder (`database/seeders/DefaultUsersSeeder.php`) is idempotent — re-running `db:seed` won't duplicate accounts.
 
 ### Flutter Apps
 

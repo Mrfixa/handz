@@ -17,6 +17,12 @@ class AdminUserSeeder extends Seeder
      */
     public function run()
     {
+        // Idempotent: only create the super-admin if it does not already exist,
+        // so re-seeding never duplicates the row or mutates its id (FK-safe).
+        if (DB::table('users')->where('email', 'admin@admin.com')->exists()) {
+            return;
+        }
+
         DB::table('users')->insert([
             'id' => Uuid::uuid4(),
             'first_name' => 'Super',

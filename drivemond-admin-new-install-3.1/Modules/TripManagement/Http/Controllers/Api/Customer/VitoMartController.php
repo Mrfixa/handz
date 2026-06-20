@@ -12,6 +12,7 @@ use Modules\TripManagement\Entities\MartOrder;
 use Modules\TripManagement\Entities\MartOrderItem;
 use Modules\TripManagement\Entities\MartProduct;
 use Modules\TripManagement\Entities\MartPromoCode;
+use Modules\TripManagement\Entities\MartReview;
 use Modules\TripManagement\Entities\StripeEvent;
 use Modules\UserManagement\Entities\User;
 
@@ -346,6 +347,48 @@ class VitoMartController extends Controller
         }
 
         return response()->json(responseFormatter(DEFAULT_200));
+    }
+
+    public function reviewOrder(Request $request, string $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'rating'  => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        $order = MartOrder::where('id', $id)
+            ->where('customer_id', $request->user()->id)
+            ->where('status', 'delivered')
+            ->whereNotNull('driver_id')
+            ->first();
+
+        if (!$order) {
+            return response()->json(responseFormatter(
+                constant: DEFAULT_404,
+                errors: [['message' => 'Order not found or not eligible for review.']]
+            ), 404);
+        }
+
+        if (MartReview::where('order_id', $order->id)->exists()) {
+            return response()->json(responseFormatter(
+                constant: DEFAULT_400,
+                errors: [['message' => 'This order has already been reviewed.']]
+            ), 400);
+        }
+
+        $review = MartReview::create([
+            'order_id'    => $order->id,
+            'customer_id' => $order->customer_id,
+            'driver_id'   => $order->driver_id,
+            'rating'      => (int) $request->rating,
+            'comment'     => $request->comment,
+        ]);
+
+        return response()->json(responseFormatter(DEFAULT_200, $review));
     }
 
     /**

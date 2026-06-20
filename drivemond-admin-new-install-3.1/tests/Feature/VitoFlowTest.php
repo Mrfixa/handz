@@ -35,6 +35,7 @@ class VitoFlowTest extends TestCase
         Schema::dropIfExists('reviews');
         Schema::dropIfExists('transactions');
         Schema::dropIfExists('stripe_events');
+        Schema::dropIfExists('mart_reviews');
         Schema::dropIfExists('mart_order_items');
         Schema::dropIfExists('mart_orders');
         Schema::dropIfExists('mart_promo_codes');
@@ -229,6 +230,8 @@ class VitoFlowTest extends TestCase
                 $table->string('car_photo')->nullable();
                 $table->boolean('car_photo_approved')->default(false);
                 $table->boolean('is_approved')->default(false);
+                $table->unsignedTinyInteger('is_verified')->default(0);
+                $table->unsignedTinyInteger('is_suspended')->default(0);
                 $table->integer('ride_count')->default(0);
                 $table->integer('parcel_count')->default(0);
                 $table->timestamps();
@@ -360,6 +363,18 @@ class VitoFlowTest extends TestCase
                 $table->unsignedInteger('quantity');
                 $table->decimal('unit_price', 10, 2);
                 $table->decimal('total_price', 10, 2);
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('mart_reviews')) {
+            Schema::create('mart_reviews', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('order_id')->unique();
+                $table->uuid('customer_id');
+                $table->uuid('driver_id')->nullable();
+                $table->unsignedTinyInteger('rating');
+                $table->text('comment')->nullable();
                 $table->timestamps();
             });
         }
@@ -2791,6 +2806,27 @@ class VitoFlowTest extends TestCase
         $resp->assertStatus(403);
     }
 
+    public function test_mart_driver_approved_via_is_verified(): void
+    {
+        // Production driver_details has no is_approved column — approval is via
+        // is_verified. A verified, non-suspended driver must be allowed in.
+        $driver = $this->createUser('driver', ['username' => 'verifieddriver']);
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 0, 'availability_status' => 'available',
+            'is_approved' => false, 'is_verified' => 1, 'is_suspended' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $resp = $this->getJson('/api/driver/mart/pending-orders');
+        $resp->assertOk();
+
+        // A suspended driver is rejected even if verified.
+        DB::table('driver_details')->where('user_id', $driver->id)->update(['is_suspended' => 1]);
+        Passport::actingAs(User::find($driver->id), ['AccessToDriver']);
+        $this->getJson('/api/driver/mart/pending-orders')->assertStatus(403);
+    }
+
     public function test_apply_promo_requires_items_array(): void
     {
         $this->seedUserLevel('customer');
@@ -3039,5 +3075,80 @@ class VitoFlowTest extends TestCase
         $this->assertEquals('Vehicle issue', $fresh->cancellation_reason);
         $this->assertEquals('driver', $fresh->cancelled_by);
         $this->assertNotNull($fresh->cancelled_at);
+    }
+
+    // ========================================================================
+    // Customer can review a delivered mart order (once); guards enforced
+    // ========================================================================
+
+    public function test_mart_order_review(): void
+    {
+        $customer = $this->createUser('customer');
+        $driver = $this->createUser('driver');
+
+        // Not-yet-delivered order cannot be reviewed.
+        $pending = MartOrder::create([
+            'ref_id' => 'VM-REV0PEND', 'customer_id' => $customer->id, 'driver_id' => $driver->id,
+            'status' => 'accepted', 'total_amount' => 10.00, 'delivery_address' => 'Rev St',
+        ]);
+
+        Passport::actingAs($customer, ['AccessToCustomer']);
+        $early = $this->postJson("/api/customer/mart/orders/{$pending->id}/review", ['rating' => 5]);
+        $early->assertStatus(404);
+
+        // Delivered order can be reviewed.
+        $delivered = MartOrder::create([
+            'ref_id' => 'VM-REV0DONE', 'customer_id' => $customer->id, 'driver_id' => $driver->id,
+            'status' => 'delivered', 'total_amount' => 10.00, 'delivery_address' => 'Rev St',
+        ]);
+
+        $bad = $this->postJson("/api/customer/mart/orders/{$delivered->id}/review", ['rating' => 9]);
+        $bad->assertStatus(422);
+
+        $ok = $this->postJson("/api/customer/mart/orders/{$delivered->id}/review", [
+            'rating' => 5, 'comment' => 'Great service',
+        ]);
+        $ok->assertOk();
+        $this->assertDatabaseHas('mart_reviews', [
+            'order_id' => $delivered->id, 'driver_id' => $driver->id, 'rating' => 5,
+        ]);
+
+        // Second review on the same order is rejected.
+        $dup = $this->postJson("/api/customer/mart/orders/{$delivered->id}/review", ['rating' => 4]);
+        $dup->assertStatus(400);
+
+        // Another customer cannot review someone else's order.
+        $other = $this->createUser('customer');
+        Passport::actingAs($other, ['AccessToCustomer']);
+        $foreign = $this->postJson("/api/customer/mart/orders/{$delivered->id}/review", ['rating' => 1]);
+        $foreign->assertStatus(404);
+    }
+
+    // ========================================================================
+    // Default credentials seeder creates working, idempotent logins
+    // ========================================================================
+
+    public function test_default_users_seeder(): void
+    {
+        (new \Database\Seeders\DefaultUsersSeeder())->run();
+
+        // Seeded customer can log in with username + PIN.
+        $cust = $this->postJson('/api/customer/auth/pin-login', ['username' => 'customer', 'pin' => '123456']);
+        $cust->assertOk();
+        $this->assertArrayHasKey('token', $cust->json('data'));
+
+        // Seeded driver can log in.
+        $drv = $this->postJson('/api/driver/auth/pin-login', ['username' => 'driver', 'pin' => '123456']);
+        $drv->assertOk();
+
+        // Seeded driver is verified → mart driver endpoints are reachable.
+        $driver = User::where('username', 'driver')->first();
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $this->getJson('/api/driver/mart/pending-orders')->assertOk();
+
+        // Idempotent: a second run does not duplicate accounts.
+        (new \Database\Seeders\DefaultUsersSeeder())->run();
+        $this->assertEquals(1, User::where('username', 'customer')->count());
+        $this->assertEquals(1, User::where('username', 'driver')->count());
     }
 }

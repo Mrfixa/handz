@@ -18,7 +18,7 @@ class VitoMartDriverController extends Controller
     public function pendingOrders(Request $request): JsonResponse
     {
         $driver = $request->user()->driverDetails;
-        if (!$driver || !$driver->is_approved) {
+        if (!$this->driverApproved($driver)) {
             return response()->json(responseFormatter(DEFAULT_403), 403);
         }
 
@@ -41,7 +41,7 @@ class VitoMartDriverController extends Controller
         }
 
         $driver = $request->user()->driverDetails;
-        if (!$driver || !$driver->is_approved) {
+        if (!$this->driverApproved($driver)) {
             return response()->json(responseFormatter(DEFAULT_403), 403);
         }
 
@@ -276,6 +276,24 @@ class VitoMartDriverController extends Controller
         }
 
         return response()->json(responseFormatter(DEFAULT_200, $order));
+    }
+
+    /**
+     * Whether a driver is cleared to handle mart deliveries.
+     * The production `driver_details` table gates approval via `is_verified`
+     * (older/test fixtures use `is_approved`) — accept either, and always
+     * reject suspended drivers. Accessing a column that does not exist returns
+     * null, so this stays safe across schema variants.
+     */
+    private function driverApproved($driver): bool
+    {
+        if (!$driver) {
+            return false;
+        }
+        if ($driver->is_suspended ?? false) {
+            return false;
+        }
+        return (bool) ($driver->is_verified ?? false) || (bool) ($driver->is_approved ?? false);
     }
 
     private function notifyCustomer(MartOrder $order, string $title, string $description, string $action): void

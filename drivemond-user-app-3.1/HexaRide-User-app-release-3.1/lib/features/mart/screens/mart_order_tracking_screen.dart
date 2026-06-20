@@ -8,9 +8,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/message/controllers/message_controller.dart';
-import 'package:ride_sharing_user_app/features/payment/controllers/payment_controller.dart';
 import 'package:ride_sharing_user_app/util/app_colors.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
+import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
@@ -876,13 +876,21 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
                       child: ElevatedButton(
                         onPressed: () async {
                           Navigator.of(ctx).pop();
+                          // Mart orders are reviewed through the dedicated mart
+                          // endpoint (the generic /review/store only accepts trips).
                           try {
-                            await Get.find<PaymentController>().submitReview(
-                              widget.orderId,
-                              selectedRating,
-                              commentController.text,
+                            final response = await Get.find<ApiClient>().postData(
+                              '${AppConstants.martReviewOrder}${widget.orderId}/review',
+                              {'rating': selectedRating, 'comment': commentController.text.trim()},
                             );
-                          } catch (_) {}
+                            if (response.statusCode == 200) {
+                              showCustomSnackBar('thanks_for_your_feedback'.tr, isError: false);
+                            } else {
+                              showCustomSnackBar('something_went_wrong'.tr);
+                            }
+                          } catch (_) {
+                            showCustomSnackBar('something_went_wrong'.tr);
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).primaryColor,

@@ -1091,5 +1091,6 @@
   "order_chat_unavailable": "الدردشة غير متاحة حتى يتم تعيين سائق",
   "processing_payment": "جارٍ معالجة الدفع...",
   "order_payment": "دفع الطلب",
-  "loading": "جارٍ التحميل..."
+  "loading": "جارٍ التحميل...",
+  "thanks_for_your_feedback": "شكرًا على ملاحظاتك!"
 }

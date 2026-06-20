@@ -19,6 +19,7 @@ Route::group(['prefix' => 'customer/mart', 'middleware' => ['auth:api', 'mainten
         Route::get('orders', 'orderList');
         Route::get('orders/{id}', 'orderDetails');
         Route::middleware('throttle:20,1')->put('orders/{id}/cancel', 'cancelOrder');
+        Route::middleware('throttle:20,1')->post('orders/{id}/review', 'reviewOrder');
     });
 });
 

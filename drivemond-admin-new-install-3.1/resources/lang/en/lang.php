@@ -4426,4 +4426,5 @@
   'The external base url field is required.' => 'The external base url field is required.',
   'The token field is required.' => 'The token field is required.',
   'The items field is required.' => 'The items field is required.',
+  'The rating may not be greater than 5.' => 'The rating may not be greater than 5.',
 );
