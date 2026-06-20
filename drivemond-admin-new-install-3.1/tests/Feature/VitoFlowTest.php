@@ -735,8 +735,8 @@ class VitoFlowTest extends TestCase
 
         // Ensure driver_details exist (required by TripRequest model observer)
         DB::table('driver_details')->insert([
-            ['user_id' => $driver1->id, 'is_online' => 1, 'availability_status' => 'available', 'created_at' => now(), 'updated_at' => now()],
-            ['user_id' => $driver2->id, 'is_online' => 1, 'availability_status' => 'available', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $driver1->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $driver2->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // Seed time_tracks (required by TripRequest booted observer)
@@ -1482,7 +1482,7 @@ class VitoFlowTest extends TestCase
         $driver   = $this->createUser('driver', ['username' => 'driverp1']);
 
         DB::table('driver_details')->insert([
-            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1,
             'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('time_tracks')->insert([
@@ -1575,7 +1575,7 @@ class VitoFlowTest extends TestCase
         $driver   = $this->createUser('driver', ['username' => 'driverp2']);
 
         DB::table('driver_details')->insert([
-            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1,
             'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('time_tracks')->insert([
@@ -2395,7 +2395,7 @@ class VitoFlowTest extends TestCase
         $driver = $this->createUser('driver', ['username' => 'clearnotifdriver']);
         $this->createUserAccount($driver);
         DB::table('driver_details')->insert([
-            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1,
             'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('time_tracks')->insert([
@@ -2430,7 +2430,7 @@ class VitoFlowTest extends TestCase
         $driver = $this->createUser('driver', ['username' => 'parceltypedriver']);
         $this->createUserAccount($driver);
         DB::table('driver_details')->insert([
-            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1,
             'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('time_tracks')->insert([
@@ -2722,7 +2722,7 @@ class VitoFlowTest extends TestCase
         $driver = $this->createUser('driver', ['username' => 'rideatomicdriver']);
         $this->createUserAccount($driver);
         DB::table('driver_details')->insert([
-            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1,
             'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('time_tracks')->insert([
@@ -2825,6 +2825,85 @@ class VitoFlowTest extends TestCase
         DB::table('driver_details')->where('user_id', $driver->id)->update(['is_suspended' => 1]);
         Passport::actingAs(User::find($driver->id), ['AccessToDriver']);
         $this->getJson('/api/driver/mart/pending-orders')->assertStatus(403);
+    }
+
+    public function test_ride_accept_requires_approved_driver(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $driver = $this->createUser('driver', ['username' => 'unapprovedride']);
+        // Unverified, unapproved driver.
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'is_approved' => false, 'is_verified' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(),
+            'last_ride_completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $tripId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $tripId, 'customer_id' => $customer->id, 'type' => 'ride_request',
+            'current_status' => 'pending', 'driver_id' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $tripId])->assertStatus(403);
+        // Trip stays unassigned.
+        $this->assertNull(DB::table('trip_requests')->where('id', $tripId)->value('driver_id'));
+
+        // Once verified, acceptance succeeds (fresh trip id to avoid idempotency replay).
+        DB::table('driver_details')->where('user_id', $driver->id)->update(['is_verified' => 1]);
+        $tripId2 = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $tripId2, 'customer_id' => $customer->id, 'type' => 'ride_request',
+            'current_status' => 'pending', 'driver_id' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Passport::actingAs(User::find($driver->id), ['AccessToDriver']);
+        $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $tripId2])->assertOk();
+    }
+
+    public function test_parcel_accept_requires_approved_driver(): void
+    {
+        $this->seedUserLevel('customer');
+        $this->seedUserLevel('driver');
+        $customer = $this->createUser('customer');
+        $driver = $this->createUser('driver', ['username' => 'unapprovedparcel']);
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available',
+            'is_approved' => false, 'is_verified' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(),
+            'last_ride_completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $parcelId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $parcelId, 'customer_id' => $customer->id, 'type' => 'parcel',
+            'current_status' => 'pending', 'driver_id' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+        $this->postJson('/api/driver/parcel/atomic-accept', ['trip_request_id' => $parcelId])->assertStatus(403);
+
+        // Once verified, acceptance succeeds (fresh parcel id to avoid idempotency replay).
+        DB::table('driver_details')->where('user_id', $driver->id)->update(['is_verified' => 1]);
+        $parcelId2 = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $parcelId2, 'customer_id' => $customer->id, 'type' => 'parcel',
+            'current_status' => 'pending', 'driver_id' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Passport::actingAs(User::find($driver->id), ['AccessToDriver']);
+        $this->postJson('/api/driver/parcel/atomic-accept', ['trip_request_id' => $parcelId2])->assertOk();
     }
 
     public function test_apply_promo_requires_items_array(): void

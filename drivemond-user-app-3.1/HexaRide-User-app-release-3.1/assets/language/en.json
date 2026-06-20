@@ -1089,5 +1089,6 @@
   "loading": "Loading...",
   "max_capacity": "Max Capacity",
   "kg": "Kg",
-  "thanks_for_your_feedback": "Thanks for your feedback!"
+  "thanks_for_your_feedback": "Thanks for your feedback!",
+  "warning": "Warning"
 }

@@ -160,7 +160,7 @@ class _PaymentScreenState extends State<PaymentScreen> with WidgetsBindingObserv
                           child: Row(mainAxisAlignment: MainAxisAlignment.center,children: [
                               Text(
                                 PriceConverter.convertPrice(
-                                  rideController.finalFare!.paidFare! + double.parse(paymentController.tipAmount),
+                                  rideController.finalFare!.paidFare! + (double.tryParse(paymentController.tipAmount) ?? 0),
                                 ),
                                 style: textRobotoMedium.copyWith(fontSize: Dimensions.fontSizeOverLarge,
                                   color: Theme.of(context).textTheme.bodyMedium!.color,
@@ -168,7 +168,7 @@ class _PaymentScreenState extends State<PaymentScreen> with WidgetsBindingObserv
                               ),
                             const SizedBox(width: Dimensions.paddingSizeSmall),
 
-                            if(double.parse(paymentController.tipAmount) > 0)
+                            if((double.tryParse(paymentController.tipAmount) ?? 0) > 0)
                             Text('( ${'tips_added'.tr} )')
                             ]),
                         ) : const SizedBox(),
@@ -270,7 +270,7 @@ class _PaymentScreenState extends State<PaymentScreen> with WidgetsBindingObserv
                                       paymentController.tipAmount.isEmpty) ?
                                   'give_tips'.tr :
                                   '${'tips'.tr}: ${PriceConverter.convertPrice(
-                                      double.parse(paymentController.tipAmount))}',
+                                      (double.tryParse(paymentController.tipAmount) ?? 0))}',
                                   style: textRobotoMedium.copyWith(color: Theme.of(context).primaryColorDark),
                                 ),
                               ),

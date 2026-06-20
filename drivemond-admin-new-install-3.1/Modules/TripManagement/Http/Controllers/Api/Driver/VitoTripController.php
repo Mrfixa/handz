@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Modules\TripManagement\Entities\TempTripNotification;
 use Modules\TripManagement\Entities\TripRequest;
+use Modules\TripManagement\Http\Controllers\Concerns\ChecksDriverApproval;
 
 class VitoTripController extends Controller
 {
+    use ChecksDriverApproval;
+
     public function atomicAccept(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -20,6 +23,11 @@ class VitoTripController extends Controller
 
         if ($validator->fails()) {
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 400);
+        }
+
+        // Only verified, non-suspended drivers may accept rides.
+        if (!$this->driverApproved($request->user()->driverDetails)) {
+            return response()->json(responseFormatter(DEFAULT_403), 403);
         }
 
         $result = DB::transaction(function () use ($request) {

@@ -383,7 +383,7 @@ class _ProductCardState extends State<_ProductCard> {
 
   void _handleAdd() {
     if (widget.isOffline) {
-      Get.snackbar('', 'you_are_offline'.tr);
+      Get.snackbar('warning'.tr, 'you_are_offline'.tr);
       return;
     }
     if (_isOutOfStock) return;

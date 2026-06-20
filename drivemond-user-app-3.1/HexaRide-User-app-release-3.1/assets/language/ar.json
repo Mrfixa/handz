@@ -1092,5 +1092,6 @@
   "processing_payment": "جارٍ معالجة الدفع...",
   "order_payment": "دفع الطلب",
   "loading": "جارٍ التحميل...",
-  "thanks_for_your_feedback": "شكرًا على ملاحظاتك!"
+  "thanks_for_your_feedback": "شكرًا على ملاحظاتك!",
+  "warning": "تنبيه"
 }

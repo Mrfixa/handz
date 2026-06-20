@@ -57,7 +57,12 @@ class QrTokenController extends Controller
         $qrToken = QrToken::where('token', $request->token)->first();
 
         if (!$qrToken || !$qrToken->isValid()) {
-            return response()->json(responseFormatter(constant: DEFAULT_404), 404);
+            // Structured error body for parity with validateTokenPublic so clients
+            // can distinguish invalid/expired/revoked from a generic 404.
+            return response()->json(responseFormatter(
+                constant: DEFAULT_404,
+                errors: [['message' => 'Token is invalid or expired']]
+            ), 404);
         }
 
         return response()->json(responseFormatter(DEFAULT_200, [
