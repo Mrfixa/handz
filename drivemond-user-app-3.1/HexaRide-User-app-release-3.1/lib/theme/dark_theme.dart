@@ -36,7 +36,7 @@ ThemeData darkTheme = ThemeData(
     errorContainer: Color(0xFFF6F6F6),
     primaryContainer: Color(0xFFFFA800),
     onSurface: Color(0xFFFFE6AD),
-    onPrimary: Color(0xFFF5B800),
+    onPrimary: Color(0xFFFFFFFF),
     inverseSurface: Color(0xFF0148AF),
     surfaceContainer: Color(0xFF0094FF),
     secondaryFixedDim: Color(0xff808080),

@@ -30,20 +30,24 @@ class LoginHelper{
     final Uri? initialLink = await appLinks.getInitialLink();
     final String? deepLinkPath = initialLink?.path;
 
-    Get.find<SplashController>().getConfigData().then((isSuccess) {
-      if (!isSuccess) return;
-      if (_isForceUpdate(Get.find<SplashController>().config)) {
-        Get.offAll(() => const AppVersionWarningScreen());
-      } else if (deepLinkPath != null && deepLinkPath.isNotEmpty) {
-        Get.offAll(() => LiveLocationScreen(trackingUrl: deepLinkPath));
-      } else {
-        if (Get.find<LocalizationController>().haveLocalLanguageCode()) {
-          checkLoginRoutes(notificationData);
-        } else {
-          Get.offAll(() => LanguageSelectionScreen(notificationData: notificationData));
-        }
-      }
-    });
+    Get.find<SplashController>().getConfigData()
+        .timeout(const Duration(seconds: 15), onTimeout: () => false)
+        .then((isSuccess) => _routeAfterConfig(notificationData, deepLinkPath))
+        .catchError((_) => _routeAfterConfig(notificationData, deepLinkPath));
+  }
+
+  // Routes once config has loaded (or failed/timed out) — never hangs on splash,
+  // and language selection is the first screen when none is saved.
+  void _routeAfterConfig(Map<String, dynamic>? notificationData, String? deepLinkPath){
+    if (_isForceUpdate(Get.find<SplashController>().config)) {
+      Get.offAll(() => const AppVersionWarningScreen());
+    } else if (deepLinkPath != null && deepLinkPath.isNotEmpty) {
+      Get.offAll(() => LiveLocationScreen(trackingUrl: deepLinkPath));
+    } else if (!Get.find<LocalizationController>().haveLocalLanguageCode()) {
+      Get.offAll(() => LanguageSelectionScreen(notificationData: notificationData));
+    } else {
+      checkLoginRoutes(notificationData);
+    }
   }
 
   void checkLoginRoutes(Map<String,dynamic>? notificationData){
@@ -76,9 +80,10 @@ class LoginHelper{
         }
 
       }else{
-        if(Get.find<SplashController>().config!.maintenanceMode != null &&
-            Get.find<SplashController>().config!.maintenanceMode!.maintenanceStatus == 1 &&
-            Get.find<SplashController>().config!.maintenanceMode!.selectedMaintenanceSystem!.driverApp == 1
+        final maintenance = Get.find<SplashController>().config?.maintenanceMode;
+        if(maintenance != null &&
+            maintenance.maintenanceStatus == 1 &&
+            maintenance.selectedMaintenanceSystem?.driverApp == 1
         ){
           Get.offAll(() => const MaintenanceScreen());
         }else{

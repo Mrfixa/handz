@@ -184,9 +184,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                             ButtonWidget(
                               buttonText: 'login'.tr,
-                              isLoading: authController.isLoading || authController.updateFcm ||
-                                  profileController.isLoading || rideController.isLoading ||
-                                  locationController.lastLocationLoading,
+                              isLoading: authController.isLoading,
                               onPressed: () {
                                 HapticFeedback.mediumImpact();
                                 String username = usernameController.text.trim();

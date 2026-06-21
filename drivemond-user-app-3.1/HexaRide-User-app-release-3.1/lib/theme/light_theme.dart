@@ -47,7 +47,7 @@ ThemeData lightTheme = ThemeData(
     onPrimaryContainer: Color(0xFFDEFFFB),
     primaryContainer: Color(0xFFFFA800),
     onErrorContainer: Color(0xFFFFE6AD),
-    onPrimary: Color(0xFFF5B800),
+    onPrimary: Color(0xFFFFFFFF),
     surfaceTint: Color(0xFF0B9722),
     errorContainer: Color(0xFFF6F6F6),
     inverseSurface: Color(0xFF0148AF),

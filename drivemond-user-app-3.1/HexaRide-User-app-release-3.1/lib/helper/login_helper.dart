@@ -34,18 +34,23 @@ class LoginHelper{
     FirebaseHelper().subscribeFirebaseTopic();
     String? path = await initDynamicLinks();
 
-    Get.find<ConfigController>().getConfigData().then((value){
+    Get.find<ConfigController>().getConfigData()
+        .timeout(const Duration(seconds: 15), onTimeout: () => false)
+        .then((value){
       if(_isForceUpdate(Get.find<ConfigController>().config)) {
         Get.offAll(()=> const AppVersionWarningScreen());
+      }else if(path != null){
+        Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
       }else{
-       if(path != null){
-         Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
-       }else{
-         route(notificationData);
-       }
-
+        route(notificationData);
       }
-
+    }).catchError((_){
+      // Never get stuck on splash if config fails to load.
+      if(path != null){
+        Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
+      }else{
+        route(notificationData);
+      }
     });
 
   }
@@ -81,13 +86,13 @@ class LoginHelper{
     }
 
     Future.delayed(const Duration(milliseconds: 100), () {
+      // Language selection is the first screen for anyone without a saved language.
+      if(!Get.find<LocalizationController>().haveLocalLanguageCode()){
+        Get.offAll(()=> LanguageSelectionScreen(notificationData: notificationData));
+        return;
+      }
       if(Get.find<AuthController>().isLoggedIn()) {
-        if(Get.find<LocalizationController>().haveLocalLanguageCode()){
-          forLoginUserRoute(notificationData);
-        }else{
-          Get.offAll(()=> LanguageSelectionScreen(notificationData: notificationData));
-        }
-
+        forLoginUserRoute(notificationData);
       }else{
         forNotLoginUserRoute(notificationData);
       }
@@ -96,24 +101,16 @@ class LoginHelper{
   }
 
   void forNotLoginUserRoute(Map<String,dynamic>? notificationData){
-    if(Get.find<ConfigController>().config!.maintenanceMode != null &&
-        Get.find<ConfigController>().config!.maintenanceMode!.maintenanceStatus == 1 &&
-        Get.find<ConfigController>().config!.maintenanceMode!.selectedMaintenanceSystem!.userApp == 1
+    final maintenance = Get.find<ConfigController>().config?.maintenanceMode;
+    if(maintenance != null &&
+        maintenance.maintenanceStatus == 1 &&
+        maintenance.selectedMaintenanceSystem?.userApp == 1
     ){
       Get.offAll(() => const MaintenanceScreen());
-    }else{
-      if (Get.find<ConfigController>().showIntro()) {
-        Get.offAll(() => OnBoardingScreen(notificationData: notificationData));
-
-      }else {
-        if(Get.find<LocalizationController>().haveLocalLanguageCode()){
-          checkLoginMedium();
-
-        }else{
-          Get.offAll(()=> LanguageSelectionScreen(notificationData: notificationData));
-        }
-
-      }
+    }else if (Get.find<ConfigController>().showIntro()) {
+      Get.offAll(() => OnBoardingScreen(notificationData: notificationData));
+    }else {
+      checkLoginMedium();
     }
   }
 
