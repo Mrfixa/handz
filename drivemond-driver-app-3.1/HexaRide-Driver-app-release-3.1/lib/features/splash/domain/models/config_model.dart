@@ -212,14 +212,14 @@ class ConfigModel {
     }else{
       conversionRate = 0;
     }
-    otpResendTime = int.parse(json['otp_resend_time'].toString());
+    otpResendTime = int.tryParse(json['otp_resend_time'].toString()) ?? 60;
     selfRegistration = json['self_registration'];
     currencySymbol = json['currency_symbol'];
     reviewStatus = json['review_status'];
     parcelReturnTime = json['return_time_for_driver'];
     parcelReturnTimeType = json['return_time_type_for_driver'];
     parcelReturnTimeFeeStatus = json['parcel_return_time_fee_status'] ?? false;
-    parcelReturnFeeTimeExceed = double.parse(json['return_fee_for_driver_time_exceed'].toString());
+    parcelReturnFeeTimeExceed = double.tryParse(json['return_fee_for_driver_time_exceed'].toString()) ?? 0.0;
     maintenanceMode = json['maintenance_mode'] != null
         ? MaintenanceMode.fromJson(json['maintenance_mode'])
         : null;

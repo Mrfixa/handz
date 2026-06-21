@@ -202,6 +202,9 @@ class AuthRepository implements AuthRepositoryInterface{
     Get.find<FlutterSecureStorage>().delete(key: AppConstants.token);
     sharedPreferences.remove(AppConstants.token);
     sharedPreferences.remove(AppConstants.userAddress);
+    // Reset the in-memory token so isLoggedIn() (which reads apiClient.token)
+    // does not keep reporting a logged-in session after logout.
+    apiClient.clearToken();
     return true;
   }
 

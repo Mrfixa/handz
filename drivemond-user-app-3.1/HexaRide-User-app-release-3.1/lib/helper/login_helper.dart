@@ -122,12 +122,22 @@ class LoginHelper{
         && Get.find<LocationController>().getUserAddress()!.address != null
         && Get.find<LocationController>().getUserAddress()!.address!.isNotEmpty) {
 
-      Get.find<ProfileController>().getProfileInfo().then((value) {
+      Get.find<ProfileController>().getProfileInfo()
+          .timeout(const Duration(seconds: 15), onTimeout: () => Response(statusCode: 408))
+          .then((value) {
         if(value.statusCode == 200) {
           Get.find<AuthController>().updateToken();
           Get.find<AuthController>().remainingFindingRideTime();
           Get.offAll(()=> const DashboardScreen());
+        } else if(value.statusCode == 401) {
+          // Stale/expired token — drop to sign-in instead of hanging on splash.
+          Get.offAll(() => const SignInScreen());
+        } else {
+          // Any other failure: don't strand the user on splash.
+          Get.offAll(()=> const DashboardScreen());
         }
+      }).catchError((_) {
+        Get.offAll(()=> const DashboardScreen());
       });
 
     }else{

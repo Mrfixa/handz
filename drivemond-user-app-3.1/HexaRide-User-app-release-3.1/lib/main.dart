@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -22,36 +23,51 @@ import 'package:ride_sharing_user_app/common_widgets/offline_banner_widget.dart'
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  Stripe.publishableKey = const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY', defaultValue: '');
+  // Run the whole app inside a guarded zone so uncaught async errors are
+  // reported instead of crashing silently.
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    Stripe.publishableKey = const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY', defaultValue: '');
 
-  if(GetPlatform.isAndroid) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyCFGqSEiWMItei_AFIUgdM53PWrvyGmjFY",
-        appId: "1:76471554747:android:9fb5d198e81cd2b26d0f9e",
-        messagingSenderId: "76471554747",
-        projectId: "drivevalley-fdb7f",
-      ),
-    );
-  } else {
-  await Firebase.initializeApp();
-  }
+    // Firebase init must never take down app startup.
+    try {
+      if(GetPlatform.isAndroid) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyCFGqSEiWMItei_AFIUgdM53PWrvyGmjFY",
+            appId: "1:76471554747:android:9fb5d198e81cd2b26d0f9e",
+            messagingSenderId: "76471554747",
+            projectId: "drivevalley-fdb7f",
+          ),
+        );
+      } else {
+        await Firebase.initializeApp();
+      }
 
-  // Route all uncaught Flutter framework and async errors to Crashlytics.
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+      // Route all uncaught Flutter framework and async errors to Crashlytics.
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    } catch (_) {}
 
-  Map<String, Map<String, String>> languages = await di.init();
+    Map<String, Map<String, String>> languages = await di.init();
 
-  final RemoteMessage? remoteMessage = await FirebaseMessaging.instance.getInitialMessage();
-  await NotificationHelper.initialize(flutterLocalNotificationsPlugin);
-  FirebaseMessaging.onBackgroundMessage(myBackgroundMessageHandler);
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  runApp(MyApp(languages: languages, notificationData: remoteMessage?.data));
+    RemoteMessage? remoteMessage;
+    try {
+      remoteMessage = await FirebaseMessaging.instance.getInitialMessage();
+      await NotificationHelper.initialize(flutterLocalNotificationsPlugin);
+      FirebaseMessaging.onBackgroundMessage(myBackgroundMessageHandler);
+    } catch (_) {}
+
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    runApp(MyApp(languages: languages, notificationData: remoteMessage?.data));
+  }, (error, stack) {
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {}
+  });
 }
 
 class MyApp extends StatelessWidget {

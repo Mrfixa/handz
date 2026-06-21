@@ -107,13 +107,19 @@ class AuthController extends GetxController implements GetxService {
   }
 
   void pickImage(bool isBack, bool isProfile) async {
-       if(isProfile){
-        _pickedProfileFile = (await FileValidationHelper.validateAndPickImage(source: ImageSource.gallery))!;
-      } else{
-         identityImage = (await FileValidationHelper.validateAndPickImage(source: ImageSource.gallery))!;
-         identityImages.add(identityImage);
-         multipartList.add(MultipartBody('identity_images[]', identityImage));
-      }
+    // validateAndPickImage returns null if the user cancels or the file is
+    // invalid (it shows its own snackbar) — never force-unwrap it.
+    final picked = await FileValidationHelper.validateAndPickImage(source: ImageSource.gallery);
+    if(picked == null){
+      return;
+    }
+    if(isProfile){
+      _pickedProfileFile = picked;
+    } else{
+      identityImage = picked;
+      identityImages.add(identityImage);
+      multipartList.add(MultipartBody('identity_images[]', identityImage));
+    }
     update();
   }
 
@@ -124,12 +130,13 @@ class AuthController extends GetxController implements GetxService {
   }
 
   Future<bool> pickOtherFile() async {
-    _otherFile = (await FilePicker.platform.pickFiles(
+    // pickFiles returns null if the user cancels — never force-unwrap it.
+    _otherFile = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       withReadStream: true,
       allowedExtensions: AppConstants.registrationAllowExtensions,
-    ))!;
-    if (_otherFile != null) {
+    );
+    if (_otherFile != null && _otherFile!.files.isNotEmpty) {
       if(await FileValidationHelper.validatePlatformFileSizeAsync(file: _otherFile!.files.single)){
         objFile = _otherFile!.files.single;
         otherDocuments.add(MultipartDocument('upload_documents[]', objFile));
@@ -216,6 +223,8 @@ class AuthController extends GetxController implements GetxService {
       Get.find<RideController>().updateRoute(false, notify: true);
       Get.find<ProfileController>().stopLocationRecord();
       logging = false;
+      // Clear the session token so the next cold start routes to sign-in.
+      await clearSharedData();
       Get.back();
       LoginHelper.checkLoginMedium();
 
@@ -236,8 +245,10 @@ class AuthController extends GetxController implements GetxService {
       Get.find<RideController>().updateRoute(false, notify: true);
       Get.find<ProfileController>().stopLocationRecord();
       logging = false;
+      await clearSharedData();
       Get.back();
       LoginHelper.checkLoginMedium();
+      PusherHelper().pusherDisconnectPusher();
       Get.find<SafetyAlertController>().cancelDriverNeedSafetyStream();
       showCustomSnackBar('successfully_delete_account'.tr, isError: false);
     }else{

@@ -274,11 +274,11 @@ class LocationController extends GetxController implements GetxService {
   Future<String> initAddressAddressFromGeocode(LatLng latLng) async {
     Response response = await locationServiceInterface.getAddressFromGeocode(latLng);
     if(response.statusCode == 200) {
-      _address = response.body['data']['results'][0]['formatted_address'].toString();
+      _address = _formattedAddressFrom(response) ?? _address;
       pickupLocationController.text = _address;
       fromAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: _address);
     }else {
-      showCustomSnackBar(response.body['errors'][0]['message'] ?? response.bodyString);
+      showCustomSnackBar(_geocodeError(response));
     }
     update();
     return _address;
@@ -287,12 +287,34 @@ class LocationController extends GetxController implements GetxService {
   Future<String> getAddressFromGeocode(LatLng latLng) async {
     Response response = await locationServiceInterface.getAddressFromGeocode(latLng);
     if(response.statusCode == 200) {
-      _address = response.body['data']['results'][0]['formatted_address'].toString();
+      _address = _formattedAddressFrom(response) ?? _address;
     }else {
-      showCustomSnackBar(response.body['errors'][0]['message'] ?? response.bodyString);
+      showCustomSnackBar(_geocodeError(response));
     }
     update();
     return _address;
+  }
+
+  // Null-safe extraction of the formatted address from a geocode response;
+  // returns null if the expected data/results[0] chain is missing or malformed.
+  String? _formattedAddressFrom(Response response) {
+    try {
+      final results = response.body['data']?['results'];
+      if (results is List && results.isNotEmpty) {
+        return results[0]['formatted_address']?.toString();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  String _geocodeError(Response response) {
+    try {
+      final errors = response.body['errors'];
+      if (errors is List && errors.isNotEmpty && errors[0]['message'] != null) {
+        return errors[0]['message'].toString();
+      }
+    } catch (_) {}
+    return response.bodyString ?? 'something_went_wrong'.tr;
   }
 
   Future<List<Suggestions>?> searchLocation(BuildContext context, String text, {LocationType type = LocationType.from, bool fromMap = false}) async {

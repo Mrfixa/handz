@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:get/get_connect/http/src/response/response.dart';
+import 'package:get/get.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/splash/domain/repositories/splash_repository_interface.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
@@ -29,8 +30,14 @@ class SplashRepository implements SplashRepositoryInterface{
   }
 
   @override
-  Future<bool> removeSharedData() {
-    return sharedPreferences.clear();
+  Future<bool> removeSharedData() async {
+    // Clear the session (token) without wiping the saved language, theme or
+    // intro flags, and reset the in-memory/secure token so a 401 does not leave
+    // a stale token behind that re-triggers 401 on the next request.
+    await Get.find<FlutterSecureStorage>().delete(key: AppConstants.token);
+    await sharedPreferences.remove(AppConstants.token);
+    apiClient.clearToken();
+    return true;
   }
 
   @override

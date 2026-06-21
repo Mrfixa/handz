@@ -212,7 +212,7 @@ class ConfigModel {
     conversionStatus = json['conversion_status'];
     conversionRate = json['conversion_rate'];
     addIntermediatePoint = json['add_intermediate_points'];
-    otpResendTime = int.parse(json['otp_resend_time'].toString());
+    otpResendTime = int.tryParse(json['otp_resend_time'].toString()) ?? 60;
     currencySymbol = json['currency_symbol'];
     tripActiveTime = json['trip_request_active_time'];
     reviewStatus = json['review_status'];
@@ -267,7 +267,7 @@ class ConfigModel {
     afterTripCompleteSafetyFeatureActiveStatus = json['after_trip_completed_safety_feature_active_status'];
     afterTripCompleteSafetyFeatureSetTime = json['after_trip_completed_safety_feature_set_time'];
     safetyFeatureEmergencyGovtNumber = json['safety_feature_emergency_govt_number'];
-    maximumParcelWeightCapacity = json['maximum_parcel_weight_capacity'] != null ? double.parse(json['maximum_parcel_weight_capacity'].toString()) : null;
+    maximumParcelWeightCapacity = json['maximum_parcel_weight_capacity'] != null ? double.tryParse(json['maximum_parcel_weight_capacity'].toString()) : null;
     otpConfirmationForTrip = json['otp_confirmation_for_trip'];
     scheduleTripStatus = json['schedule_trip_status'];
     advanceScheduleBookTime = json['advance_schedule_book_time'];

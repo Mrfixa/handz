@@ -175,6 +175,9 @@ class AuthRepository implements AuthRepositoryInterface {
   bool clearSharedData() {
     Get.find<FlutterSecureStorage>().delete(key: AppConstants.token);
     sharedPreferences.remove(AppConstants.token);
+    // Reset the in-memory token so isLoggedIn() (which reads apiClient.token)
+    // does not keep reporting a logged-in session after logout.
+    apiClient.clearToken();
     return true;
   }
 

@@ -53,9 +53,15 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
     Get.find<ProfileController>().getCategoryList(1);
     Get.find<ProfileController>().clearVehicleData();
     if(widget.vehicleInfo != null){
-      licencePlateNumberController.text = widget.vehicleInfo!.licencePlateNumber!;
-      Get.find<ProfileController>().setStartDate(DateTime.parse(widget.vehicleInfo!.licenceExpireDate!));
-      Get.find<ProfileController>().setFuelType(widget.vehicleInfo!.fuelType!, false);
+      licencePlateNumberController.text = widget.vehicleInfo!.licencePlateNumber ?? '';
+      final expireDate = widget.vehicleInfo!.licenceExpireDate;
+      final parsedDate = expireDate != null ? DateTime.tryParse(expireDate) : null;
+      if(parsedDate != null){
+        Get.find<ProfileController>().setStartDate(parsedDate);
+      }
+      if(widget.vehicleInfo!.fuelType != null){
+        Get.find<ProfileController>().setFuelType(widget.vehicleInfo!.fuelType!, false);
+      }
       parcelWeightCapacity.text = (widget.vehicleInfo?.parcelWeightCapacity ?? '').toString();
     }
     super.initState();
@@ -418,7 +424,9 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                                       const SizedBox(width: Dimensions.paddingSizeSmall),
 
                                       Expanded(child: Text(
-                                        profileController.listOfDocuments[index].files.first.name,
+                                        profileController.listOfDocuments[index].files.isNotEmpty
+                                            ? profileController.listOfDocuments[index].files.first.name
+                                            : '',
                                         maxLines: 1,overflow: TextOverflow.ellipsis,
                                       )),
                                       const Icon(Icons.clear, color: Colors.red,size: 20)
@@ -451,19 +459,19 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                 radius: Dimensions.radiusExtraLarge,
                 buttonText: widget.vehicleInfo == null ? 'send_request'.tr : 'update_and_send_request'.tr,
                 onPressed: (){
-                  String brandId = profileController.selectedBrand!.id!;
-                  String modelId = profileController.selectedModel.id!;
-                  String categoryId = profileController.selectedCategory.id!;
+                  String brandId = profileController.selectedBrand?.id ?? 'abc';
+                  String modelId = profileController.selectedModel.id ?? 'abc';
+                  String categoryId = profileController.selectedCategory.id ?? 'abc';
                   String licencePlateNumber = licencePlateNumberController.text.trim();
                   String expireDate = profileController.dateFormat.format(profileController.startDate??DateTime.now()).toString();
                   String vinNumber = vinNumberController.text.trim();
                   String transmission = transmissionController.text.trim();
                   String fuelType = profileController.selectedFuelType;
-                  if(profileController.selectedBrand!.id == 'abc'){
+                  if(brandId == 'abc'){
                     showCustomSnackBar('select_vehicle_brand'.tr);
-                  }else if(profileController.selectedModel.id == 'abc'){
+                  }else if(modelId == 'abc'){
                     showCustomSnackBar('select_vehicle_model'.tr);
-                  }else if(profileController.selectedCategory.id == 'abc'){
+                  }else if(categoryId == 'abc'){
                     showCustomSnackBar('select_vehicle_category'.tr);
                   }
                   else if(licencePlateNumber.isEmpty){
@@ -482,7 +490,7 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                         vinNumber: vinNumber,
                         transmission: transmission,
                         fuelType: fuelType,
-                        driverId: profileController.profileInfo!.id??"123456789",
+                        driverId: profileController.profileInfo?.id??"123456789",
                         ownership: 'driver',
                         parcelCapacityWeight: parcelWeightCapacity.text.trim()
                     );

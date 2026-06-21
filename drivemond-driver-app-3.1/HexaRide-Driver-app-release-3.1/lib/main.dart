@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -30,40 +32,66 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterL
 late List<CameraDescription> cameras;
 
 Future<void> main() async {
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarIconBrightness: Brightness.dark, // dark text for status bar
-      statusBarColor: Colors.transparent),
-  );
-
-  WidgetsFlutterBinding.ensureInitialized();
-  if(GetPlatform.isAndroid) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyCFGqSEiWMItei_AFIUgdM53PWrvyGmjFY",
-        appId: "1:76471554747:android:28346318a6d400326d0f9e",
-        messagingSenderId: "76471554747",
-        projectId: "drivevalley-fdb7f",
-      ),
+  // Run the whole app inside a guarded zone so uncaught async errors are
+  // reported instead of crashing silently.
+  runZonedGuarded(() async {
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarIconBrightness: Brightness.dark, // dark text for status bar
+        statusBarColor: Colors.transparent),
     );
-  } else {
-    await Firebase.initializeApp();
-  }
 
-  cameras = await availableCameras();
+    WidgetsFlutterBinding.ensureInitialized();
 
-  Map<String, Map<String, String>> languages = await di.init();
+    // Firebase init must never take down app startup.
+    try {
+      if(GetPlatform.isAndroid) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyCFGqSEiWMItei_AFIUgdM53PWrvyGmjFY",
+            appId: "1:76471554747:android:28346318a6d400326d0f9e",
+            messagingSenderId: "76471554747",
+            projectId: "drivevalley-fdb7f",
+          ),
+        );
+      } else {
+        await Firebase.initializeApp();
+      }
 
-  final RemoteMessage? remoteMessage = await FirebaseMessaging.instance.getInitialMessage();
+      // Route all uncaught Flutter framework and async errors to Crashlytics.
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    } catch (_) {}
 
-  await NotificationHelper.initialize(flutterLocalNotificationsPlugin);
+    try {
+      cameras = await availableCameras();
+    } catch (_) {
+      cameras = [];
+    }
 
-  FirebaseMessaging.onBackgroundMessage(myBackgroundMessageHandler);
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    Map<String, Map<String, String>> languages = await di.init();
 
-  await FlutterDownloader.initialize(debug: kDebugMode, ignoreSsl: false);
+    RemoteMessage? remoteMessage;
+    try {
+      remoteMessage = await FirebaseMessaging.instance.getInitialMessage();
+      await NotificationHelper.initialize(flutterLocalNotificationsPlugin);
+      FirebaseMessaging.onBackgroundMessage(myBackgroundMessageHandler);
+    } catch (_) {}
 
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(MyApp(languages: languages, notificationData: remoteMessage?.data));
+    try {
+      await FlutterDownloader.initialize(debug: kDebugMode, ignoreSsl: false);
+    } catch (_) {}
+
+    runApp(MyApp(languages: languages, notificationData: remoteMessage?.data));
+  }, (error, stack) {
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {}
+  });
 }
 
 class MyApp extends StatelessWidget {

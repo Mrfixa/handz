@@ -110,6 +110,9 @@ class AuthController extends GetxController implements GetxService {
       LoginHelper.checkLoginMedium();
       showCustomSnackBar('successfully_logout'.tr, isError: false);
       clearSharedData();
+      // Tear down the realtime connection so stale private channels are not
+      // left subscribed after logout.
+      try { PusherHelper.pusherClient?.disconnect(); } catch (_) {}
       Get.find<RideController>().clearRideDetails();
       Get.find<ParcelController>().clearParcelModel();
       Get.find<SafetyAlertController>().cancelDriverNeedSafetyStream();

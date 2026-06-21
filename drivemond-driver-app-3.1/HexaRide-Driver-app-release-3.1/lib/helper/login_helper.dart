@@ -62,19 +62,30 @@ class LoginHelper{
           Get.offAll(()=> const AccessLocationScreen());
 
         }else{
-          Get.find<OutOfZoneController>().getZoneList();
-          Get.find<ProfileController>().getProfileInfo().then((value){
-            if(value.statusCode ==200){
-              Get.find<LocationController>().getCurrentLocation().then((value){
+          try { Get.find<OutOfZoneController>().getZoneList(); } catch (_) {}
+          Get.find<ProfileController>().getProfileInfo()
+              .timeout(const Duration(seconds: 15), onTimeout: () => Response(statusCode: 408))
+              .then((value){
+            if(value.statusCode == 200){
+              try {
+                PusherHelper().driverTripRequestSubscribe(value.body['data']['id']);
+              } catch (_) {}
+              // Route to the dashboard regardless of whether the location fetch
+              // succeeds, so a denied/failed GPS read never strands the driver.
+              Get.find<LocationController>().getCurrentLocation().whenComplete((){
                 if(notificationData != null){
                   NotificationHelper.notificationToRoute(notificationData, formSplash: true, userName: notificationData['user_name']);
                 }else{
                   Get.offAll(()=> const DashboardScreen());
                 }
-
               });
-              PusherHelper().driverTripRequestSubscribe(value.body['data']['id']);
+            } else if(value.statusCode == 401){
+              checkLoginMedium();
+            } else {
+              Get.offAll(()=> const DashboardScreen());
             }
+          }).catchError((_){
+            Get.offAll(()=> const DashboardScreen());
           });
 
         }

@@ -94,7 +94,10 @@ class ParcelController extends GetxController with GetSingleTickerProviderStateM
 
   void updateParcelCategoryIndex(int newIndex) {
     selectedParcelCategory = newIndex;
-    parcelTypeController.text = parcelCategoryList![selectedParcelCategory].name!;
+    if(parcelCategoryList != null &&
+        newIndex >= 0 && newIndex < parcelCategoryList!.length){
+      parcelTypeController.text = parcelCategoryList![selectedParcelCategory].name ?? '';
+    }
     update();
   }
 

@@ -47,6 +47,13 @@ class ApiClient extends GetxService {
     _mainHeaders = header;
   }
 
+  /// Clears the in-memory token and rebuilds headers without an Authorization
+  /// bearer, so a logged-out / 401 session does not keep reusing a dead token.
+  void clearToken() {
+    token = '';
+    updateHeader('', sharedPreferences.getString(AppConstants.languageCode), '', '', '');
+  }
+
   Future<Response> getData(String uri, {Map<String, dynamic>? query, Map<String, String>? headers}) async {
     try {
       if(kDebugMode) {

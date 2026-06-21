@@ -17,22 +17,32 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 class PusherHelper {
   static PusherChannelsClient?  pusherClient;
   static void initializePusher() async{
-    PusherChannelsOptions testOptions = PusherChannelsOptions.fromHost(
-      host: Get.find<ConfigController>().config!.webSocketUrl ?? '',
-      scheme: Get.find<ConfigController>().config!.websocketScheme == 'https' ? 'wss' : 'ws',
-      key: Get.find<ConfigController>().config!.webSocketKey ?? '',
-      port: int.parse(Get.find<ConfigController>().config?.webSocketPort ?? '6001'),
-    );
+    final config = Get.find<ConfigController>().config;
+    // Config may be null if the config API failed on splash; don't crash.
+    if(config == null) {
+      return;
+    }
+    try {
+      PusherChannelsOptions testOptions = PusherChannelsOptions.fromHost(
+        host: config.webSocketUrl ?? '',
+        scheme: config.websocketScheme == 'https' ? 'wss' : 'ws',
+        key: config.webSocketKey ?? '',
+        port: int.tryParse(config.webSocketPort ?? '6001') ?? 6001,
+      );
 
-    pusherClient = PusherChannelsClient.websocket(
-      options: testOptions,
-      connectionErrorHandler: (exception, trace, refresh) async {
-        Get.find<ConfigController>().setPusherStatus('Disconnected');
-        refresh();
-      },
-    );
+      pusherClient = PusherChannelsClient.websocket(
+        options: testOptions,
+        connectionErrorHandler: (exception, trace, refresh) async {
+          Get.find<ConfigController>().setPusherStatus('Disconnected');
+          refresh();
+        },
+      );
 
-    await pusherClient?.connect();
+      await pusherClient?.connect();
+    } catch (_) {
+      Get.find<ConfigController>().setPusherStatus('Disconnected');
+      return;
+    }
 
     String? pusherChannelId =  pusherClient?.channelsManager.channelsConnectionDelegate.socketId;
     if(pusherChannelId != null){
