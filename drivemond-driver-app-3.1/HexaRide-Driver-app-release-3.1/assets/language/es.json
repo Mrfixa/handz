@@ -1093,5 +1093,6 @@
     "order_chat_unavailable": "Chat no disponible hasta que se asigne un conductor",
     "loading": "Cargando...",
     "successfully_sent_otp": "OTP enviado correctamente",
-    "invalid_number": "Número no válido"
+    "invalid_number": "Número no válido",
+    "camera_permission_required": "Se necesita permiso de cámara para escanear el código QR"
 }

@@ -1093,5 +1093,6 @@
     "order_chat_unavailable": "الدردشة غير متاحة حتى يتم تعيين سائق",
     "loading": "جارٍ التحميل...",
     "successfully_sent_otp": "تم إرسال رمز التحقق بنجاح",
-    "invalid_number": "رقم غير صالح"
+    "invalid_number": "رقم غير صالح",
+    "camera_permission_required": "إذن الكاميرا مطلوب لمسح رمز QR"
 }

@@ -172,6 +172,15 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                             icon: Icon(Icons.keyboard_arrow_down),
                             value: profileController.selectedBrand ?? Brand(id: 'abc', name: 'Select Brand Model'),
                           ),
+                        )
+                      else
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => profileController.getVehicleBrandList(1),
+                            icon: Icon(Icons.refresh, size: 18, color: Theme.of(context).primaryColor),
+                            label: Text('retry'.tr, style: textRegular.copyWith(color: Theme.of(context).primaryColor)),
+                          ),
                         ),
 
                       if(profileController.modelList.isNotEmpty)
@@ -230,6 +239,15 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                             icon: Icon(Icons.keyboard_arrow_down),
                             underline: const SizedBox(),
                             value: profileController.selectedCategory,
+                          ),
+                        )
+                      else
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => profileController.getCategoryList(1),
+                            icon: Icon(Icons.refresh, size: 18, color: Theme.of(context).primaryColor),
+                            label: Text('retry'.tr, style: textRegular.copyWith(color: Theme.of(context).primaryColor)),
                           ),
                         ),
 

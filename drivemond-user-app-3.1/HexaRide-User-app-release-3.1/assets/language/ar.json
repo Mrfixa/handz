@@ -1105,5 +1105,6 @@
     "referral_code": "رمز الإحالة",
     "clear": "مسح",
     "successfully_sent_otp": "تم إرسال رمز التحقق بنجاح",
-    "invalid_number": "رقم غير صالح"
+    "invalid_number": "رقم غير صالح",
+    "camera_permission_required": "إذن الكاميرا مطلوب لمسح رمز QR"
 }

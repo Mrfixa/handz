@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -23,6 +24,25 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   );
   bool _hasScanned = false;
   bool _isLoadingFromGallery = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ensureCameraPermission();
+  }
+
+  // Give clear feedback instead of a black screen when camera access is denied.
+  Future<void> _ensureCameraPermission() async {
+    var status = await Permission.camera.status;
+    if (status.isGranted) return;
+    status = await Permission.camera.request();
+    if (status.isGranted || !mounted) return;
+    showCustomSnackBar('camera_permission_required'.tr);
+    if (status.isPermanentlyDenied) {
+      openAppSettings();
+    }
+    Get.back();
+  }
 
   @override
   void dispose() {

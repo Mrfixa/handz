@@ -1102,5 +1102,6 @@
     "referral_code": "Referral Code",
     "clear": "Clear",
     "successfully_sent_otp": "OTP sent successfully",
-    "invalid_number": "Invalid number"
+    "invalid_number": "Invalid number",
+    "camera_permission_required": "Camera permission is required to scan the QR code"
 }
