@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 
@@ -18,10 +19,15 @@ class ButtonWidget extends StatelessWidget {
   final Color? textColor;
   final Color? backgroundColor;
   final String? semanticLabel;
+  /// When true, shows a spinner and blocks taps while keeping the active background.
+  final bool isLoading;
+  /// Light haptic on tap for a premium feel; opt out for rapid-fire buttons.
+  final bool enableHaptic;
   const ButtonWidget({
     super.key, this.onPressed, required this.buttonText, this.transparent = false, this.margin = EdgeInsets.zero,
     this.width = Dimensions.webMaxWidth, this.height = 45, this.fontSize, this.radius = 5, this.icon,this.showBorder = false,this.borderWidth=1,
     this.borderColor, this.textColor, this.backgroundColor, this.semanticLabel,
+    this.isLoading = false, this.enableHaptic = true,
   });
 
   @override
@@ -44,9 +50,22 @@ class ButtonWidget extends StatelessWidget {
       child: Center(child: SizedBox(width: width, child: Padding(
       padding: margin,
       child: TextButton(
-        onPressed: onPressed,
+        onPressed: (onPressed == null || isLoading) ? null : () {
+          if (enableHaptic) HapticFeedback.selectionClick();
+          onPressed!();
+        },
         style: flatButtonStyle,
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        child: isLoading
+          ? SizedBox(
+              height: 22, width: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  textColor ?? (transparent ? Theme.of(context).primaryColor : Colors.white),
+                ),
+              ),
+            )
+          : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           icon != null ?
           Padding(
             padding: const EdgeInsets.only(right: Dimensions.paddingSizeExtraSmall),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 
@@ -19,6 +20,10 @@ class ButtonWidget extends StatelessWidget {
   final Color? backgroundColor;
   final bool boldText;
   final String? semanticLabel;
+  /// When true, shows a spinner and blocks taps while keeping the active background.
+  final bool isLoading;
+  /// Light haptic on tap for a premium feel; opt out for rapid-fire buttons.
+  final bool enableHaptic;
   const ButtonWidget({super.key, this.onPressed,
     required this.buttonText,
     this.transparent = false,
@@ -32,7 +37,9 @@ class ButtonWidget extends StatelessWidget {
     this.textColor,
     this.backgroundColor,
     this.boldText = true,
-    this.semanticLabel});
+    this.semanticLabel,
+    this.isLoading = false,
+    this.enableHaptic = true});
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +64,22 @@ class ButtonWidget extends StatelessWidget {
       width: width,
       child: Padding(padding: margin,
         child: TextButton(
-          onPressed: onPressed,
+          onPressed: (onPressed == null || isLoading) ? null : () {
+            if (enableHaptic) HapticFeedback.selectionClick();
+            onPressed!();
+          },
           style: flatButtonStyle,
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          child: isLoading
+            ? SizedBox(
+                height: 22, width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    textColor ?? (transparent ? Theme.of(context).primaryColor : Colors.white),
+                  ),
+                ),
+              )
+            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             icon != null ?
             Padding(
               padding: const EdgeInsets.only(right: Dimensions.paddingSizeExtraSmall),

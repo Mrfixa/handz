@@ -160,6 +160,8 @@ void main() {
                 const SizedBox(width: 10),
                 ButtonWidget(buttonText: 'Book ride', width: 150, icon: Icons.local_taxi, onPressed: () {}),
               ]),
+              const SizedBox(height: 10),
+              ButtonWidget(buttonText: 'Loading…', width: 320, isLoading: true, onPressed: () {}),
 
               _sectionTitle('Typography (SF Pro Text)'),
               Text('Regular — find your ride', style: textRegular.copyWith(fontSize: 16, color: const Color(0xFF1D2D2B))),

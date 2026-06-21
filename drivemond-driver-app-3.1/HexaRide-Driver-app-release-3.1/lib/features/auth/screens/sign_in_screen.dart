@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:ride_sharing_user_app/common_widgets/vito_pin_field.dart';
@@ -183,12 +182,11 @@ class _SignInScreenState extends State<SignInScreen> {
 
                             const SizedBox(height: Dimensions.paddingSizeDefault),
 
-                            (authController.isLoading || authController.updateFcm ||
-                                profileController.isLoading || rideController.isLoading ||
-                                locationController.lastLocationLoading) ?
-                            Center(child: SpinKitCircle(color: Theme.of(context).primaryColor, size: 40.0)) :
                             ButtonWidget(
                               buttonText: 'login'.tr,
+                              isLoading: authController.isLoading || authController.updateFcm ||
+                                  profileController.isLoading || rideController.isLoading ||
+                                  locationController.lastLocationLoading,
                               onPressed: () {
                                 HapticFeedback.mediumImpact();
                                 String username = usernameController.text.trim();

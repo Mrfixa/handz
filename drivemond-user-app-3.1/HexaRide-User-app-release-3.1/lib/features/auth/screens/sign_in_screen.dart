@@ -2,7 +2,6 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/enums/verification_from_enum.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/otp_log_in_screen.dart';
@@ -150,10 +149,9 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ]),
 
-            authController.isLoading ?
-            Center(child: SpinKitCircle(color: Theme.of(context).primaryColor, size: 40.0)) :
             ButtonWidget(
               buttonText: 'log_in'.tr,
+              isLoading: authController.isLoading,
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 String username = phoneController.text.trim();
