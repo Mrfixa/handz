@@ -44,6 +44,8 @@ class VitoAuthController extends Controller
 
     public function pinLogin(Request $request): JsonResponse
     {
+        $request->merge(['username' => trim((string) $request->username)]);
+
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|min:3|max:50',
             'pin' => 'required|string|digits:6',
@@ -171,11 +173,23 @@ class VitoAuthController extends Controller
             'pin_blocked_at' => null,
         ]);
 
+        // Security: a PIN change invalidates every other session — revoke all of
+        // the user's tokens except the one making this request, so other devices
+        // must re-authenticate with the new PIN.
+        $currentTokenId = auth('api')->user()->token()->id ?? null;
+        foreach ($user->tokens as $token) {
+            if ($token->id !== $currentTokenId) {
+                $token->revoke();
+            }
+        }
+
         return response()->json(responseFormatter(DEFAULT_200));
     }
 
     public function pinRegister(Request $request): JsonResponse
     {
+        $request->merge(['username' => trim((string) $request->username)]);
+
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|min:3|max:50|regex:/^[a-zA-Z0-9_-]+$/|unique:users,username',
             'pin' => 'required|string|digits:6|confirmed',

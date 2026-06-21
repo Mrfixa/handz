@@ -767,6 +767,44 @@ class VitoFlowTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_change_pin_revokes_other_sessions(): void
+    {
+        $user = $this->createUser('customer', [
+            'username' => 'multidevice',
+            'pin_hash' => Hash::make('111111'),
+        ]);
+
+        // Two existing "device" sessions.
+        $sessionA = $user->createToken('device-a', ['AccessToCustomer']);
+        $sessionB = $user->createToken('device-b', ['AccessToCustomer']);
+
+        Passport::actingAs($user, ['AccessToCustomer']);
+
+        $this->postJson('/api/customer/auth/change-pin', [
+            'current_pin' => '111111',
+            'new_pin' => '222222',
+            'new_pin_confirmation' => '222222',
+        ])->assertOk();
+
+        // A PIN change invalidates other device sessions.
+        $this->assertTrue((bool) $user->tokens()->where('id', $sessionA->token->id)->first()->revoked);
+        $this->assertTrue((bool) $user->tokens()->where('id', $sessionB->token->id)->first()->revoked);
+    }
+
+    public function test_pin_login_trims_username(): void
+    {
+        $this->createUser('customer', [
+            'username' => 'spaced',
+            'pin_hash' => Hash::make('123456'),
+        ]);
+
+        // Surrounding whitespace must not block login.
+        $this->postJson('/api/customer/auth/pin-login', [
+            'username' => '  spaced  ',
+            'pin' => '123456',
+        ])->assertOk();
+    }
+
     // ========================================================================
     // 5. Atomic Ride Acceptance (race condition protection)
     // ========================================================================
