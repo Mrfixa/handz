@@ -112,23 +112,17 @@ void main() {
               Text('Shared components · trip patterns', style: textRegular.copyWith(fontSize: 13, color: _muted)),
 
               _sectionTitle('Buttons (ButtonWidget)'),
-              SizedBox(
-                height: 48,
-                child: Row(children: [
-                  ButtonWidget(buttonText: 'Accept', width: 150, onPressed: () {}),
-                  const SizedBox(width: 10),
-                  ButtonWidget(buttonText: 'Decline', width: 150, transparent: true, showBorder: true, textColor: _ink, onPressed: () {}),
-                ]),
-              ),
+              Row(children: [
+                SizedBox(width: 160, height: 48, child: ButtonWidget(buttonText: 'Accept', width: 150, onPressed: () {})),
+                const SizedBox(width: 10),
+                SizedBox(width: 160, height: 48, child: ButtonWidget(buttonText: 'Decline', width: 150, transparent: true, showBorder: true, textColor: _ink, onPressed: () {})),
+              ]),
               const SizedBox(height: 10),
-              SizedBox(
-                height: 48,
-                child: Row(children: [
-                  ButtonWidget(buttonText: 'Offline', width: 150, onPressed: null),
-                  const SizedBox(width: 10),
-                  ButtonWidget(buttonText: 'Navigate', width: 150, icon: Icons.navigation, onPressed: () {}),
-                ]),
-              ),
+              Row(children: [
+                SizedBox(width: 160, height: 48, child: ButtonWidget(buttonText: 'Offline', width: 150, onPressed: null)),
+                const SizedBox(width: 10),
+                SizedBox(width: 160, height: 48, child: ButtonWidget(buttonText: 'Navigate', width: 150, icon: Icons.navigation, onPressed: () {})),
+              ]),
 
               _sectionTitle('Typography (SF Pro Text)'),
               Text('Regular — new ride request', style: textRegular.copyWith(fontSize: 16, color: _ink)),
