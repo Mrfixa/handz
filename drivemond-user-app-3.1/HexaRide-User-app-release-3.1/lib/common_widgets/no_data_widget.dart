@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -8,7 +9,10 @@ import 'package:ride_sharing_user_app/util/styles.dart';
 
 class NoDataWidget extends StatelessWidget {
   final String? title;
-  const NoDataWidget({super.key, this.title});
+  /// Optional call-to-action shown below the message (e.g. "Add address").
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  const NoDataWidget({super.key, this.title, this.actionLabel, this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +31,13 @@ class NoDataWidget extends StatelessWidget {
 
             Text(title != null ? title!.tr : 'no_data_found'.tr,
                 style: textRegular.copyWith( color: Theme.of(context).hintColor,
-                fontSize: Dimensions.fontSizeDefault), textAlign: TextAlign.center)])));
+                fontSize: Dimensions.fontSizeDefault), textAlign: TextAlign.center),
+
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: Dimensions.paddingSizeLarge),
+              ButtonWidget(buttonText: actionLabel!, width: 180, radius: 50, onPressed: onAction),
+            ],
+          ])));
   }
 }
+

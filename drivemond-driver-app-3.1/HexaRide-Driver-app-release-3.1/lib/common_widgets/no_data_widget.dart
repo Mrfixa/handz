@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -9,7 +10,10 @@ import 'package:ride_sharing_user_app/util/styles.dart';
 class NoDataWidget extends StatelessWidget {
   final String? title;
   final bool fromHome;
-  const NoDataWidget({super.key, this.title, this.fromHome = false});
+  /// Optional call-to-action shown below the message.
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  const NoDataWidget({super.key, this.title, this.fromHome = false, this.actionLabel, this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +39,10 @@ class NoDataWidget extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
 
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: Dimensions.paddingSizeLarge),
+            ButtonWidget(buttonText: actionLabel!, width: 180, radius: 50, onPressed: onAction),
+          ],
         ]),
       ),
     );

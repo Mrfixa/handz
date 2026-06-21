@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ride_sharing_user_app/common_widgets/skeleton_widget.dart';
 import 'package:ride_sharing_user_app/theme/light_theme.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -180,12 +181,24 @@ void main() {
                   ]),
                 ),
               ]),
+
+              _sectionTitle('Loading skeleton'),
+              Row(children: const [
+                SkeletonWidget(width: 48, height: 48, radius: 12),
+                SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  SkeletonWidget(width: double.infinity, height: 12),
+                  SizedBox(height: 8),
+                  SkeletonWidget(width: 160, height: 12),
+                ])),
+              ]),
             ]),
           ),
         ),
       ),
     ));
-    await tester.pumpAndSettle();
+    // Fixed pump (not pumpAndSettle) — the Shimmer skeleton animates forever.
+    await tester.pump(const Duration(milliseconds: 300));
 
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/ui_catalog.png'));
   });
