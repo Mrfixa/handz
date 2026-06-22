@@ -17,6 +17,8 @@ class GoogleMapSetupStoreOrUpdateRequest extends FormRequest
         return [
             'map_api_key' => 'required',
             'map_api_key_server' => 'required',
+            'map_provider' => 'nullable|in:google,mapbox',
+            'mapbox_access_token' => 'nullable|string|max:255',
         ];
     }
 

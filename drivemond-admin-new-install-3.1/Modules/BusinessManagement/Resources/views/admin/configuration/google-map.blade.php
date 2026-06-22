@@ -46,6 +46,30 @@
                                 </div>
                             </div>
                         </div>
+
+                        <hr class="my-4">
+                        <h6 class="text-uppercase mb-3">{{translate('map_provider')}}</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label for="map_provider" class="mb-2">{{translate('map_provider')}}</label>
+                                    <select name="map_provider" class="form-control" id="map_provider">
+                                        <option value="google" {{ ($setting['map_provider'] ?? 'google') === 'google' ? 'selected' : '' }}>{{translate('Google Maps')}}</option>
+                                        <option value="mapbox" {{ ($setting['map_provider'] ?? 'google') === 'mapbox' ? 'selected' : '' }}>{{translate('Mapbox')}}</option>
+                                    </select>
+                                    <small class="text-muted">{{translate('Apps render Google Maps by default; switch to Mapbox once the apps are built with the Mapbox SDK')}}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label for="mapbox_access_token" class="mb-2">{{translate('mapbox_access_token')}} ({{translate('public')}})</label>
+                                    <input type="text" name="mapbox_access_token"
+                                           value="{{$setting['mapbox_access_token']??''}}" class="form-control"
+                                           id="mapbox_access_token" placeholder="pk.xxxxxx">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-end">
                             <button type="{{ env('APP_MODE') != 'demo' ? 'submit' : 'button' }}" class="btn btn-primary call-demo" tabindex="3">{{translate('save')}}</button>
                         </div>
