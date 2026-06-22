@@ -80,8 +80,12 @@ class LoginHelper{
                 }
               });
             } else if(value.statusCode == 401){
+              // Confirmed dead session on the dedicated startup auth check — the
+              // ONLY place that deliberately clears the session.
+              Get.find<SplashController>().removeSharedData();
               checkLoginMedium();
             } else {
+              // Any other failure (timeout/offline/5xx): never eject the driver.
               Get.offAll(()=> const DashboardScreen());
             }
           }).catchError((_){

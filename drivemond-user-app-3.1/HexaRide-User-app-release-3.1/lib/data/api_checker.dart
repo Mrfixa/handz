@@ -5,10 +5,22 @@ import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/helper/login_helper.dart';
 
 class ApiChecker {
-  static void checkApi(Response response) {
+  /// Pure predicate: a 401 invalidates the session ONLY when the caller is the
+  /// deliberate auth check (handleUnauthorized: true). A transient/secondary
+  /// 401 must never destroy a valid session. Unit-testable in isolation.
+  static bool shouldInvalidateSession(int? statusCode, {required bool handleUnauthorized}) {
+    return statusCode == 401 && handleUnauthorized;
+  }
+
+  static void checkApi(Response response, {bool handleUnauthorized = false}) {
     if(response.statusCode == 401) {
-      Get.find<ConfigController>().removeSharedData();
-      LoginHelper.checkLoginMedium();
+      // Only the startup auth check (or an explicit caller) may clear the
+      // session. Every other 401 is swallowed so the caller keeps its UI state
+      // — this prevents spurious "bounced back to login" on background 401s.
+      if(shouldInvalidateSession(response.statusCode, handleUnauthorized: handleUnauthorized)) {
+        Get.find<ConfigController>().removeSharedData();
+        LoginHelper.checkLoginMedium();
+      }
 
     }else if(response.statusCode == 403) {
       ErrorResponse errorResponse;

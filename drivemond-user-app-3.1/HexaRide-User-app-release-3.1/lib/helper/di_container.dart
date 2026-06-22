@@ -126,14 +126,25 @@ Future<Map<String, Map<String, String>>> init() async {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
-  // One-time migration: move legacy SharedPreferences token to secure storage
+  // One-time migration: move legacy SharedPreferences token to secure storage.
+  // Only drop the legacy copy once a read-back confirms the secure write actually
+  // persisted — otherwise a silent encrypted-storage failure (some Android OEMs)
+  // would lose the only token copy and log the user out on next launch.
   String? initialToken = await secureStorage.read(key: AppConstants.token);
   if ((initialToken == null || initialToken.isEmpty) &&
       sharedPreferences.containsKey(AppConstants.token)) {
     final legacyToken = sharedPreferences.getString(AppConstants.token) ?? '';
     if (legacyToken.isNotEmpty) {
-      await secureStorage.write(key: AppConstants.token, value: legacyToken);
-      await sharedPreferences.remove(AppConstants.token);
+      try {
+        await secureStorage.write(key: AppConstants.token, value: legacyToken);
+        final readBack = await secureStorage.read(key: AppConstants.token);
+        if (readBack == legacyToken) {
+          await sharedPreferences.remove(AppConstants.token);
+        }
+        // else: secure write didn't stick — keep the legacy copy for next launch.
+      } catch (_) {
+        // Never lose the token on a migration error — keep the legacy copy.
+      }
       initialToken = legacyToken;
     }
   }

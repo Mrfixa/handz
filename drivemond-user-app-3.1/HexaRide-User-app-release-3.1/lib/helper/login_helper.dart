@@ -130,10 +130,12 @@ class LoginHelper{
           Get.find<AuthController>().remainingFindingRideTime();
           Get.offAll(()=> const DashboardScreen());
         } else if(value.statusCode == 401) {
-          // Stale/expired token — drop to sign-in instead of hanging on splash.
+          // Confirmed dead session on the dedicated startup auth check — this is
+          // the ONLY place that deliberately clears the session.
+          Get.find<ConfigController>().removeSharedData();
           Get.offAll(() => const SignInScreen());
         } else {
-          // Any other failure: don't strand the user on splash.
+          // Any other failure (timeout/offline/5xx): never eject the user.
           Get.offAll(()=> const DashboardScreen());
         }
       }).catchError((_) {

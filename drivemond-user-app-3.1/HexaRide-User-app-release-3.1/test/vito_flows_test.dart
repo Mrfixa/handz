@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ride_sharing_user_app/data/api_checker.dart';
 import 'package:ride_sharing_user_app/features/ride/domain/models/remaining_distance_model.dart';
 
 /// Unit tests for VITO-specific flows in the user app.
@@ -242,6 +243,23 @@ void main() {
     test('RemainingDistanceModel.fromJson parses valid numeric distances', () {
       expect(RemainingDistanceModel.fromJson({'distance': 12.5}).distance, 12.5);
       expect(RemainingDistanceModel.fromJson({'distance': 5}).distance, 5.0);
+    });
+  });
+
+  group('Session 401 handling', () {
+    // A transient/secondary 401 must NOT destroy a valid session — only the
+    // deliberate startup auth check (handleUnauthorized: true) may log out.
+    test('secondary 401 does not invalidate the session', () {
+      expect(ApiChecker.shouldInvalidateSession(401, handleUnauthorized: false), false);
+    });
+    test('startup-confirmed 401 invalidates the session', () {
+      expect(ApiChecker.shouldInvalidateSession(401, handleUnauthorized: true), true);
+    });
+    test('non-401 never invalidates the session', () {
+      expect(ApiChecker.shouldInvalidateSession(200, handleUnauthorized: true), false);
+      expect(ApiChecker.shouldInvalidateSession(403, handleUnauthorized: true), false);
+      expect(ApiChecker.shouldInvalidateSession(408, handleUnauthorized: true), false);
+      expect(ApiChecker.shouldInvalidateSession(null, handleUnauthorized: true), false);
     });
   });
 }
