@@ -24,6 +24,8 @@ class ConfigModel {
   bool? smsVerification;
   bool? emailVerification;
   String? mapApiKey;
+  String? mapProvider;
+  String? mapboxAccessToken;
   int? paginationLimit;
   String? facebookLogin;
   String? googleLogin;
@@ -104,6 +106,8 @@ class ConfigModel {
     this.smsVerification,
     this.emailVerification,
     this.mapApiKey,
+    this.mapProvider,
+    this.mapboxAccessToken,
     this.paginationLimit,
     this.facebookLogin,
     this.googleLogin,
@@ -200,6 +204,8 @@ class ConfigModel {
     smsVerification = json['sms_verification'];
     emailVerification = json['email_verification'];
     mapApiKey = json['map_api_key'];
+    mapProvider = json['map_provider'] ?? 'google';
+    mapboxAccessToken = json['mapbox_access_token'];
     paginationLimit = json['pagination_limit'];
     facebookLogin = json['facebook_login'].toString();
     googleLogin = json['google_login'].toString();

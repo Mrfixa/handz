@@ -210,7 +210,10 @@ class ConfigController extends Controller
             'upload_max_file_size' => maxUploadSize('file'),
             'is_otp_enabled' => isOtpEnabled(),
             'customer_login_options' => $info->firstWhere(key: 'key_name', operator: 'customer_login_options')?->value ?? ['manual_login' => 1, 'otp_login' => 0],
-            'is_real_time_location_sharing_enabled' => (bool) (businessConfig('enable_real_time_location_sharing', TRIP_SETTINGS)?->value ?? 0)
+            'is_real_time_location_sharing_enabled' => (bool) (businessConfig('enable_real_time_location_sharing', TRIP_SETTINGS)?->value ?? 0),
+            // Map provider toggle: apps render Google by default, Mapbox when set.
+            'map_provider' => businessConfig(GOOGLE_MAP_API)?->value['map_provider'] ?? 'google',
+            'mapbox_access_token' => businessConfig(GOOGLE_MAP_API)?->value['mapbox_access_token'] ?? null,
         ];
 
         return response()->json($configs);
