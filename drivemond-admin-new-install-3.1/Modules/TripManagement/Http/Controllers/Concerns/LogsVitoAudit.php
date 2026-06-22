@@ -15,23 +15,26 @@ trait LogsVitoAudit
     protected function auditLog(?string $userId, string $action, string $modelType, string $modelId, array $changes): void
     {
         try {
+            // Column names must match the vito_audit_log migration
+            // (entity_type/entity_id/new_values) — the old model_type/model_id/
+            // changes names silently failed every insert.
             DB::table('vito_audit_log')->insert([
-                'id'         => Str::uuid(),
-                'user_id'    => $userId,
-                'action'     => $action,
-                'model_type' => $modelType,
-                'model_id'   => $modelId,
-                'changes'    => json_encode($changes),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'id'          => Str::uuid(),
+                'user_id'     => $userId,
+                'action'      => $action,
+                'entity_type' => $modelType,
+                'entity_id'   => $modelId,
+                'new_values'  => json_encode($changes),
+                'created_at'  => now(),
+                'updated_at'  => now(),
             ]);
         } catch (\Throwable $e) {
             Log::warning('Audit log write failed', [
-                'user_id'    => $userId,
-                'action'     => $action,
-                'model_type' => $modelType,
-                'model_id'   => $modelId,
-                'error'      => $e->getMessage(),
+                'user_id'     => $userId,
+                'action'      => $action,
+                'entity_type' => $modelType,
+                'entity_id'   => $modelId,
+                'error'       => $e->getMessage(),
             ]);
         }
     }

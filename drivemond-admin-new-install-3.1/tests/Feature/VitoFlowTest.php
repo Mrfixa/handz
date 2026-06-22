@@ -397,6 +397,21 @@ class VitoFlowTest extends TestCase
             });
         }
 
+        if (!Schema::hasTable('vito_audit_log')) {
+            Schema::create('vito_audit_log', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('user_id')->nullable();
+                $table->string('action');
+                $table->string('entity_type')->nullable();
+                $table->string('entity_id')->nullable();
+                $table->json('old_values')->nullable();
+                $table->json('new_values')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->string('user_agent')->nullable();
+                $table->timestamps();
+            });
+        }
+
         if (!Schema::hasTable('stripe_events')) {
             Schema::create('stripe_events', function (Blueprint $table) {
                 $table->uuid('id')->primary();
@@ -1003,6 +1018,98 @@ class VitoFlowTest extends TestCase
         // A nonsensical jump (delivered -> pending) is not a valid transition.
         $this->assertArrayNotHasKey('pending', $map);
         $this->assertNotContains('delivered', $map['accepted']);
+    }
+
+    // ========================================================================
+    // 6c. VitoMart Admin web routes (super-admin session)
+    // ========================================================================
+
+    private function makeMartOrder(string $status, ?string $customerId = null): MartOrder
+    {
+        return MartOrder::create([
+            'ref_id' => 'VM-' . strtoupper(\Illuminate\Support\Str::random(8)),
+            'customer_id' => $customerId ?? $this->createUser('customer')->id,
+            'status' => $status,
+            'total_amount' => 25.00,
+            'tip_amount' => 0,
+            'discount_amount' => 0,
+            'payment_status' => 'unpaid',
+            'payment_method' => 'cash',
+            'delivery_address' => '123 Test St',
+        ]);
+    }
+
+    public function test_admin_can_update_mart_order_status_and_writes_audit(): void
+    {
+        $admin = $this->createUser('super-admin');
+        $order = $this->makeMartOrder('pending');
+
+        $response = $this->actingAs($admin)
+            ->put("/admin/mart/orders/status/{$order->id}", ['status' => 'accepted']);
+
+        $response->assertRedirect();
+        $this->assertEquals('accepted', $order->fresh()->status);
+        // The audit row must now actually land (previously written to wrong columns).
+        $this->assertDatabaseHas('vito_audit_log', [
+            'entity_id' => $order->id,
+            'action'    => 'status_change',
+        ]);
+    }
+
+    public function test_admin_invalid_mart_order_status_transition_rejected(): void
+    {
+        $admin = $this->createUser('super-admin');
+        $order = $this->makeMartOrder('delivered');
+
+        $this->actingAs($admin)
+            ->put("/admin/mart/orders/status/{$order->id}", ['status' => 'pending']);
+
+        // delivered -> pending is not a valid transition; status unchanged.
+        $this->assertEquals('delivered', $order->fresh()->status);
+    }
+
+    public function test_admin_can_create_promo_code_via_web(): void
+    {
+        $admin = $this->createUser('super-admin');
+
+        $response = $this->actingAs($admin)->post('/admin/mart/promo/store', [
+            'code' => 'webpromo',
+            'discount_type' => 'fixed',
+            'discount_value' => 5,
+            'min_order_amount' => 10,
+            'is_active' => 1,
+        ]);
+
+        $response->assertRedirect();
+        // Code is upper-cased server-side.
+        $this->assertDatabaseHas('mart_promo_codes', ['code' => 'WEBPROMO']);
+    }
+
+    public function test_admin_can_create_category_via_web(): void
+    {
+        $admin = $this->createUser('super-admin');
+
+        $response = $this->actingAs($admin)->post('/admin/mart/categories/store', [
+            'name' => 'Bakery',
+            'sort_order' => 2,
+            'is_active' => 1,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('mart_categories', ['name' => 'Bakery', 'slug' => 'bakery']);
+    }
+
+    public function test_non_admin_redirected_from_mart_admin(): void
+    {
+        $customer = $this->createUser('customer');
+        $order = $this->makeMartOrder('pending');
+
+        $response = $this->actingAs($customer)
+            ->put("/admin/mart/orders/status/{$order->id}", ['status' => 'accepted']);
+
+        // AdminMiddleware bounces non-admins to the login route; status unchanged.
+        $response->assertRedirect();
+        $this->assertEquals('pending', $order->fresh()->status);
     }
 
     // ========================================================================

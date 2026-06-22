@@ -502,7 +502,6 @@
   'new_ride_request' => 'New ride request',
   'no' => 'No',
   'no_data_available' => 'No data available',
-  'no_driver_assigned' => 'No driver assigned',
   'no_rewards' => 'No rewards',
   'notification' => 'Notification',
   'notification_setup' => 'Notification setup',
@@ -4448,4 +4447,6 @@
   'The items field is required when subtotal is not present.' => 'The items field is required when subtotal is not present.',
   'The subtotal field is required when items is not present.' => 'The subtotal field is required when items is not present.',
   'The new pin must be 6 digits.' => 'The new pin must be 6 digits.',
+  'promo_code_added_successfully' => 'Promo code added successfully',
+  'category_added_successfully' => 'Category added successfully',
 );
