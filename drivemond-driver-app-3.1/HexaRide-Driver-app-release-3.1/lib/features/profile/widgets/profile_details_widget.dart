@@ -56,7 +56,7 @@ class _ProfileDetailsWidgetState extends State<ProfileDetailsWidget> {
               borderRadius: BorderRadius.all(Radius.circular(Dimensions.radiusDefault))
             ),
             child: Column(children:  [
-              if(profileController.profileInfo?.details?.services != null)
+              if(profileController.profileInfo?.details?.services != null && profileController.profileInfo!.details!.services!.isNotEmpty)
                 ProfileItemWidget(title: 'service',
                   value: profileController.profileInfo!.details!.services!.length == 1 ?
                   profileController.profileInfo!.details!.services![0].tr :

@@ -113,8 +113,7 @@ class WithdrawRequestWidgetState extends State<WithdrawRequestWidget> {
                         ),
                       const SizedBox(height: Dimensions.paddingSizeDefault),
 
-                      if(walletController.withdrawMethodInfoData == null ||
-                          walletController.withdrawMethodInfoData!.data!.isEmpty)...[
+                      if(walletController.withdrawMethodInfoData?.data?.isEmpty ?? true)...[
                         InkWell(
                           onTap: ()=> Get.to(()=> const AddPaymentInfoScreen()),
                           child: Text('set_withdraw_method'.tr,style: textBold.copyWith(
@@ -295,8 +294,7 @@ class WithdrawRequestWidgetState extends State<WithdrawRequestWidget> {
                   !walletController.isLoading ?
                   InkWell(
                     onTap: () {
-                      if(walletController.withdrawMethodInfoData == null ||
-                          walletController.withdrawMethodInfoData!.data!.isEmpty){
+                      if(walletController.withdrawMethodInfoData?.data?.isEmpty ?? true){
                         Get.find<WalletController>().toggleMethodSelected(false);
                         showCustomSnackBar('${'please_configure_your_payment_method'.tr}!');
                       }else if (walletController.selectedMethodInfo == null ||
@@ -339,7 +337,7 @@ class WithdrawRequestWidgetState extends State<WithdrawRequestWidget> {
     if (balance.isEmpty) {
       showCustomSnackBar('enter_balance'.tr);
 
-    }else if(bal > Get.find<ProfileController>().profileInfo!.wallet!.receivableBalance!) {
+    }else if(bal > (Get.find<ProfileController>().profileInfo?.wallet?.receivableBalance ?? 0)) {
       Get.find<WalletController>().toggleHaveWithdrawAmount(false);
       showCustomSnackBar(
         'insufficient_balance'.tr,
