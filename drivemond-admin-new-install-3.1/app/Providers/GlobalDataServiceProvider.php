@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Modules\TripManagement\Entities\MartOrder;
 use Modules\TripManagement\Service\Interfaces\ParcelRefundServiceInterface;
 use Modules\TripManagement\Service\Interfaces\TripRequestServiceInterface;
 
@@ -37,8 +39,35 @@ class GlobalDataServiceProvider extends ServiceProvider
                 $parcelRefundCount = [];
                 $view->with('tripCount', $this->getTripCounts());
                 $view->with('parcelRefundCount', $this->getParcelRefundCounts());
+                $view->with('martOrderCounts', $this->getMartOrderCounts());
             }
         );
+    }
+
+    /**
+     * Status-wise mart order counts for the sidebar badges. Computed with a
+     * single grouped query (not one query per status) and guarded so a missing
+     * table (fresh install before migrate) never breaks the sidebar.
+     */
+    private function getMartOrderCounts()
+    {
+        $counts = ['all' => 0, 'pending' => 0, 'accepted' => 0, 'picked_up' => 0, 'delivered' => 0, 'cancelled' => 0];
+        try {
+            if (!Schema::hasTable('mart_orders')) {
+                return $counts;
+            }
+            $grouped = MartOrder::query()
+                ->selectRaw('status, COUNT(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status');
+            foreach ($grouped as $status => $total) {
+                $counts[$status] = $total;
+                $counts['all'] += $total;
+            }
+        } catch (\Throwable $e) {
+            // Sidebar must always render.
+        }
+        return $counts;
     }
 
 

@@ -15,6 +15,23 @@ class MartOrder extends Model
 {
     use HasUuids, SoftDeletes;
 
+    /**
+     * The full set of mart order statuses, in lifecycle order.
+     */
+    public const STATUSES = ['pending', 'accepted', 'picked_up', 'delivered', 'cancelled'];
+
+    /**
+     * Allowed status transitions: target status => list of statuses it may come from.
+     * Single source of truth shared by the driver API and the admin panel so both
+     * can never drive an order into an inconsistent state.
+     */
+    public const STATUS_TRANSITIONS = [
+        'accepted'  => ['pending'],
+        'picked_up' => ['accepted'],
+        'delivered' => ['picked_up'],
+        'cancelled' => ['pending', 'accepted'],
+    ];
+
     protected $fillable = [
         'ref_id',
         'customer_id',

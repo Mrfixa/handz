@@ -109,12 +109,10 @@ class VitoMartDriverController extends Controller
             }
         }
 
-        // Drivers may cancel an order only while it is still in 'accepted' state.
-        $allowedTransitions = [
-            'picked_up'  => ['accepted'],
-            'delivered'  => ['picked_up'],
-            'cancelled'  => ['accepted'],
-        ];
+        // Canonical transition map (shared with the admin panel). The driver_id
+        // filter below additionally guarantees a driver can only act on an order
+        // they own, so they can never cancel a still-pending (unclaimed) order.
+        $allowedTransitions = MartOrder::STATUS_TRANSITIONS;
 
         $order = DB::transaction(function () use ($request, $allowedTransitions) {
             $order = MartOrder::where('id', $request->order_id)

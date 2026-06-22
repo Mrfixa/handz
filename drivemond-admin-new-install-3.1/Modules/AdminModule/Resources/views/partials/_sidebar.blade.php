@@ -211,12 +211,6 @@
 
                         </a>
                     </li>
-                    <li class="{{ Request::is('admin/mart/products*')?'active open':'' }}">
-                        <a href="{{route('admin.mart.products.index')}}">
-                            <i class="bi bi-shop"></i>
-                            <span class="link-title text-capitalize">{{ translate('VitoMart Products') }}</span>
-                        </a>
-                    </li>
                     <li class="{{ Request::is('admin/qr-tokens*')?'active open':'' }}">
                         <a href="{{route('admin.qr-tokens.index')}}">
                             <i class="bi bi-qr-code"></i>
@@ -224,6 +218,65 @@
                         </a>
                     </li>
                     <!----------------- End Trip Management ------------------------>
+                @endif
+
+                @if(\Illuminate\Support\Facades\Gate::any(['vito_mart_view', 'vito_mart_add', 'vito_mart_edit', 'vito_mart_delete', 'vito_mart_log', 'vito_mart_export']))
+                    <!----------------- Start VitoMart ------------------------>
+                    <li class="nav-category" title="{{ translate('vito_mart') }}">{{ translate('vito_mart') }}</li>
+
+                    <li class="{{ Request::is('admin/mart/dashboard')?'active open':'' }}">
+                        <a href="{{route('admin.mart.dashboard')}}">
+                            <i class="bi bi-speedometer2"></i>
+                            <span class="link-title text-capitalize">{{ translate('dashboard') }}</span>
+                        </a>
+                    </li>
+
+                    <li class="{{ Request::is('admin/mart/orders*')?'active sub-menu-opened':'' }} text-capitalize">
+                        <a href="#">
+                            <i class="bi bi-bag-check-fill"></i>
+                            <span class="link-title">{{ translate('orders') }}</span>
+                            @if(($martOrderCounts['all'] ?? 0) > 0)
+                                <span class="badge badge-primary float-end">{{ $martOrderCounts['all'] }}</span>
+                            @endif
+                        </a>
+                        <ul class="nav flex-column sub-menu text-capitalize">
+                            @foreach(['all','pending','accepted','picked_up','delivered','cancelled'] as $mStatus)
+                                <li class="{{ Request::is('admin/mart/orders/list/'.$mStatus) ?'active open':'' }}">
+                                    <a href="{{route('admin.mart.orders.index', [$mStatus])}}">
+                                        <i class="bi bi-dot"></i>
+                                        <span class="link-title">{{ translate($mStatus === 'all' ? 'all' : 'order_status_'.$mStatus) }}</span>
+                                        <span class="badge badge-primary float-end">{{ $martOrderCounts[$mStatus] ?? 0 }}</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </li>
+
+                    <li class="{{ Request::is('admin/mart/products*')?'active open':'' }}">
+                        <a href="{{route('admin.mart.products.index')}}">
+                            <i class="bi bi-shop"></i>
+                            <span class="link-title text-capitalize">{{ translate('products') }}</span>
+                        </a>
+                    </li>
+                    <li class="{{ Request::is('admin/mart/categories*')?'active open':'' }}">
+                        <a href="{{route('admin.mart.categories.index')}}">
+                            <i class="bi bi-tags-fill"></i>
+                            <span class="link-title text-capitalize">{{ translate('categories') }}</span>
+                        </a>
+                    </li>
+                    <li class="{{ Request::is('admin/mart/promo*')?'active open':'' }}">
+                        <a href="{{route('admin.mart.promo.index')}}">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                            <span class="link-title text-capitalize">{{ translate('promo_codes') }}</span>
+                        </a>
+                    </li>
+                    <li class="{{ Request::is('admin/mart/reviews*')?'active open':'' }}">
+                        <a href="{{route('admin.mart.reviews.index')}}">
+                            <i class="bi bi-star-fill"></i>
+                            <span class="link-title text-capitalize">{{ translate('reviews') }}</span>
+                        </a>
+                    </li>
+                    <!----------------- End VitoMart ------------------------>
                 @endif
 
                 @if(\Illuminate\Support\Facades\Gate::any(['promotion_view', 'promotion_add', 'promotion_edit', 'promotion_delete', 'promotion_log', 'promotion_export']))

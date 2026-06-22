@@ -2717,6 +2717,7 @@ const MODULES = [
     'zone_management' => ['view', 'add', 'update', 'delete', 'log', 'export'],
     'trip_management' => ['view', 'update', 'delete', 'log', 'export'],
     'parcel_management' => ['view', 'add', 'update', 'delete', 'log', 'export'],
+    'vito_mart' => ['view', 'add', 'update', 'delete', 'log', 'export'],
     'promotion_management' => ['view', 'add', 'update', 'delete', 'log', 'export'],
     'vehicle_management' => ['view', 'add', 'update', 'delete', 'log', 'export'],
     'fare_management' => ['view', 'add', 'update', 'delete', 'log', 'export'],

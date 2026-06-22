@@ -3,18 +3,23 @@
 namespace Modules\TripManagement\Http\Controllers\Web;
 
 use Brian2694\Toastr\Facades\Toastr;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Modules\TripManagement\Entities\MartCategory;
 use Modules\TripManagement\Entities\MartProduct;
 
 class VitoMartAdminController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index(Request $request): View
     {
+        $this->authorize('vito_mart_view');
         $search = $request->search;
         $products = MartProduct::when($search, function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
@@ -26,11 +31,14 @@ class VitoMartAdminController extends Controller
 
     public function create(): View
     {
-        return view('tripmanagement::admin.mart.create');
+        $this->authorize('vito_mart_add');
+        $categories = MartCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
+        return view('tripmanagement::admin.mart.create', compact('categories'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('vito_mart_add');
         $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
@@ -56,12 +64,15 @@ class VitoMartAdminController extends Controller
 
     public function edit(string $id): View
     {
+        $this->authorize('vito_mart_edit');
         $product = MartProduct::findOrFail($id);
-        return view('tripmanagement::admin.mart.edit', compact('product'));
+        $categories = MartCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
+        return view('tripmanagement::admin.mart.edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, string $id): RedirectResponse
     {
+        $this->authorize('vito_mart_edit');
         $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
@@ -89,6 +100,7 @@ class VitoMartAdminController extends Controller
 
     public function destroy(string $id): RedirectResponse
     {
+        $this->authorize('vito_mart_delete');
         MartProduct::findOrFail($id)->delete();
         Toastr::success(translate('product_deleted_successfully'));
 
@@ -97,6 +109,7 @@ class VitoMartAdminController extends Controller
 
     public function toggleStatus(string $id): RedirectResponse
     {
+        $this->authorize('vito_mart_edit');
         $product = MartProduct::findOrFail($id);
         $product->update(['is_active' => !$product->is_active]);
         Toastr::success(translate('product_status_updated'));
@@ -106,6 +119,7 @@ class VitoMartAdminController extends Controller
 
     public function stockAdjust(Request $request, $id)
     {
+        $this->authorize('vito_mart_edit');
         $product = MartProduct::findOrFail($id);
         $action = $request->input('action');
         if ($action === 'increment') {

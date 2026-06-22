@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Modules\TripManagement\Entities\MartCategory;
 use Modules\TripManagement\Entities\MartOrder;
 use Modules\TripManagement\Entities\MartOrderItem;
 use Modules\TripManagement\Entities\MartProduct;
@@ -32,6 +33,16 @@ class VitoMartController extends Controller
             ->paginate($limit);
 
         return response()->json(responseFormatter(DEFAULT_200, $products));
+    }
+
+    public function categories(): JsonResponse
+    {
+        $categories = MartCategory::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'image']);
+
+        return response()->json(responseFormatter(DEFAULT_200, $categories));
     }
 
     public function productDetails(string $id): JsonResponse

@@ -10,6 +10,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Laravel\Passport\Passport;
 use Modules\AuthManagement\Entities\QrToken;
 use Modules\TripManagement\Entities\MartProduct;
+use Modules\TripManagement\Entities\MartCategory;
 use Modules\TripManagement\Entities\MartOrder;
 use Modules\TripManagement\Entities\MartOrderItem;
 use Modules\TripManagement\Entities\MartPromoCode;
@@ -39,6 +40,7 @@ class VitoFlowTest extends TestCase
         Schema::dropIfExists('mart_order_items');
         Schema::dropIfExists('mart_orders');
         Schema::dropIfExists('mart_promo_codes');
+        Schema::dropIfExists('mart_categories');
         Schema::dropIfExists('mart_products');
         Schema::dropIfExists('vito_otps');
         Schema::dropIfExists('vehicle_models');
@@ -308,6 +310,19 @@ class VitoFlowTest extends TestCase
                 $table->boolean('is_active')->default(true);
                 $table->unsignedInteger('stock')->default(0);
                 $table->uuid('zone_id')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
+
+        if (!Schema::hasTable('mart_categories')) {
+            Schema::create('mart_categories', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->string('image')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->integer('sort_order')->default(0);
                 $table->timestamps();
                 $table->softDeletes();
             });
@@ -935,6 +950,59 @@ class VitoFlowTest extends TestCase
 
         $product->delete();
         $this->assertSoftDeleted('mart_products', ['id' => $product->id]);
+    }
+
+    // ========================================================================
+    // 6b. Mart Categories (managed taxonomy)
+    // ========================================================================
+
+    public function test_mart_category_crud(): void
+    {
+        $category = MartCategory::create([
+            'name' => 'Beverages',
+            'slug' => 'beverages',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->assertDatabaseHas('mart_categories', ['slug' => 'beverages']);
+
+        $category->update(['name' => 'Drinks']);
+        $this->assertDatabaseHas('mart_categories', ['name' => 'Drinks']);
+
+        $category->delete();
+        $this->assertSoftDeleted('mart_categories', ['id' => $category->id]);
+    }
+
+    public function test_mart_categories_api_returns_active_only(): void
+    {
+        $customer = $this->createUser('customer');
+
+        MartCategory::create(['name' => 'Active Cat', 'slug' => 'active-cat', 'is_active' => true, 'sort_order' => 0]);
+        MartCategory::create(['name' => 'Hidden Cat', 'slug' => 'hidden-cat', 'is_active' => false, 'sort_order' => 0]);
+
+        Passport::actingAs($customer, ['AccessToCustomer']);
+        $response = $this->getJson('/api/customer/mart/categories');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('name')->all();
+        $this->assertContains('Active Cat', $names);
+        $this->assertNotContains('Hidden Cat', $names);
+    }
+
+    public function test_mart_order_status_transition_map_is_canonical(): void
+    {
+        // Single source of truth shared by the driver API and the admin panel.
+        $map = MartOrder::STATUS_TRANSITIONS;
+
+        $this->assertSame(['pending'], $map['accepted']);
+        $this->assertSame(['accepted'], $map['picked_up']);
+        $this->assertSame(['picked_up'], $map['delivered']);
+        $this->assertEqualsCanonicalizing(['pending', 'accepted'], $map['cancelled']);
+
+        // A nonsensical jump (delivered -> pending) is not a valid transition.
+        $this->assertArrayNotHasKey('pending', $map);
+        $this->assertNotContains('delivered', $map['accepted']);
     }
 
     // ========================================================================

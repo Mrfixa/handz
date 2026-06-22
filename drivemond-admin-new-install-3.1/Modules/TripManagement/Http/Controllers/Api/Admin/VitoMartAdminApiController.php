@@ -5,9 +5,12 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Modules\TripManagement\Entities\MartProduct;
+use Modules\TripManagement\Http\Controllers\Concerns\LogsVitoAudit;
 
 class VitoMartAdminApiController extends Controller
 {
+    use LogsVitoAudit;
+
     public function index(Request $request)
     {
         $query = MartProduct::query();
@@ -71,29 +74,5 @@ class VitoMartAdminApiController extends Controller
         $product->delete();
         $this->auditLog(auth()->id(), 'delete', MartProduct::class, $product->id, []);
         return response()->json(['message' => 'Product deleted']);
-    }
-
-    private function auditLog(?string $userId, string $action, string $modelType, string $modelId, array $changes): void
-    {
-        try {
-            \Illuminate\Support\Facades\DB::table('vito_audit_log')->insert([
-                'id'         => \Illuminate\Support\Str::uuid(),
-                'user_id'    => $userId,
-                'action'     => $action,
-                'model_type' => $modelType,
-                'model_id'   => $modelId,
-                'changes'    => json_encode($changes),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Audit log write failed', [
-                'user_id'    => $userId,
-                'action'     => $action,
-                'model_type' => $modelType,
-                'model_id'   => $modelId,
-                'error'      => $e->getMessage(),
-            ]);
-        }
     }
 }

@@ -28,7 +28,9 @@
                                         <label class="form-label">{{translate('category')}} *</label>
                                         <select name="category" class="form-control" required>
                                             <option value="">{{ translate('select_category') }}</option>
-                                            @foreach(['Food','Drinks','Snacks','Essentials','Personal Care','Household','Electronics','Other'] as $cat)
+                                            @php($catNames = (isset($categories) && count($categories)) ? $categories->pluck('name')->all() : ['Food','Drinks','Snacks','Essentials','Personal Care','Household','Electronics','Other'])
+                                            @if($product->category && !in_array($product->category, $catNames)) @php($catNames[] = $product->category) @endif
+                                            @foreach($catNames as $cat)
                                                 <option value="{{ $cat }}"
                                                     @if(isset($product) && $product->category === $cat) selected @endif
                                                 >{{ $cat }}</option>

@@ -47,16 +47,66 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
         });
     });
 
-    Route::group(['prefix' => 'mart/products', 'as' => 'mart.products.'], function () {
-        Route::controller(\Modules\TripManagement\Http\Controllers\Web\VitoMartAdminController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::get('create', 'create')->name('create');
-            Route::post('store', 'store')->name('store');
-            Route::get('{id}/edit', 'edit')->name('edit');
-            Route::put('{id}', 'update')->name('update');
-            Route::delete('{id}', 'destroy')->name('destroy');
-            Route::post('{id}/toggle-status', 'toggleStatus')->name('toggle-status');
-            Route::post('{id}/stock-adjust', 'stockAdjust')->name('stock-adjust');
+    Route::group(['prefix' => 'mart', 'as' => 'mart.'], function () {
+        // Dashboard
+        Route::get('dashboard', [\Modules\TripManagement\Http\Controllers\Web\MartDashboardController::class, 'index'])->name('dashboard');
+
+        // Products (names unchanged: admin.mart.products.*)
+        Route::group(['prefix' => 'products', 'as' => 'products.'], function () {
+            Route::controller(\Modules\TripManagement\Http\Controllers\Web\VitoMartAdminController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('create', 'create')->name('create');
+                Route::post('store', 'store')->name('store');
+                Route::get('{id}/edit', 'edit')->name('edit');
+                Route::put('{id}', 'update')->name('update');
+                Route::delete('{id}', 'destroy')->name('destroy');
+                Route::post('{id}/toggle-status', 'toggleStatus')->name('toggle-status');
+                Route::post('{id}/stock-adjust', 'stockAdjust')->name('stock-adjust');
+            });
+        });
+
+        // Orders
+        Route::group(['prefix' => 'orders', 'as' => 'orders.'], function () {
+            Route::controller(\Modules\TripManagement\Http\Controllers\Web\MartOrderAdminController::class)->group(function () {
+                Route::get('export', 'export')->name('export');
+                Route::get('details/{id}', 'show')->name('show');
+                Route::put('status/{id}', 'updateStatus')->name('status');
+                Route::get('list/{type?}', 'orderList')->name('index');
+            });
+        });
+
+        // Promo codes
+        Route::group(['prefix' => 'promo', 'as' => 'promo.'], function () {
+            Route::controller(\Modules\TripManagement\Http\Controllers\Web\MartPromoCodeAdminController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('create', 'create')->name('create');
+                Route::post('store', 'store')->name('store');
+                Route::get('{id}/edit', 'edit')->name('edit');
+                Route::put('{id}', 'update')->name('update');
+                Route::delete('{id}', 'destroy')->name('destroy');
+                Route::post('{id}/toggle-status', 'toggleStatus')->name('toggle-status');
+            });
+        });
+
+        // Reviews
+        Route::group(['prefix' => 'reviews', 'as' => 'reviews.'], function () {
+            Route::controller(\Modules\TripManagement\Http\Controllers\Web\MartReviewAdminController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::delete('{id}', 'destroy')->name('destroy');
+            });
+        });
+
+        // Categories
+        Route::group(['prefix' => 'categories', 'as' => 'categories.'], function () {
+            Route::controller(\Modules\TripManagement\Http\Controllers\Web\MartCategoryAdminController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('create', 'create')->name('create');
+                Route::post('store', 'store')->name('store');
+                Route::get('{id}/edit', 'edit')->name('edit');
+                Route::put('{id}', 'update')->name('update');
+                Route::delete('{id}', 'destroy')->name('destroy');
+                Route::post('{id}/toggle-status', 'toggleStatus')->name('toggle-status');
+            });
         });
     });
 
