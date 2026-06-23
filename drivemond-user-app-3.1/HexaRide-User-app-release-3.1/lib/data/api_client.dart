@@ -195,14 +195,27 @@ class ApiClient extends GetxService {
     dynamic body;
     try {
       body = jsonDecode(response.body);
-    // ignore: empty_catches
-    }catch(e) {}
+    } catch (e) {
+      // If JSON parsing fails and response is not 200, return error
+      if (response.statusCode != 200) {
+        return Response(
+          body: null,
+          bodyString: response.body.toString(),
+          statusCode: 0,
+          statusText: 'server_error'.tr,
+        );
+      }
+      // For 200 responses that aren't JSON, return raw body
+      body = response.body;
+    }
+    
     Response localResponse = Response(
-      body: body ?? response.body, bodyString: response.body.toString(),
+      body: body, bodyString: response.body.toString(),
       request: Request(headers: response.request!.headers, method: response.request!.method, url: response.request!.url),
       headers: response.headers, statusCode: response.statusCode, statusText: response.reasonPhrase,
     );
-    if(localResponse.statusCode != 200 && localResponse.body != null && localResponse.body is !String) {
+    
+    if(localResponse.statusCode != 200 && localResponse.body != null && localResponse.body is! String) {
       // Prefer RFC 7807 `title`/`detail` when present (additive backend fields); fall back to legacy format.
       final title = localResponse.body['title'];
       final detail = localResponse.body['detail'];
@@ -214,6 +227,13 @@ class ApiClient extends GetxService {
         localResponse = Response(statusCode: localResponse.statusCode, body: localResponse.body, statusText: errorResponse.errors![0].message);
       }else if(localResponse.body.toString().startsWith('{message')) {
         localResponse = Response(statusCode: localResponse.statusCode, body: localResponse.body, statusText: localResponse.body['message']);
+      } else {
+        // Generic error message for other non-200 responses
+        localResponse = Response(
+          statusCode: localResponse.statusCode,
+          body: localResponse.body,
+          statusText: 'something_went_wrong'.tr,
+        );
       }
     }else if(localResponse.statusCode != 200 && localResponse.body == null) {
       localResponse = Response(statusCode: 0, statusText: noInternetMessage);

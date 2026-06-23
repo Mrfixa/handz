@@ -77,10 +77,10 @@ class MartController extends GetxController implements GetxService {
     return false;
   }
 
-  Future<bool> updateStatus(String orderId, String status, {String? reason}) async {
+  Future<bool> updateStatus(String orderId, String status, {String? reason, double? driverLat, double? driverLng}) async {
     isActionLoading = true;
     update();
-    final response = await martServiceInterface.updateStatus(orderId, status, reason: reason);
+    final response = await martServiceInterface.updateStatus(orderId, status, reason: reason, driverLat: driverLat, driverLng: driverLng);
     isActionLoading = false;
     update();
     if (response.statusCode == 200) {

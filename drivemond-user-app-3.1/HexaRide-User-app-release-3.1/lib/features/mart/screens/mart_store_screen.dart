@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ import 'package:ride_sharing_user_app/features/mart/screens/mart_order_tracking_
 import 'package:ride_sharing_user_app/features/mart/screens/mart_order_history_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_product_details_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_payment_screen.dart';
+import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
 import 'package:ride_sharing_user_app/util/app_colors.dart';
 
 class MartStoreScreen extends StatefulWidget {
@@ -26,40 +28,39 @@ class MartStoreScreen extends StatefulWidget {
 class _MartStoreScreenState extends State<MartStoreScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<Map<String, dynamic>> _products = [];
-  final List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = true;
   bool _isOffline = false;
   bool _hasError = false;
   String _selectedCategory = 'all';
+  Timer? _searchDebounce;
 
-  final List<String> _categories = ['all', 'food', 'drinks', 'snacks', 'essentials'];
-
-  // B16: running total for FAB — guards against malformed/negative values
-  double get _cartTotal {
-    double total = 0.0;
-    for (final item in _cartItems) {
-      final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-      final qty = item['quantity'] as int? ?? 1;
-      if (price <= 0 || qty <= 0) continue;
-      total += price * qty;
-    }
-    return total.clamp(0.0, 999999.99);
-  }
+  MartController get _martController => Get.find<MartController>();
 
   @override
   void initState() {
     super.initState();
     _fetchProducts();
+    // Ensure categories are loaded
+    if (_martController.categories.isEmpty) {
+      _martController.getCategories();
+    }
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  // B17: renamed so RefreshIndicator can call it
   Future<void> _loadProducts() => _fetchProducts();
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() {});
+    });
+  }
 
   Future<void> _fetchProducts() async {
     if (!mounted) return;
@@ -87,7 +88,6 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     } catch (e) {
       debugPrint('Mart error: $e');
       if (!mounted) return;
-      // B20: distinguish network error from general error
       setState(() {
         _isOffline = true;
         _hasError = false;
@@ -101,21 +101,22 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     return Scaffold(
       appBar: AppBarWidget(title: 'vito_mart', showLogo: true),
       body: _isOffline ? _buildOfflineBody(context) : _buildBody(context),
-      // B16: FAB shows count + running total
-      floatingActionButton: _cartItems.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                _navigateToCart();
-              },
-              backgroundColor: Theme.of(context).primaryColor,
-              icon: Icon(Icons.shopping_cart, color: Theme.of(context).colorScheme.onPrimary),
-              label: Text(
-                '${'cart'.tr} (${_cartItems.length}) • \$${_cartTotal.toStringAsFixed(2)}',
-                style: textMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary),
-              ),
-            )
-          : null,
+      floatingActionButton: GetBuilder<MartController>(
+        builder: (controller) => controller.cartItems.isNotEmpty
+            ? FloatingActionButton.extended(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _navigateToCart();
+                },
+                backgroundColor: Theme.of(context).primaryColor,
+                icon: Icon(Icons.shopping_cart, color: Theme.of(context).colorScheme.onPrimary),
+                label: Text(
+                  '${'cart'.tr} (${controller.cartItemCount}) • \$${controller.cartTotal.toStringAsFixed(2)}',
+                  style: textMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
     );
   }
 
@@ -164,7 +165,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
           Expanded(
             child: TextField(
               controller: _searchController,
-              onChanged: (_) => setState(() {}),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'search_products'.tr,
                 prefixIcon: const Icon(Icons.search),
@@ -174,6 +175,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: _searchController.text.isEmpty ? null : () {
+                      _searchDebounce?.cancel();
                       _searchController.clear();
                       setState(() {});
                     },
@@ -202,30 +204,40 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   }
 
   Widget _buildCategoryFilter(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final isSelected = category == _selectedCategory;
-          return Padding(
-            padding: const EdgeInsets.only(right: Dimensions.paddingSizeSmall),
-            child: FilterChip(
-              label: Text(category.tr),
-              selected: isSelected,
-              onSelected: (selected) {
-                HapticFeedback.selectionClick();
-                setState(() => _selectedCategory = category);
-              },
-              selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-              checkmarkColor: Theme.of(context).primaryColor,
-            ),
-          );
-        },
-      ),
+    return GetBuilder<MartController>(
+      builder: (controller) {
+        final categories = controller.categoryList;
+        return SizedBox(
+          height: 40,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              final isSelected = category == _selectedCategory;
+              return Padding(
+                padding: const EdgeInsets.only(right: Dimensions.paddingSizeSmall),
+                child: FilterChip(
+                  label: Text(category.tr),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedCategory = category);
+                    if (category == 'all') {
+                      _fetchProducts();
+                    } else {
+                      controller.getProducts(category: category);
+                    }
+                  },
+                  selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                  checkmarkColor: Theme.of(context).primaryColor,
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -352,18 +364,11 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   }
 
   void _addToCart(Map<String, dynamic> product) {
-    setState(() {
-      final existingIndex = _cartItems.indexWhere((item) => item['id'] == product['id']);
-      if (existingIndex >= 0) {
-        _cartItems[existingIndex]['quantity'] = (_cartItems[existingIndex]['quantity'] ?? 1) + 1;
-      } else {
-        _cartItems.add(<String, dynamic>{...product, 'quantity': 1});
-      }
-    });
+    _martController.addToCart(product);
   }
 
   void _navigateToCart() {
-    Get.to(() => MartCartScreen(cartItems: _cartItems));
+    Get.to(() => MartCartScreen(cartItems: _martController.cartItems));
   }
 }
 

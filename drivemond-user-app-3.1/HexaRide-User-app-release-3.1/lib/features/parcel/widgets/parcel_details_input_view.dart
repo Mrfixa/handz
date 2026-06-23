@@ -41,19 +41,19 @@ class _ParcelDetailInputViewState extends State<ParcelDetailInputView> with Sing
                     showBorder: true,
                     hintText: '${'parcel_weight_hint'.tr} ${Get.find<ConfigController>().config?.parcelWeightUnit}',
                     fillColor:
-                    _showErrorWeightCapacity() ?
+                    _showErrorWeightCapacity() || _hasInvalidWeight() ?
                     Theme.of(context).colorScheme.error.withValues(alpha:0.04) :
                     Get.isDarkMode ?
                     Theme.of(context).cardColor :
                     Theme.of(context).primaryColor.withValues(alpha:0.04),
                     controller: parcelController.parcelWeightController,
                     focusNode: parcelController.parcelWeightNode,
-                    inputType: TextInputType.number,
+                    inputType: const TextInputType.numberWithOptions(decimal: true),
                     inputAction: TextInputAction.done,
                     isAmount: true,
                     prefix: false,
                     onTap: () => parcelController.focusOnBottomSheet(widget.expandableKey),
-                    focusBorderColor: _showErrorWeightCapacity() ?
+                    focusBorderColor: _showErrorWeightCapacity() || _hasInvalidWeight() ?
                     Theme.of(context).colorScheme.error :
                     null,
                     onChanged: (_){
@@ -66,6 +66,11 @@ class _ParcelDetailInputViewState extends State<ParcelDetailInputView> with Sing
                   if(_showErrorWeightCapacity())
                   Align(alignment: Alignment.centerRight, child: Text(
                       '${'max_capacity'.tr} ${Get.find<ConfigController>().config?.maximumParcelWeightCapacity} ${'kg'.tr}',
+                    style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall,color: Theme.of(context).colorScheme.error),
+                  )),
+                  if(_hasInvalidWeight() && !_showErrorWeightCapacity())
+                  Align(alignment: Alignment.centerRight, child: Text(
+                      'invalid_weight_format'.tr,
                     style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall,color: Theme.of(context).colorScheme.error),
                   )),
                   const SizedBox(height: Dimensions.paddingSizeDefault),
@@ -92,12 +97,16 @@ class _ParcelDetailInputViewState extends State<ParcelDetailInputView> with Sing
                   Center(child: SpinKitCircle(color: Theme.of(context).primaryColor, size: 40.0)) :
                   ButtonWidget(
                     buttonText: "save_details".tr,
-                    backgroundColor: _showErrorWeightCapacity() ? Theme.of(context).hintColor : null,
+                    backgroundColor: _showErrorWeightCapacity() || _hasInvalidWeight() ? Theme.of(context).hintColor : null,
                     onPressed: () {
                       if(parcelController.parcelWeightController.text.trim().isEmpty) {
                         FocusScope.of(context).requestFocus(parcelController.parcelWeightNode);
                         parcelController.focusOnBottomSheet(widget.expandableKey);
                         showCustomSnackBar('parcel_weight_is_required'.tr);
+                      }else if(_hasInvalidWeight()){
+                        FocusScope.of(context).requestFocus(parcelController.parcelWeightNode);
+                        parcelController.focusOnBottomSheet(widget.expandableKey);
+                        showCustomSnackBar('invalid_weight_format'.tr);
                       }else if(_showErrorWeightCapacity()){
                         setState(() {});
                       }else{
@@ -144,5 +153,14 @@ class _ParcelDetailInputViewState extends State<ParcelDetailInputView> with Sing
     }else{
       return false;
     }
+  }
+
+  bool _hasInvalidWeight() {
+    final text = Get.find<ParcelController>().parcelWeightController.text.trim();
+    // Empty is valid (will show required error separately)
+    if (text.isEmpty) return false;
+    // Must be a valid positive number
+    final weight = double.tryParse(text);
+    return weight == null || weight <= 0;
   }
 }

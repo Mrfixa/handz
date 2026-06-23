@@ -28,11 +28,13 @@ class MartRepository implements MartRepositoryInterface {
   }
 
   @override
-  Future<Response> updateStatus(String orderId, String status, {String? reason}) async {
+  Future<Response> updateStatus(String orderId, String status, {String? reason, double? driverLat, double? driverLng}) async {
     return await apiClient.putData(AppConstants.martUpdateStatus, {
       'order_id': orderId,
       'status': status,
       if (reason != null && reason.isNotEmpty) 'reason': reason,
+      if (driverLat != null) 'driver_lat': driverLat,
+      if (driverLng != null) 'driver_lng': driverLng,
     });
   }
 

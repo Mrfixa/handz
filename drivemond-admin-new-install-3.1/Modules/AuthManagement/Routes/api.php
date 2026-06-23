@@ -95,7 +95,7 @@ Route::controller(\Modules\AuthManagement\Http\Controllers\Api\QrTokenController
 | Vito Client OTP Authentication Routes
 |--------------------------------------------------------------------------
 */
-Route::group(['prefix' => 'customer/auth', 'middleware' => ['throttle:20,1']], function () {
+Route::group(['prefix' => 'customer/auth', 'middleware' => ['throttle:5,1']], function () {
     Route::post('check', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'checkUser']);
     Route::post('send-otp', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'sendOtp']);
     Route::post('otp-verification', [\Modules\AuthManagement\Http\Controllers\Api\ClientOtpAuthController::class, 'verifyOtp']);

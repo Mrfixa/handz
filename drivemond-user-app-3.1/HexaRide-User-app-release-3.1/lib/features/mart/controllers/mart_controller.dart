@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ride_sharing_user_app/data/api_checker.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_category_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
@@ -19,6 +21,119 @@ class MartController extends GetxController implements GetxService {
   List<MartOrderModel> orders = [];
   MartOrderModel? currentOrder;
   MartProductModel? productDetails;
+
+  // Cart state - persisted to SharedPreferences
+  static const String _cartKey = 'mart_cart_items';
+  List<Map<String, dynamic>> _cartItems = [];
+  List<Map<String, dynamic>> get cartItems => _cartItems;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadCartFromStorage();
+    getCategories();
+  }
+
+  Future<void> _loadCartFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartJson = prefs.getString(_cartKey);
+      if (cartJson != null) {
+        final List<dynamic> decoded = jsonDecode(cartJson);
+        _cartItems = decoded.cast<Map<String, dynamic>>();
+        update();
+      }
+    } catch (e) {
+      debugPrint('Failed to load cart from storage: $e');
+      _cartItems = [];
+    }
+  }
+
+  Future<void> _saveCartToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cartKey, jsonEncode(_cartItems));
+    } catch (e) {
+      debugPrint('Failed to save cart to storage: $e');
+    }
+  }
+
+  // Cart total calculation
+  double get cartTotal {
+    double total = 0.0;
+    for (final item in _cartItems) {
+      final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
+      final qty = item['quantity'] as int? ?? 1;
+      if (price > 0 && qty > 0) {
+        total += price * qty;
+      }
+    }
+    return total.clamp(0.0, 999999.99);
+  }
+
+  int get cartItemCount => _cartItems.length;
+
+  void addToCart(Map<String, dynamic> product, {int quantity = 1}) {
+    final existingIndex = _cartItems.indexWhere(
+      (item) => item['id'] == product['id'],
+    );
+
+    if (existingIndex >= 0) {
+      final existing = Map<String, dynamic>.from(_cartItems[existingIndex]);
+      existing['quantity'] = (existing['quantity'] as int? ?? 1) + quantity;
+      _cartItems[existingIndex] = existing;
+    } else {
+      _cartItems.add({
+        'id': product['id'],
+        'name': product['name'],
+        'price': product['price'],
+        'image': product['image'],
+        'quantity': quantity,
+      });
+    }
+
+    _saveCartToStorage();
+    update();
+  }
+
+  void updateCartItemQuantity(String productId, int quantity) {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    final index = _cartItems.indexWhere((item) => item['id'] == productId);
+    if (index >= 0) {
+      final item = Map<String, dynamic>.from(_cartItems[index]);
+      item['quantity'] = quantity;
+      _cartItems[index] = item;
+      _saveCartToStorage();
+      update();
+    }
+  }
+
+  void removeFromCart(String productId) {
+    _cartItems.removeWhere((item) => item['id'] == productId);
+    _saveCartToStorage();
+    update();
+  }
+
+  void clearCart() {
+    _cartItems = [];
+    _saveCartToStorage();
+    update();
+  }
+
+  // Get categories as string list for UI
+  List<String> get categoryList {
+    final list = ['all'];
+    for (final cat in categories) {
+      if (cat.name != null && cat.name!.isNotEmpty) {
+        list.add(cat.name!);
+      }
+    }
+    return list.isEmpty ? ['all', 'food', 'drinks', 'snacks', 'essentials'] : list;
+  }
 
   /// Helper to extract a list payload that may be a plain list or a Laravel
   /// paginator ({data: {data: [...]}}).

@@ -16,6 +16,17 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 
 class PusherHelper {
   static PusherChannelsClient?  pusherClient;
+
+  /// Safely decode event data, returning null if parsing fails or data is null
+  static Map<String, dynamic>? _safeDecodeData(String? data) {
+    if (data == null || data.isEmpty) return null;
+    try {
+      return jsonDecode(data) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static void initializePusher() async{
     final config = Get.find<ConfigController>().config;
     // Config may be null if the config API failed on splash; don't crash.
@@ -79,9 +90,11 @@ class PusherHelper {
       if(pusherDriverAccepted.currentStatus ==  null){
         pusherDriverAccepted.subscribe();
         pusherDriverAccepted.bind("driver-trip-accepted.$tripId").listen((event) {
-          Get.find<RideController>().getRideDetails(jsonDecode(event.data!)['id']).then((value){
+          final data = _safeDecodeData(event.data);
+          if (data == null) return;
+          Get.find<RideController>().getRideDetails(data['id']?.toString() ?? tripId).then((value){
             if(value.statusCode == 200){
-              if(jsonDecode(event.data!)['type'] == AppConstants.parcel){
+              if(data['type'] == AppConstants.parcel){
                 Get.find<ParcelController>().updateParcelState(ParcelDeliveryState.acceptRider);
                 Get.find<RideController>().startLocationRecord();
                 Get.find<MapController>().notifyMapController();
@@ -113,15 +126,17 @@ class PusherHelper {
       if(driverTripStarted.currentStatus == null){
         driverTripStarted.subscribe();
         driverTripStarted.bind("driver-trip-started.$tripId").listen((event) {
+          final data = _safeDecodeData(event.data);
+          if (data == null) return;
           Get.find<RideController>().startLocationRecord();
-          if(jsonDecode(event.data!)['type']== AppConstants.parcel){
+          if(data['type'] == AppConstants.parcel){
             Get.find<MapController>().getPolyline();
             Get.find<ParcelController>().updateParcelState(ParcelDeliveryState.parcelOngoing);
 
             if(Get.find<RideController>().tripDetails == null ){
-              Get.find<RideController>().getRideDetails(jsonDecode(event.data!)['id']).then((value) {
+              Get.find<RideController>().getRideDetails(data['id']?.toString() ?? tripId).then((value) {
                 if (Get.find<RideController>().tripDetails!.parcelInformation!.payer == 'sender') {
-                  Get.find<RideController>().getFinalFare(jsonDecode(event.data!)['id']).then((value) {
+                  Get.find<RideController>().getFinalFare(data['id']?.toString() ?? tripId).then((value) {
                     if (value.statusCode == 200) {
                       Get.find<MapController>().notifyMapController();
                       Get.off(() => const PaymentScreen(fromParcel: true,));
@@ -131,7 +146,7 @@ class PusherHelper {
               });
             }else{
               if (Get.find<RideController>().tripDetails!.parcelInformation!.payer == 'sender') {
-                Get.find<RideController>().getFinalFare(jsonDecode(event.data!)['id']).then((value) {
+                Get.find<RideController>().getFinalFare(data['id']?.toString() ?? tripId).then((value) {
                   if (value.statusCode == 200) {
                     Get.find<MapController>().notifyMapController();
                     Get.off(() => const PaymentScreen(fromParcel: true,));
@@ -185,16 +200,18 @@ class PusherHelper {
       if(driverTripCompleted.currentStatus ==  null){
         driverTripCompleted.subscribe();
         driverTripCompleted.bind("driver-trip-completed.$tripId").listen((event) {
-          if(jsonDecode(event.data!)['type']== AppConstants.parcel){
+          final data = _safeDecodeData(event.data);
+          if (data == null) return;
+          if(data['type'] == AppConstants.parcel){
             Get.find<RideController>().clearRideDetails();
             if(Get.find<ConfigController>().config!.reviewStatus!) {
-              Get.off(()=> ReviewScreen(tripId: jsonDecode(event.data!)['id']));
+              Get.off(()=> ReviewScreen(tripId: data['id']?.toString() ?? tripId));
             }else{
               Get.offAll(const DashboardScreen());
             }
           }else{
             Get.dialog(const ConfirmationTripDialog(isStartedTrip: false,), barrierDismissible: false);
-            Get.find<RideController>().getFinalFare(jsonDecode(event.data!)['id']).then((value) {
+            Get.find<RideController>().getFinalFare(data['id']?.toString() ?? tripId).then((value) {
               if(value.statusCode == 200){
                 Get.find<RideController>().updateRideCurrentState(RideState.completeRide);
                 Get.find<MapController>().notifyMapController();
@@ -222,9 +239,11 @@ class PusherHelper {
       if(driverPaymentReceived.currentStatus == null){
         driverPaymentReceived.subscribe();
         driverPaymentReceived.bind("driver-payment-received.$tripId").listen((event) {
-          if (jsonDecode(event.data!)['type']== 'ride_request') {
+          final data = _safeDecodeData(event.data);
+          if (data == null) return;
+          if (data['type'] == 'ride_request') {
             if(Get.find<ConfigController>().config!.reviewStatus!){
-              Get.off(()=> ReviewScreen(tripId: jsonDecode(event.data!)['id']));
+              Get.off(()=> ReviewScreen(tripId: data['id']?.toString() ?? tripId));
               Get.find<RideController>().tripDetails = null;
             }else{
               Get.offAll(() => const DashboardScreen());
@@ -232,7 +251,7 @@ class PusherHelper {
             }
 
           } else {
-            Get.find<RideController>().getRideDetails(jsonDecode(event.data!)['id']).then((_){
+            Get.find<RideController>().getRideDetails(data['id']?.toString() ?? tripId).then((_){
               if(Get.find<RideController>().tripDetails?.parcelInformation?.payer == 'sender'){
                 Get.find<ParcelController>().updateParcelState(ParcelDeliveryState.parcelOngoing);
                 Get.find<RideController>().startLocationRecord();

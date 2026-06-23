@@ -3,5 +3,5 @@ abstract class MartServiceInterface {
   Future<dynamic> getMyOrders({int limit});
   Future<dynamic> getOrderDetails(String id);
   Future<dynamic> acceptOrder(String orderId);
-  Future<dynamic> updateStatus(String orderId, String status, {String? reason});
+  Future<dynamic> updateStatus(String orderId, String status, {String? reason, double? driverLat, double? driverLng});
 }

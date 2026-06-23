@@ -166,25 +166,30 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
               children: [
                 if (_isOffline) _buildOfflineBanner(context),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildOrderHeader(context),
-                        const SizedBox(height: Dimensions.paddingSizeLarge),
-                        _buildStatusTimeline(context),
-                        // B30: driver location map when picked_up
-                        _buildDriverMap(context),
-                        const SizedBox(height: Dimensions.paddingSizeLarge),
-                        _buildDriverInfo(context),
-                        // B31: delivery photo + signature
-                        _buildDeliveryProof(context),
-                        const SizedBox(height: Dimensions.paddingSizeLarge),
-                        if (_currentStatus != 'delivered' &&
-                            _currentStatus != 'cancelled')
-                          _buildCancelButton(context),
-                      ],
+                  child: RefreshIndicator(
+                    onRefresh: _fetchOrderStatus,
+                    color: Theme.of(context).primaryColor,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildOrderHeader(context),
+                          const SizedBox(height: Dimensions.paddingSizeLarge),
+                          _buildStatusTimeline(context),
+                          // B30: driver location map when picked_up
+                          _buildDriverMap(context),
+                          const SizedBox(height: Dimensions.paddingSizeLarge),
+                          _buildDriverInfo(context),
+                          // B31: delivery photo + signature
+                          _buildDeliveryProof(context),
+                          const SizedBox(height: Dimensions.paddingSizeLarge),
+                          if (_currentStatus != 'delivered' &&
+                              _currentStatus != 'cancelled')
+                            _buildCancelButton(context),
+                        ],
+                      ),
                     ),
                   ),
                 ),

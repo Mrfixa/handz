@@ -88,6 +88,8 @@ class VitoMartDriverController extends Controller
             'order_id' => 'required|string',
             'status' => 'required|in:picked_up,delivered,cancelled',
             'reason' => 'nullable|string|max:255',
+            'driver_lat' => 'nullable|numeric|between:-90,90',
+            'driver_lng' => 'nullable|numeric|between:-180,180',
         ]);
 
         if ($validator->fails()) {
@@ -126,6 +128,12 @@ class VitoMartDriverController extends Controller
             }
 
             $updateData = ['status' => $request->status];
+
+            // Update driver location if provided (for real-time tracking)
+            if ($request->filled('driver_lat') && $request->filled('driver_lng')) {
+                $updateData['driver_lat'] = $request->driver_lat;
+                $updateData['driver_lng'] = $request->driver_lng;
+            }
 
             if ($request->status === 'cancelled') {
                 // Restore product stock atomically under the same transaction lock.

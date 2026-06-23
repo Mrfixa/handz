@@ -24,9 +24,12 @@ class VitoMartController extends Controller
         $search = substr((string)($request->search ?? ''), 0, 100);
         $limit = min($request->input('limit', 20), 100);
 
+        // Sanitize search: escape LIKE special characters to prevent injection
+        $escapedSearch = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+
         $products = MartProduct::where('is_active', true)
             ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
-            ->when($search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($search, fn($q, $s) => $q->where('name', 'like', "%{$escapedSearch}%"))
             ->when($request->zone_id, fn($q, $zoneId) => $q->where(function ($q) use ($zoneId) {
                 $q->where('zone_id', $zoneId)->orWhereNull('zone_id');
             }))

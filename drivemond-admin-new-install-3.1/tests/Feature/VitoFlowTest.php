@@ -60,6 +60,9 @@ class VitoFlowTest extends TestCase
         Schema::dropIfExists('app_notifications');
         Schema::dropIfExists('firebase_push_notifications');
         Schema::dropIfExists('vito_audit_log');
+        Schema::dropIfExists('channel_conversations');
+        Schema::dropIfExists('channel_lists');
+        Schema::dropIfExists('channel_users');
         Schema::dropIfExists('oauth_access_tokens');
         Schema::dropIfExists('oauth_personal_access_clients');
         Schema::dropIfExists('oauth_clients');
@@ -362,6 +365,8 @@ class VitoFlowTest extends TestCase
                 $table->text('delivery_address')->nullable();
                 $table->decimal('delivery_lat', 10, 7)->nullable();
                 $table->decimal('delivery_lng', 10, 7)->nullable();
+                $table->decimal('driver_lat', 10, 7)->nullable();
+                $table->decimal('driver_lng', 10, 7)->nullable();
                 $table->string('signature_image')->nullable();
                 $table->string('delivery_photo')->nullable();
                 $table->text('notes')->nullable();

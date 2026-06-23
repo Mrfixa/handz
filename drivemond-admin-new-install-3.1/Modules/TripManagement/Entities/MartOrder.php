@@ -46,6 +46,8 @@ class MartOrder extends Model
         'delivery_address',
         'delivery_lat',
         'delivery_lng',
+        'driver_lat',
+        'driver_lng',
         'signature_image',
         'delivery_photo',
         'notes',
@@ -60,6 +62,8 @@ class MartOrder extends Model
         'discount_amount' => 'decimal:2',
         'delivery_lat' => 'decimal:7',
         'delivery_lng' => 'decimal:7',
+        'driver_lat' => 'decimal:7',
+        'driver_lng' => 'decimal:7',
         'cancelled_at' => 'datetime',
     ];
 

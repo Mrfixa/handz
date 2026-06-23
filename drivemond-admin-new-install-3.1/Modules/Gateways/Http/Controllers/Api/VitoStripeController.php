@@ -240,7 +240,30 @@ class VitoStripeController extends Controller
                 $metaType = $meta['type'] ?? 'wallet_topup';
 
                 if ($metaType === 'order_payment' && !empty($meta['order_id'])) {
-                    MartOrder::where('id', $meta['order_id'])->update(['payment_status' => 'paid']);
+                    $order = MartOrder::where('id', $meta['order_id'])->first();
+                    if ($order) {
+                        $order->update(['payment_status' => 'paid']);
+                        
+                        // Notify customer of successful payment
+                        try {
+                            $customer = $order->customer;
+                            if ($customer && $customer->fcm_token) {
+                                sendDeviceNotification(
+                                    fcm_token: $customer->fcm_token,
+                                    title: 'Payment Successful',
+                                    description: "Your payment for order #{$order->ref_id} has been received.",
+                                    status: 'paid',
+                                    ride_request_id: $order->id,
+                                    type: 'mart',
+                                    notification_type: 'mart',
+                                    action: 'mart_payment_received',
+                                    user_id: $customer->id,
+                                );
+                            }
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Stripe webhook FCM notify failed: ' . $e->getMessage());
+                        }
+                    }
                 } elseif ($userId) {
                     $user = \Modules\UserManagement\Entities\User::find($userId);
                     if ($user) {
@@ -254,6 +277,23 @@ class VitoStripeController extends Controller
                             'referral_earn'     => 0,
                         ]);
                         $account->increment('wallet_balance', $amount);
+                        
+                        // Notify user of wallet top-up
+                        try {
+                            if ($user->fcm_token) {
+                                sendDeviceNotification(
+                                    fcm_token: $user->fcm_token,
+                                    title: 'Wallet Top-up Successful',
+                                    description: "Your wallet has been credited with {$currency} " . number_format($amount, 2),
+                                    status: 'success',
+                                    notification_type: 'wallet',
+                                    action: 'wallet_topup_success',
+                                    user_id: $user->id,
+                                );
+                            }
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Wallet topup FCM notify failed: ' . $e->getMessage());
+                        }
                     }
                 }
             });
@@ -261,8 +301,11 @@ class VitoStripeController extends Controller
             // Mark the stored event + any associated order as failed so the client
             // and reporting reflect the declined charge.
             $paymentIntentId = is_object($data) ? $data->id : ($data['id'] ?? '');
+            $userId = is_object($data) && isset($data->metadata->user_id)
+                ? $data->metadata->user_id
+                : ($data['metadata']['user_id'] ?? null);
             try {
-                DB::transaction(function () use ($paymentIntentId) {
+                DB::transaction(function () use ($paymentIntentId, $userId) {
                     $stripeEvent = StripeEvent::where('payment_intent_id', $paymentIntentId)
                         ->lockForUpdate()
                         ->first();
@@ -270,7 +313,29 @@ class VitoStripeController extends Controller
                         $stripeEvent->update(['status' => 'failed']);
                         $meta = $stripeEvent->metadata ?? [];
                         if (($meta['type'] ?? null) === 'order_payment' && !empty($meta['order_id'])) {
-                            MartOrder::where('id', $meta['order_id'])->update(['payment_status' => 'failed']);
+                            $order = MartOrder::where('id', $meta['order_id'])->first();
+                            if ($order) {
+                                $order->update(['payment_status' => 'failed']);
+                                // Notify customer of payment failure
+                                try {
+                                    $customer = $order->customer;
+                                    if ($customer && $customer->fcm_token) {
+                                        sendDeviceNotification(
+                                            fcm_token: $customer->fcm_token,
+                                            title: 'Payment Failed',
+                                            description: "Your payment for order #{$order->ref_id} has failed. Please try again.",
+                                            status: 'failed',
+                                            ride_request_id: $order->id,
+                                            type: 'mart',
+                                            notification_type: 'mart',
+                                            action: 'mart_payment_failed',
+                                            user_id: $customer->id,
+                                        );
+                                    }
+                                } catch (\Throwable $e) {
+                                    \Illuminate\Support\Facades\Log::warning('Stripe payment_failed FCM notify failed: ' . $e->getMessage());
+                                }
+                            }
                         }
                     }
                 });

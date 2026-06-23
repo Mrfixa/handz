@@ -1114,5 +1114,6 @@
     "order_status_cancelled": "Cancelled",
     "in_stock": "In stock",
     "add_to_cart": "Add to cart",
-    "description": "Description"
+    "description": "Description",
+    "invalid_weight_format": "Please enter a valid weight"
 }

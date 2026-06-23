@@ -85,27 +85,32 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
               children: [
                 if (_isOffline) _buildOfflineBanner(context),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildOrderStatusCard(context),
-                        const SizedBox(height: Dimensions.paddingSizeDefault),
-                        _buildCustomerInfo(context),
-                        const SizedBox(height: Dimensions.paddingSizeDefault),
-                        _buildDeliveryAddress(context),
-                        const SizedBox(height: Dimensions.paddingSizeDefault),
-                        _buildOrderItems(context),
-                        const SizedBox(height: Dimensions.paddingSizeDefault),
-                        if (_orderStatus == 'picked_up') ...[
-                          _buildSignatureSection(context),
+                  child: RefreshIndicator(
+                    onRefresh: _fetchOrderDetails,
+                    color: Theme.of(context).primaryColor,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildOrderStatusCard(context),
                           const SizedBox(height: Dimensions.paddingSizeDefault),
-                          _buildPhotoSection(context),
+                          _buildCustomerInfo(context),
                           const SizedBox(height: Dimensions.paddingSizeDefault),
+                          _buildDeliveryAddress(context),
+                          const SizedBox(height: Dimensions.paddingSizeDefault),
+                          _buildOrderItems(context),
+                          const SizedBox(height: Dimensions.paddingSizeDefault),
+                          if (_orderStatus == 'picked_up') ...[
+                            _buildSignatureSection(context),
+                            const SizedBox(height: Dimensions.paddingSizeDefault),
+                            _buildPhotoSection(context),
+                            const SizedBox(height: Dimensions.paddingSizeDefault),
+                          ],
+                          _buildActionButton(context),
                         ],
-                        _buildActionButton(context),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -589,12 +594,28 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   Future<void> _updateStatusViaApi(String newStatus) async {
     setState(() => _isUpdating = true);
 
+    // Get current driver location for real-time tracking
+    double? driverLat;
+    double? driverLng;
+    try {
+      final locationController = Get.find<dynamic>();
+      if (locationController != null && locationController.getCurrentPosition() != null) {
+        final position = locationController.getCurrentPosition();
+        driverLat = position?.latitude;
+        driverLng = position?.longitude;
+      }
+    } catch (_) {
+      // Location not available, proceed without it
+    }
+
     try {
       final response = await Get.find<ApiClient>().putData(
         AppConstants.martUpdateStatus,
         {
           'order_id': widget.orderId,
           'status': newStatus,
+          if (driverLat != null) 'driver_lat': driverLat,
+          if (driverLng != null) 'driver_lng': driverLng,
         },
       );
 
@@ -657,12 +678,28 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   }
 
   Future<void> _submitDeliveredStatus() async {
+    // Get current driver location for real-time tracking
+    double? driverLat;
+    double? driverLng;
+    try {
+      final locationController = Get.find<dynamic>();
+      if (locationController != null && locationController.getCurrentPosition() != null) {
+        final position = locationController.getCurrentPosition();
+        driverLat = position?.latitude;
+        driverLng = position?.longitude;
+      }
+    } catch (_) {
+      // Location not available, proceed without it
+    }
+
     try {
       final response = await Get.find<ApiClient>().putData(
         AppConstants.martUpdateStatus,
         {
           'order_id': widget.orderId,
           'status': 'delivered',
+          if (driverLat != null) 'driver_lat': driverLat,
+          if (driverLng != null) 'driver_lng': driverLng,
         },
       );
 

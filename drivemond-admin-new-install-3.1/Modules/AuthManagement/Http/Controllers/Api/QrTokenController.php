@@ -16,15 +16,22 @@ class QrTokenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'role' => 'required|in:driver,customer',
+            'length' => 'nullable|integer|min:8|max:128',
         ]);
 
         if ($validator->fails()) {
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
         }
 
-        do {
-            $tokenValue = Str::random(64);
-        } while (QrToken::where('token', $tokenValue)->exists());
+        $tokenLength = $request->input('length', $request->role === 'customer' ? 16 : 32);
+        $tokenValue = Str::random($tokenLength);
+
+        // Ensure uniqueness
+        $attempts = 0;
+        while (QrToken::where('token', $tokenValue)->exists() && $attempts < 10) {
+            $tokenValue = Str::random($tokenLength);
+            $attempts++;
+        }
 
         $token = QrToken::create([
             'token' => $tokenValue,
@@ -35,6 +42,7 @@ class QrTokenController extends Controller
 
         return response()->json(responseFormatter(DEFAULT_200, [
             'token' => $token->token,
+            'length' => strlen($token->token),
             'role' => $token->role,
             'expires_at' => $token->expires_at->toISOString(),
             'qr_data' => json_encode([
@@ -47,7 +55,7 @@ class QrTokenController extends Controller
     public function validateToken(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'token' => 'required|string|size:64',
+            'token' => 'required|string|min:6|max:128',
         ]);
 
         if ($validator->fails()) {
@@ -74,7 +82,7 @@ class QrTokenController extends Controller
     public function redeemToken(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'token' => 'required|string|size:64',
+            'token' => 'required|string|min:6|max:128',
         ]);
 
         if ($validator->fails()) {
@@ -110,6 +118,11 @@ class QrTokenController extends Controller
 
     public function validateTokenPublic(string $token): JsonResponse
     {
+        // Accept tokens from 6 to 128 characters
+        if (strlen($token) < 6 || strlen($token) > 128) {
+            return response()->json(responseFormatter(constant: DEFAULT_404, errors: [['message' => 'Token is invalid or expired']]), 404);
+        }
+        
         $qrToken = QrToken::where('token', $token)->first();
 
         if (!$qrToken || !$qrToken->isValid()) {
@@ -127,7 +140,7 @@ class QrTokenController extends Controller
     public function revokeToken(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'token' => 'required|string|size:64',
+            'token' => 'required|string|min:6|max:128',
         ]);
 
         if ($validator->fails()) {

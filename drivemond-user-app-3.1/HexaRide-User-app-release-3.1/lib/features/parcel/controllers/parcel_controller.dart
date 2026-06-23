@@ -90,6 +90,17 @@ class ParcelController extends GetxController with GetSingleTickerProviderStateM
     receiverContactController.text = '';
     receiverNameController.text = '';
     parcelNotesController.text = '';
+    // Only clear country codes when explicitly starting fresh
+    // _senderCountryDialCode = null;
+    // _receiverCountryDialCode = null;
+  }
+
+  void resetParcelFlow() {
+    // Full reset including country codes for new parcel
+    initParcelData();
+    _senderCountryDialCode = null;
+    _receiverCountryDialCode = null;
+    update();
   }
 
   void updateParcelCategoryIndex(int newIndex) {

@@ -7,9 +7,8 @@ import 'package:ride_sharing_user_app/helper/login_helper.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/features/splash/controllers/config_controller.dart';
 
-
 class SplashScreen extends StatefulWidget {
-  final Map<String,dynamic>? notificationData;
+  final Map<String, dynamic>? notificationData;
   const SplashScreen({super.key, this.notificationData});
 
   @override
@@ -17,11 +16,11 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  StreamSubscription<List<ConnectivityResult>>? _onConnectivityChanged;
+  StreamSubscription<ConnectivityResult>? _onConnectivityChanged;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late AnimationController _lottieController;
-
+  bool _hasCheckedConnectivity = false;
 
   @override
   void initState() {
@@ -40,35 +39,38 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _checkConnectivity();
   }
 
-  void _checkConnectivity(){
-    bool isFirst = true;
-    _onConnectivityChanged = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) {
-      bool isConnected = result.contains(ConnectivityResult.wifi) || result.contains(ConnectivityResult.mobile);
-      if(!isFirst || !isConnected) {
-        ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
-        ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
-        ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(
-          backgroundColor: isConnected ? Colors.green : Colors.red,
-          duration: Duration(seconds: isConnected ? 3 : 6),
-          content: Text(
-            isConnected ? 'connected'.tr : 'no_connection'.tr,
-            textAlign: TextAlign.center,
-          ),
-        ));
-        if(isConnected) {
-          LoginHelper().handleIncomingLinks(widget.notificationData);
+  Future<void> _checkConnectivity() async {
+    // First check current connectivity status
+    final connectivityResult = await Connectivity().checkConnectivity();
+    _handleConnectivityResult(connectivityResult);
 
-        }
-      }else{
-        ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
-        ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
-        LoginHelper().handleIncomingLinks(widget.notificationData);
-      }
-      isFirst = false;
-    });
+    // Then listen for changes
+    _onConnectivityChanged = Connectivity().onConnectivityChanged.listen(_handleConnectivityResult);
   }
 
+  void _handleConnectivityResult(ConnectivityResult result) {
+    if (_hasCheckedConnectivity) return; // Only run once on initial check
+    _hasCheckedConnectivity = true;
 
+    bool isConnected = result == ConnectivityResult.wifi || 
+                       result == ConnectivityResult.mobile ||
+                       result == ConnectivityResult.ethernet;
+
+    ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
+    ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
+    ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(
+      backgroundColor: isConnected ? Colors.green : Colors.red,
+      duration: Duration(seconds: isConnected ? 3 : 6),
+      content: Text(
+        isConnected ? 'connected'.tr : 'no_connection'.tr,
+        textAlign: TextAlign.center,
+      ),
+    ));
+
+    if (isConnected) {
+      LoginHelper().handleIncomingLinks(widget.notificationData);
+    }
+  }
 
   @override
   void dispose() {
@@ -77,9 +79,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _onConnectivityChanged?.cancel();
     super.dispose();
   }
+  
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: AnimatedBuilder(
         animation: _fadeAnimation,
