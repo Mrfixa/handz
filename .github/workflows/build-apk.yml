@@ -41,19 +41,10 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos || true
 
-      - name: Repair Android NDK if corrupt
+      - name: Clean disk space
         run: |
-          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          for NDK_DIR in "$SDK"/ndk/*; do
-            [ -d "$NDK_DIR" ] || continue
-            if [ ! -f "$NDK_DIR/source.properties" ]; then
-              VER=$(basename "$NDK_DIR")
-              echo "Corrupt NDK $VER (no source.properties) — reinstalling"
-              rm -rf "$NDK_DIR"
-              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "ndk;$VER" || true
-            fi
-          done
+          rm -rf build android/.gradle ~/.gradle 2>/dev/null || true
+          df -h / || true
 
       - name: Setup release keystore
         env:
@@ -113,19 +104,10 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos || true
 
-      - name: Repair Android NDK if corrupt
+      - name: Clean disk space
         run: |
-          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          for NDK_DIR in "$SDK"/ndk/*; do
-            [ -d "$NDK_DIR" ] || continue
-            if [ ! -f "$NDK_DIR/source.properties" ]; then
-              VER=$(basename "$NDK_DIR")
-              echo "Corrupt NDK $VER (no source.properties) — reinstalling"
-              rm -rf "$NDK_DIR"
-              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "ndk;$VER" || true
-            fi
-          done
+          rm -rf build android/.gradle ~/.gradle 2>/dev/null || true
+          df -h / || true
 
       - name: Setup release keystore
         env:
