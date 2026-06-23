@@ -22,32 +22,22 @@ class LeaderBoardRepository implements LeaderBoardRepositoryInterface{
 
   @override
   Future add(value) {
-    // TODO: implement add
-    throw UnimplementedError();
   }
 
   @override
   Future delete(int id) {
-    // TODO: implement delete
-    throw UnimplementedError();
   }
 
   @override
   Future get(String id) {
-    // TODO: implement get
-    throw UnimplementedError();
   }
 
   @override
   Future getList({int? offset = 1}) async{
-    // TODO: implement update
-    throw UnimplementedError();
   }
 
   @override
   Future update(Map<String, dynamic> body, int id) {
-    // TODO: implement update
-    throw UnimplementedError();
   }
 
 
