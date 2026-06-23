@@ -7,6 +7,7 @@ on:
     branches:
       - 'master'
       - 'claude/analyze-mart-qr-code-FySPn'
+      - 'claude/test-coverage-2024'
   workflow_dispatch:
     inputs:
       version:
