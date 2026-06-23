@@ -16,7 +16,7 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  StreamSubscription<ConnectivityResult>? _onConnectivityChanged;
+  StreamSubscription<List<ConnectivityResult>>? _onConnectivityChanged;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late AnimationController _lottieController;
@@ -48,13 +48,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _onConnectivityChanged = Connectivity().onConnectivityChanged.listen(_handleConnectivityResult);
   }
 
-  void _handleConnectivityResult(ConnectivityResult result) {
+  void _handleConnectivityResult(List<ConnectivityResult> results) {
     if (_hasCheckedConnectivity) return; // Only run once on initial check
     _hasCheckedConnectivity = true;
 
-    bool isConnected = result == ConnectivityResult.wifi || 
-                       result == ConnectivityResult.mobile ||
-                       result == ConnectivityResult.ethernet;
+    bool isConnected = results.any((result) => 
+        result == ConnectivityResult.wifi || 
+        result == ConnectivityResult.mobile ||
+        result == ConnectivityResult.ethernet);
 
     ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
     ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
