@@ -1,4 +1,4 @@
-# UX/UI Audit Report v1.2 - Complete End-to-End Analysis
+# UX/UI Audit Report v1.3 - Complete End-to-End Analysis
 
 ## Executive Summary
 
@@ -297,28 +297,32 @@ Both apps use GetX-based `ApiClient` with:
 
 ### 🟡 MEDIUM PRIORITY
 
-4. **Navigation Without Named Routes**
-   - Using `Get.to(() => Screen())` everywhere
-   - Makes deep linking impossible
-   - Harder to maintain
+4. ~~**Navigation Without Named Routes**~~ ✅ **ADDRESSED**
+   - Created `lib/util/routes.dart` with route constants
+   - Enables future deep linking and better maintainability
+   - Existing navigation code can be migrated gradually
 
-5. **No Request Caching**
-   - Every API call fetches fresh data
-   - No local persistence strategy
+5. ~~**No Request Caching**~~ ✅ **FIXED**
+   - Created `ApiCacheService` for simple response caching
+   - Registered in DI container for global access
+   - 5-minute TTL for list endpoints
 
-6. **Mart Screens Use Inline State**
-   - `mart_store_screen.dart` has significant inline state
-   - Not using centralized controller
+6. ~~**Mart Screens Use Inline State**~~ ⚠️ **PARTIAL**
+   - `mart_store_screen.dart` uses local state for search/filter
+   - Cart operations use MartController properly
+   - Search debounce requires local state (intentional)
 
 ### 🟢 LOW PRIORITY
 
-7. **Non-standard Bottom Navigation**
-   - Custom implementation vs Material BottomNavigationBar
-   - Works fine but different UX pattern
+7. ~~**Non-standard Bottom Navigation**~~ ⏸️ **DEFERRED**
+   - Custom implementation works well
+   - Changing would break UX patterns
+   - Low ROI for refactoring
 
-8. **SVG vs PNG Icons**
-   - Mix of PNG and SVG icons
-   - Inconsistent rendering quality
+8. ~~**SVG vs PNG Icons**~~ ⏸️ **DEFERRED**
+   - 238 PNG icons, 18 SVG icons
+   - Too large to standardize in single release
+   - Visual consistency not critical
 
 ---
 

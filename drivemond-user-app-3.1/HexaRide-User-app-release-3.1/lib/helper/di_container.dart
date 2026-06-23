@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:ride_sharing_user_app/data/api_cache_service.dart';
 import 'package:ride_sharing_user_app/data/offline_queue.dart';
 import 'package:ride_sharing_user_app/features/address/domain/repositories/address_repository_interface.dart';
 import 'package:ride_sharing_user_app/features/address/domain/services/address_service.dart';
@@ -335,6 +336,9 @@ Future<Map<String, Map<String, String>>> init() async {
 
   // Offline action queue — persists mutations when offline, flushes on reconnect.
   Get.put(OfflineQueue(), permanent: true);
+
+  // API response caching — reduces redundant network calls for list endpoints.
+  Get.put(ApiCacheService(Get.find<SharedPreferences>()), permanent: true);
 
   // Retrieving localized data
   Map<String, Map<String, String>> languages = {};
