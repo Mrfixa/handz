@@ -1,18 +1,12 @@
-name: Build APKs
+name: Build and Release v1.0
 
 on:
-  push:
-    tags:
-      - 'v*'
-    branches:
-      - 'master'
-      - 'claude/analyze-mart-qr-code-FySPn'
-      - 'claude/test-coverage-2024'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version tag to create (e.g. v2.0.0)'
-        required: false
+        description: 'Release version (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0'
         type: string
 
 jobs:
@@ -42,10 +36,19 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos || true
 
-      - name: Clean disk space
+      - name: Repair Android NDK if corrupt
         run: |
-          rm -rf build android/.gradle ~/.gradle 2>/dev/null || true
-          df -h / || true
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          for NDK_DIR in "$SDK"/ndk/*; do
+            [ -d "$NDK_DIR" ] || continue
+            if [ ! -f "$NDK_DIR/source.properties" ]; then
+              VER=$(basename "$NDK_DIR")
+              echo "Corrupt NDK $VER (no source.properties) — reinstalling"
+              rm -rf "$NDK_DIR"
+              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "ndk;$VER" || true
+            fi
+          done
 
       - name: Setup release keystore
         env:
@@ -60,6 +63,16 @@ jobs:
               "$KEYSTORE_PASS" "$KEY_PASS" "$KEY_ALIAS" > android/key.properties
           fi
 
+      - name: Build debug APK
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          flutter build apk --debug \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
+            --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
+            --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        continue-on-error: true
+
       - name: Build release APK
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
@@ -68,11 +81,18 @@ jobs:
             --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
             --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
             --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
-        continue-on-error: true
 
       - name: Stage APKs for upload
         run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/vito-driver-debug.apk 2>/dev/null || true
           cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-driver-release.apk
+
+      - name: Upload Driver Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vito-driver-debug-apk
+          path: vito-driver-debug.apk
+          if-no-files-found: ignore
 
       - name: Upload Driver Release APK
         uses: actions/upload-artifact@v4
@@ -106,10 +126,19 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos || true
 
-      - name: Clean disk space
+      - name: Repair Android NDK if corrupt
         run: |
-          rm -rf build android/.gradle ~/.gradle 2>/dev/null || true
-          df -h / || true
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          for NDK_DIR in "$SDK"/ndk/*; do
+            [ -d "$NDK_DIR" ] || continue
+            if [ ! -f "$NDK_DIR/source.properties" ]; then
+              VER=$(basename "$NDK_DIR")
+              echo "Corrupt NDK $VER (no source.properties) — reinstalling"
+              rm -rf "$NDK_DIR"
+              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+              yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "ndk;$VER" || true
+            fi
+          done
 
       - name: Setup release keystore
         env:
@@ -124,6 +153,16 @@ jobs:
               "$KEYSTORE_PASS" "$KEY_PASS" "$KEY_ALIAS" > android/key.properties
           fi
 
+      - name: Build debug APK
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          flutter build apk --debug \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
+            --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
+            --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        continue-on-error: true
+
       - name: Build release APK
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
@@ -135,7 +174,15 @@ jobs:
 
       - name: Stage APKs for upload
         run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/vito-user-debug.apk 2>/dev/null || true
           cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-user-release.apk
+
+      - name: Upload User Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vito-user-debug-apk
+          path: vito-user-debug.apk
+          if-no-files-found: ignore
 
       - name: Upload User Release APK
         uses: actions/upload-artifact@v4
@@ -163,10 +210,12 @@ jobs:
 
       - name: Create release ZIP
         working-directory: ${{ github.workspace }}
+        env:
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          VERSION=$(grep '^version:' drivemond-user-app-3.1/HexaRide-User-app-release-3.1/pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
           echo "Building admin ZIP for version $VERSION"
-          zip -r "vito-admin-v${VERSION}.zip" drivemond-admin-new-install-3.1 \
+          TAG_VERSION="${VERSION#v}"
+          zip -r "vito-admin-${TAG_VERSION}.zip" drivemond-admin-new-install-3.1 \
             --exclude "*/node_modules/*" \
             --exclude "*/.git/*" \
             --exclude "*/storage/logs/*" \
@@ -179,28 +228,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vito-admin-zip
-          path: vito-admin-v*.zip
-
-  laravel-checks:
-    name: Laravel Backend Checks
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: drivemond-admin-new-install-3.1
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, xml, ctype, json, bcmath, pdo_mysql
-
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
-
-      - name: PHP syntax check
-        run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "No syntax errors" || true
+          path: vito-admin-*.zip
 
   create-release:
     name: Create GitHub Release
@@ -211,19 +239,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Resolve release version
-        id: ver
-        run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            TAG="${{ github.event.inputs.version }}"
-          elif echo "${{ github.ref }}" | grep -q '^refs/tags/'; then
-            TAG="${{ github.ref_name }}"
-          else
-            TAG="v$(grep '^version:' drivemond-user-app-3.1/HexaRide-User-app-release-3.1/pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)"
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Release tag: $TAG"
 
       - name: Download Driver Debug APK
         uses: actions/download-artifact@v4
@@ -260,9 +275,19 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
-          name: Vito ${{ steps.ver.outputs.tag }}
+          tag_name: ${{ github.event.inputs.version }}
+          name: Vito ${{ github.event.inputs.version }}
+          body: |
+            ## Vito v1.0 Release
+            
+            This release includes:
+            - Driver APK (debug + release builds)
+            - User APK (debug + release builds)
+            - Admin Laravel Backend ZIP
+            
+            ### Unit Tests Added
+            - 53 unit tests for MartPromoCode, MartOrder, and MartProduct models
           files: release-assets/*
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

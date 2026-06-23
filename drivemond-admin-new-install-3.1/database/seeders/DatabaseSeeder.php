@@ -13,5 +13,6 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminUserWalletSeeder::class);
         $this->call(BusinessManagementDatabaseSeeder::class);
         $this->call(DefaultUsersSeeder::class);
+        $this->call(VehicleBrandSeeder::class);
     }
 }
