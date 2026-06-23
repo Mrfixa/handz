@@ -9,6 +9,7 @@ ThemeData lightTheme = ThemeData(
   disabledColor: const Color(0xFFBABFC4),
   scaffoldBackgroundColor: const Color(0xFFF5B800),
   shadowColor: Colors.black.withValues(alpha:0.03),
+  dividerColor: const Color(0xFFE0E0E0),
   textTheme:  const TextTheme(
     bodyMedium: TextStyle(color: Color(0xff1D2D2B)),
     bodySmall: TextStyle(color: Color(0xff6B7675)),
@@ -35,7 +36,7 @@ ThemeData lightTheme = ThemeData(
     primary: Color(0xFFF5B800),
     secondary: Color(0xFF1B2838),
     error: Color(0xFFFF6767),
-    surface: Color(0xFFF3F3F3),
+    surface: Color(0xFFFFFFFF),
     tertiary: Color(0xFF7CCD8B),
     tertiaryContainer: Color(0xFFC98B3E),
     secondaryContainer: Color(0xFFEE6464),

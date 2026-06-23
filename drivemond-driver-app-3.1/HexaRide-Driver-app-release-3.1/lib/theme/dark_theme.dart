@@ -9,6 +9,8 @@ ThemeData darkTheme = ThemeData(
   cardColor: const Color(0xFF242424),
   hintColor: const Color(0xFF9F9F9F),
   scaffoldBackgroundColor: const Color(0xFF1B2838),
+  canvasColor: const Color(0xFF1B2838),
+  dividerColor: Colors.white24,
   primaryColorDark: const Color(0xFFB38600),
 
     extensions: <ThemeExtension<CustomThemeColors>>[
@@ -19,6 +21,7 @@ ThemeData darkTheme = ThemeData(
   colorScheme: const ColorScheme.dark(
       primary: Color(0xFFF5B800),
       error: Color(0xFFFF6767),
+      surface: Color(0xFF242424),
       secondary: Color(0xFF1B2838),
       tertiary: Color(0xFF7CCD8B),
       tertiaryContainer: Color(0xFFC98B3E),
@@ -38,11 +41,11 @@ ThemeData darkTheme = ThemeData(
   ),
   textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFFD4A000))),
     textTheme: const TextTheme(
-      displayLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF202020)),
-      displayMedium: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF393939)),
-      displaySmall: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF282828)),
-      bodyLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF272727)),
-      bodyMedium: TextStyle(fontWeight: FontWeight.w300, color: Color(0xffffffff)),
-      bodySmall: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF1D2D2B)),
+      displayLarge: TextStyle(fontWeight: FontWeight.w300, color: Colors.white),
+      displayMedium: TextStyle(fontWeight: FontWeight.w300, color: Colors.white),
+      displaySmall: TextStyle(fontWeight: FontWeight.w300, color: Colors.white),
+      bodyLarge: TextStyle(fontWeight: FontWeight.w300, color: Colors.white),
+      bodyMedium: TextStyle(fontWeight: FontWeight.w300, color: Colors.white70),
+      bodySmall: TextStyle(fontWeight: FontWeight.w300, color: Colors.white70),
     )
 );
