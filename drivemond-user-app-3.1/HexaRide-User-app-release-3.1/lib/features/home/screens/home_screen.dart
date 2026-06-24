@@ -11,6 +11,7 @@ import 'package:ride_sharing_user_app/features/home/widgets/home_map_view.dart';
 import 'package:ride_sharing_user_app/features/home/widgets/home_search_widget.dart';
 import 'package:ride_sharing_user_app/features/home/widgets/home_referral_view_widget.dart';
 import 'package:ride_sharing_user_app/features/home/widgets/visit_to_mart_widget.dart';
+import 'package:ride_sharing_user_app/features/home/widgets/quick_actions_widget.dart';
 import 'package:ride_sharing_user_app/features/my_offer/controller/offer_controller.dart';
 import 'package:ride_sharing_user_app/features/parcel/controllers/parcel_controller.dart';
 import 'package:ride_sharing_user_app/features/parcel/screens/parcel_list_view_screen.dart';
@@ -193,6 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
 
                           const HomeSearchWidget(),
+
+                          const QuickActionsWidget(),
                         ]),
                       ),
                       const SizedBox(height:Dimensions.paddingSizeDefault),

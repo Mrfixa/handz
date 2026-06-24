@@ -138,13 +138,21 @@ class CustomMenuItem extends StatelessWidget {
         onTap();
       },
       child: Padding(padding: const EdgeInsets.all(8),
-        child: SizedBox(width: isSelected ? 90 : 50, child: Column(crossAxisAlignment: CrossAxisAlignment.center,
+        child: SizedBox(width: 65, child: Column(crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
 
-            Image.asset(isSelected ? activeIcon : inActiveIcon, width: Dimensions.menuIconSize, height: Dimensions.menuIconSize,),
-
-            isSelected ? Text(name.tr, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: textRegular.copyWith(color: Colors.white, fontSize: Dimensions.fontSizeExtraSmall)) : const SizedBox(),
+            AnimatedOpacity(
+              opacity: isSelected ? 1.0 : 0.6,
+              duration: const Duration(milliseconds: 200),
+              child: Image.asset(isSelected ? activeIcon : inActiveIcon, width: Dimensions.menuIconSize, height: Dimensions.menuIconSize),
+            ),
+            const SizedBox(height: 2),
+            AnimatedOpacity(
+              opacity: isSelected ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Text(name.tr, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: textRegular.copyWith(color: Colors.white, fontSize: 10)),
+            ),
 
           ],
         )),

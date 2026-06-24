@@ -132,22 +132,28 @@ class CustomMenuItem extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: SizedBox(
-          width: isSelected ? 90 : 50,
+          width: 65,
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.center, mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min, children: [
-            CustomAssetImageWidget(
-              isSelected ? activeIcon : inActiveIcon,
-              width: Dimensions.menuIconSize, height: Dimensions.menuIconSize,
-              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+            AnimatedOpacity(
+              opacity: isSelected ? 1.0 : 0.6,
+              duration: const Duration(milliseconds: 200),
+              child: CustomAssetImageWidget(
+                isSelected ? activeIcon : inActiveIcon,
+                width: Dimensions.menuIconSize, height: Dimensions.menuIconSize,
+                color: Colors.white,
+              ),
             ),
-
-            isSelected ?
-            Text(
-              name.tr, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: textRegular.copyWith(color: Colors.white, fontSize: Dimensions.fontSizeExtraSmall),
-            ) :
-            const SizedBox(),
+            const SizedBox(height: 2),
+            AnimatedOpacity(
+              opacity: isSelected ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                name.tr, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: textRegular.copyWith(color: Colors.white, fontSize: 10),
+              ),
+            ),
           ]
           ),
         ),
