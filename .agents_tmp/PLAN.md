@@ -1,159 +1,336 @@
-# 1. OBJECTIVE
+# Vito — Complete UX/UI and Authentication Overhaul Plan
 
-Conduct a comprehensive end-to-end security and architecture audit of the entire Vito codebase, covering:
-- Laravel 12 backend (authentication, rides, parcels, mart orders, payments, chat)
-- Flutter customer app (API communication, state management, notifications, localization)
-- Flutter driver app (authentication, trip management, notifications, earnings)
-- Landing page (QR token validation)
-- CI/CD pipeline and deployment
+## 1. OBJECTIVE
 
-# 2. CONTEXT SUMMARY
+Fix all UX/UI issues, authentication flows, and user experience problems in both Flutter apps (customer and driver) to ensure a smooth, professional user experience from onboarding to trip completion.
 
-The Vito system is a three-part ride-sharing and delivery platform:
-- **Backend**: Laravel 12 with nwidart/laravel-modules, Passport auth, Stripe payments
-- **Customer App**: Flutter with GetX state management
-- **Driver App**: Flutter with GetX state management
+## 2. CONTEXT SUMMARY
 
-Previous audits exist (AUDIT.md, AUTH_AUDIT.md, VITO_AUDIT.md) but a new comprehensive review was requested to assess the current state after fixes.
+After deep analysis of both Flutter apps, the following critical UX/UI and authentication issues were identified:
 
-**Key findings from this audit:**
+### CUSTOMER APP ISSUES:
+1. **FCM Token Refresh Missing** — Push notifications stop working after token rotation
+2. **Pusher Channel Memory Leak** — Channels subscribed but never unsubscribed on chat close
+3. **No Loading States** — Buttons show no loading feedback during API calls
+4. **Silent API Failures** — Network errors show generic messages
+5. **Stale Balance Display** — Wallet balance doesn't refresh after transactions
+6. **No Offline Queue** — Failed payments/orders lost without retry
+7. **Splash Screen UX** — Shows generic snackbar instead of smooth loading
+8. **Map Fallback (0,0)** — No proper fallback when location unavailable
 
-## VERIFIED AS SECURE ✅
-- PIN login/registration with atomic `lockForUpdate()` + `DB::transaction()`
-- QR token redemption (atomic, single-use, role-enforced)
-- Mart order server-side totals (client prices ignored)
-- Mart promo code atomic `used_count` increment
-- Mart stock atomic decrement with `lockForUpdate()`
-- Stripe webhook idempotency (prevents double-credit)
-- Stripe PaymentIntent idempotency keys
-- Bearer token auth on all API endpoints
-- No SQL injection (parameterized Eloquent)
-- No XSS in Blade templates (`{!!` not found)
-- PIN change revokes other sessions
-- CSRF middleware active
-- Security headers middleware active
-- UUID primary keys throughout
+### DRIVER APP ISSUES:
+1. **FCM Token Refresh Missing** — Same as customer app
+2. **Pusher Channel Memory Leak** — Same issue
+3. **No Loading States on Buttons** — Accept/decline buttons not disabled during API calls
+4. **Online State Not Persisted** — App crash leaves driver marked as available
+5. **No Heartbeat Mechanism** — Backend can't detect driver disconnection
+6. **Silent Delivery Proof Upload** — Failed uploads leave orders stuck
+7. **No Withdrawal Confirmation** — Immediate submit without "Are you sure?"
+8. **Stale Earnings Balance** — Not refreshed after trip completion
+9. **No Camera Fallback** — Blank screen if camera permission revoked
 
-## CRITICAL ISSUES 🔴
-1. **FCM token refresh not implemented** in both apps — push notifications silently stop after Android/iOS token rotation
-2. **Driver online state not persisted** — app crash leaves driver marked as available
-3. **No button disable on status updates** — double-tap causes duplicate API calls, failed updates leave UI/backend out of sync
-4. **Silent delivery proof upload failure** — orders stuck in `picked_up` state
+### AUTHENTICATION ISSUES:
+1. **PIN Validation UI** — No visual feedback on PIN entry
+2. **No Remember Me Persistence** — State lost on app restart
+3. **Token Not Refreshed** — FCM token sent once, never updated
+4. **Logout Cleanup Incomplete** — Pusher channels not properly disconnected
 
-## HIGH-PRIORITY ISSUES 🟠
-1. **Bid mode fare bypass** — `actual_fare` falls back to client-sent value when `bid=true`
-2. **`coordinateArrival` missing authorization** — no ownership/state validation
-3. **`editScheduledTrip` missing authorization** — no `customer_id` check
-4. **Stripe error messages swallowed** — generic errors hide debugging info
-5. **No certificate pinning** — MITM vulnerable
-6. **No offline queue** — failed payments silently lost
-7. **Missing translation keys** — 17+ keys render as raw strings in ES/AR
+## 3. APPROACH OVERVIEW
 
-# 3. APPROACH OVERVIEW
+Implement fixes systematically across all three subsystems:
+1. **Customer App** — Notification helpers, auth flow, state management, UI feedback
+2. **Driver App** — Same fixes plus online state persistence, heartbeat
+3. **Backend** — Authorization checks, state machine validation
 
-The audit was conducted using static analysis across all three subsystems:
+## 4. IMPLEMENTATION STEPS
 
-1. **Backend Analysis**: Reviewed PHP controllers, models, routes, middleware, and database migrations
-2. **Flutter Apps Analysis**: Reviewed Dart controllers, API client, notification helpers, and state management
-3. **Security Review**: Checked for OWASP Top 10 vulnerabilities, authentication flaws, injection attacks, and data exposure
-4. **Architecture Review**: Assessed consistency between apps and backend, state management patterns, and error handling
+### PHASE 1: Authentication & Notifications (BOTH APPS)
 
-Findings are categorized by severity: 🔴 CRITICAL → 🟠 HIGH → 🟡 MEDIUM → 🔵 LOW → 🟢 VERIFIED
+#### Step 1.1: Add FCM Token Refresh Listener
+**File:** `lib/helper/notification_helper.dart` (BOTH APPS)
 
-# 4. IMPLEMENTATION STEPS
+Add this after FirebaseMessaging initialization:
+```dart
+// Listen for FCM token refresh and send new token to backend
+FirebaseMessaging.instance.onTokenRefresh.listen((String newToken) async {
+  customPrint('FCM Token refreshed: $newToken');
+  await _sendFcmTokenToBackend(newToken);
+});
 
-## Priority 1: Critical Fixes
-
-### Step 1: Implement FCM Token Refresh (Both Apps)
-**Goal:** Prevent push notifications from silently stopping after token rotation
-**Method:**
-1. Add `FirebaseMessaging.instance.onTokenRefresh.listen((token) { ... })` listener in both apps' `notification_helper.dart` initialization
-2. Call the backend's `updateFcmToken` API endpoint when token changes
-3. Register this listener on app startup alongside existing Firebase initialization
-
-**Reference:**
-- Customer app: `/workspace/project/handz/drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/helper/notification_helper.dart`
-- Driver app: `/workspace/project/handz/drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/lib/helper/notification_helper.dart`
-- Backend endpoint: `POST /api/customer/update/fcm-token` (routes: api.php:24)
-
-### Step 2: Persist Driver Online State
-**Goal:** Prevent false availability after app crash/kill
-**Method:**
-1. Store online state in SharedPreferences when driver toggles online
-2. On app launch, check if driver was last online and sync with backend
-3. Add a periodic heartbeat (every 30s) to indicate driver is still active when backgrounded
-
-**Reference:**
-- Driver app main.dart and driver controller files
-
-### Step 3: Disable Buttons After Tap (Status Updates)
-**Goal:** Prevent duplicate API calls and UI/backend state desync
-**Method:**
-1. Add loading state (`RxBool isLoading`) to relevant controllers
-2. Disable button when `isLoading = true`, re-enable on API response
-3. Implement optimistic UI with rollback on failure
-
-**Reference:**
-- Driver app controllers: `RideController`, `MartController`
-
-### Step 4: Handle Delivery Proof Upload Failure
-**Goal:** Prevent orders from being stuck in `picked_up` state
-**Method:**
-1. Wrap multipart upload in try-catch
-2. Show error dialog if upload fails
-3. Allow retry without losing delivery state
-
-**Reference:**
-- Driver app: `MartDeliveryScreen` (to be located in screens)
-
-## Priority 2: High-Priority Fixes
-
-### Step 5: Verify Bid Mode Fares
-**Goal:** Ensure bid fares are server-validated, not client-spoofable
-**Method:**
-1. Audit how bids are created — verify fare comes from driver fare bidding flow
-2. Add a server-side flag `bid_verified: true` when bid is created
-3. Reject `createRideRequest` with `bid=true` if bid wasn't server-generated
-
-### Step 6: Add Authorization to Status Update Endpoints
-**Goal:** Prevent unauthorized trip status modifications
-**Method:**
-1. Add `where('driver_id', auth('api')->id())` to `coordinateArrival` query
-2. Add `where('customer_id', auth('api')->id())` to `editScheduledTrip`
-3. Validate state transitions match the state machine
-
-### Step 7: Certificate Pinning
-**Goal:** Prevent MITM attacks on untrusted networks
-**Method:**
-1. Use `dart:io` SecurityContext to pin the backend's TLS certificate
-2. Or use a library like `flutter_cert_pinning`
-
-## Priority 3: Polish
-
-- Chat rate limiting middleware
-- Message retention policy (TTL)
-- Stripe error message logging
-- Remove debug API logging
-- Withdrawal confirmation dialog
-- Earnings balance live refresh
-- Landing page HSTS header
-- CI/CD security scanning (SAST, secrets detection)
-
-# 5. TESTING AND VALIDATION
-
-## Backend Verification
-```bash
-cd drivemond-admin-new-install-3.1
-php artisan test --filter=VitoFlowTest
-./vendor/bin/phpstan analyse --level=0 \
-  Modules/AuthManagement/Http/Controllers/Api/VitoAuthController.php \
-  Modules/AuthManagement/Http/Controllers/Api/QrTokenController.php \
-  Modules/TripManagement/Http/Controllers/Api/Customer/VitoMartController.php \
-  Modules/TripManagement/Http/Controllers/Api/Driver/VitoTripController.php \
-  Modules/Gateways/Http/Controllers/Api/VitoStripeController.php
+Future<void> _sendFcmTokenToBackend(String token) async {
+  try {
+    final apiClient = Get.find<ApiClient>();
+    await apiClient.postData(
+      AppConstants.fcmTokenUpdate,
+      {"_method": "put", "fcm_token": token}
+    );
+  } catch (e) {
+    customPrint('Failed to update FCM token: $e');
+  }
+}
 ```
 
-## Customer App Verification
+#### Step 1.2: Fix Logout to Properly Disconnect Pusher
+**File:** `lib/helper/pusher_helper.dart` (BOTH APPS)
+
+Add unsubscribe methods and call on logout:
+```dart
+void cleanup() {
+  try {
+    pusherClient?.disconnect();
+    pusherClient = null;
+  } catch (_) {}
+}
+```
+
+### PHASE 2: Customer App UX Fixes
+
+#### Step 2.1: Add Loading States to Buttons
+**Files:** All button widgets and screens with API calls
+
+Add `isLoading` state to all action buttons:
+```dart
+// In controllers:
+RxBool isLoading = false.obs;
+
+void submitAction() async {
+  isLoading.value = true;
+  try {
+    await apiCall();
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// In UI:
+ButtonWidget(
+  buttonText: 'submit'.tr,
+  isLoading: controller.isLoading.value,
+  onPressed: () => controller.submitAction(),
+)
+```
+
+#### Step 2.2: Fix Splash Screen UX
+**File:** `lib/features/splash/screens/splash_screen.dart`
+
+Replace generic snackbar with professional loading UI:
+```dart
+// Remove connectivity snackbar
+// Add smooth transition to next screen
+// Show loading indicator until config is fetched
+```
+
+#### Step 2.3: Add Proper Error Handling
+**File:** `lib/data/api_checker.dart`
+
+Enhance error messages:
+```dart
+static void checkApi(Response response) {
+  if (response.statusCode == 401) {
+    showCustomSnackBar('session_expired_please_login_again'.tr);
+    Get.offAll(() => const SignInScreen());
+  } else if (response.statusCode == 0) {
+    showCustomSnackBar('no_internet_connection'.tr);
+  } else {
+    showCustomSnackBar(response.body['message'] ?? 'something_went_wrong'.tr);
+  }
+}
+```
+
+#### Step 2.4: Fix Wallet Balance Refresh
+**File:** `lib/features/wallet/screens/wallet_screen.dart`
+
+Add pull-to-refresh and auto-refresh after transactions:
+```dart
+RefreshIndicator(
+  onRefresh: () => controller.refreshBalance(),
+  child: ...,
+)
+```
+
+#### Step 2.5: Fix Map Location Fallback
+**File:** `lib/features/map/screens/map_screen.dart`
+
+Add proper fallback for (0,0) coordinates:
+```dart
+LatLng getInitialPosition() {
+  final coords = locationController.initialPosition;
+  // Check for invalid coordinates (0,0)
+  if (coords.latitude == 0 && coords.longitude == 0) {
+    // Show permission prompt or city center fallback
+    return ConfigController.defaultLocation;
+  }
+  return coords;
+}
+```
+
+### PHASE 3: Driver App UX Fixes
+
+#### Step 3.1: Persist Online State
+**File:** `lib/features/home/screens/home_screen.dart`
+
+```dart
+// On toggle online:
+sharedPreferences.setBool('isOnline', true);
+apiClient.postData('driver/update-online-status', {'is_online': true});
+
+// On app start:
+if (sharedPreferences.getBool('isOnline') == true) {
+  // Sync with backend
+  apiClient.postData('driver/sync-online-status', {});
+}
+```
+
+#### Step 3.2: Add Heartbeat Mechanism
+**File:** `lib/main.dart`
+
+```dart
+Timer.periodic(Duration(seconds: 30), (timer) {
+  if (driverIsOnline && hasActiveTrip) {
+    apiClient.getData('driver/heartbeat');
+  }
+});
+```
+
+#### Step 3.3: Fix Status Update Button States
+**File:** `lib/features/ride/controllers/ride_controller.dart`
+
+```dart
+RxBool isUpdatingStatus = false.obs;
+
+Future<void> updateTripStatus(String status) async {
+  if (isUpdatingStatus.value) return;
+  isUpdatingStatus.value = true;
+  
+  try {
+    final result = await updateStatusAPI(status);
+    if (result.statusCode != 200) {
+      // Revert UI state on failure
+      showCustomSnackBar('failed_to_update_status'.tr);
+    }
+  } finally {
+    isUpdatingStatus.value = false;
+  }
+}
+```
+
+#### Step 3.4: Fix Delivery Proof Upload Error Handling
+**File:** `lib/features/mart/screens/mart_delivery_screen.dart`
+
+```dart
+Future<void> uploadProof(XFile file) async {
+  isUploading.value = true;
+  try {
+    final result = await uploadMultipart(file);
+    if (result.statusCode == 200) {
+      showCustomSnackBar('delivery_confirmed'.tr, isError: false);
+    }
+  } catch (e) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('upload_failed'.tr),
+        content: Text('please_try_again'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('retry'.tr),
+          ),
+        ],
+      ),
+    );
+  } finally {
+    isUploading.value = false;
+  }
+}
+```
+
+#### Step 3.5: Add Withdrawal Confirmation
+**File:** `lib/features/wallet/screens/wallet_screen.dart`
+
+```dart
+void initiateWithdraw(double amount) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('confirm_withdrawal'.tr),
+      content: Text('withdraw_amount_format'.tr.format(amount)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            processWithdraw(amount);
+          },
+          child: Text('confirm'.tr),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+### PHASE 4: Backend Authorization Fixes
+
+#### Step 4.1: Add Ownership Check to coordinateArrival
+**File:** `Modules/TripManagement/Http/Controllers/Api/Driver/TripRequestController.php`
+
+```php
+public function coordinateArrival(Request $request) {
+    $validator = Validator::make($request->all(), [
+        'trip_request_id' => 'required|uuid',
+        'is_reached' => 'required|in:coordinate_1,coordinate_2,destination',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([...], 422);
+    }
+
+    // Add ownership check
+    $trip = TripRequest::where('id', $request->trip_request_id)
+        ->where('driver_id', auth('api')->id())
+        ->first();
+
+    if (!$trip) {
+        return response()->json(responseFormatter(DEFAULT_403), 403);
+    }
+
+    // ... rest of the method
+}
+```
+
+#### Step 4.2: Add Ownership Check to editScheduledTrip
+**File:** `Modules/TripManagement/Http/Controllers/Api/Customer/TripRequestController.php`
+
+```php
+public function editScheduledTrip(Request $request, $trip_request_id) {
+    $trip = $this->tripRequestService->findOneBy([
+        'id' => $trip_request_id,
+        'customer_id' => auth('api')->id(),  // Add this
+    ]);
+
+    if (!$trip) {
+        return response()->json(responseFormatter(TRIP_REQUEST_404), 404);
+    }
+    // ... rest
+}
+```
+
+#### Step 4.3: Add Rate Limiting to Chat
+**File:** `Modules/ChattingManagement/Routes/api.php`
+
+```php
+Route::middleware(['auth:api', 'throttle:60,1'])->group(function () {
+    Route::post('send-message', [ChattingController::class, 'sendMessage']);
+});
+```
+
+## 5. TESTING AND VALIDATION
+
+### Customer App
 ```bash
 cd drivemond-user-app-3.1/HexaRide-User-app-release-3.1
 flutter pub get
@@ -161,7 +338,7 @@ flutter analyze --no-fatal-infos
 flutter test test/vito_flows_test.dart
 ```
 
-## Driver App Verification
+### Driver App
 ```bash
 cd drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
 flutter pub get
@@ -169,26 +346,28 @@ flutter analyze --no-fatal-infos
 flutter test test/vito_flows_test.dart
 ```
 
+### Backend
+```bash
+cd drivemond-admin-new-install-3.1
+php artisan test --filter=VitoFlowTest
+./vendor/bin/phpstan analyse --level=0 \
+  Modules/AuthManagement/Http/Controllers/Api/VitoAuthController.php \
+  Modules/TripManagement/Http/Controllers/Api/Driver/TripRequestController.php
+```
+
 ## Success Criteria
-1. **FCM token refresh**: Log new token to backend console when token changes; push notification delivered after token rotation
-2. **Driver state persistence**: After killing app while online, backend shows correct online status on next launch
-3. **Button disabling**: Double-tap of status button sends only one API call
-4. **Delivery proof**: Upload failure shows error dialog; retry works correctly
-5. **Authorization**: Attempting to modify another user's trip returns 403
 
----
+1. ✅ FCM token refresh works after Android/iOS token rotation
+2. ✅ Pusher channels properly cleaned up on logout
+3. ✅ All buttons show loading state during API calls
+4. ✅ Error messages are user-friendly and localized
+5. ✅ Driver online state persists across app restarts
+6. ✅ Failed uploads show error dialog with retry option
+7. ✅ Withdrawal requires confirmation
+8. ✅ Wallet/earnings balance refreshes after transactions
+9. ✅ Map handles (0,0) fallback gracefully
+10. ✅ Backend endpoints validate ownership before updates
 
-## Full Audit Report
+## BRANCH: vito
 
-The complete audit findings are documented in:
-- `/workspace/project/handz/AUDIT.md` — Previous comprehensive audit
-- `/workspace/project/handz/AUTH_AUDIT.md` — Authentication deep-dive
-- `/workspace/project/handz/VITO_AUDIT.md` — Admin ↔ Apps audit
-
-This audit confirms significant security improvements since previous audits:
-- ✅ Trip fares now server-side calculated
-- ✅ Mart order prices server-side recomputed
-- ✅ Promo codes atomic
-- ✅ QR tokens atomic redemption
-- ✅ Stripe webhook idempotency
-- ✅ PIN login with atomic locking
+All changes should be committed to branch `vito`.

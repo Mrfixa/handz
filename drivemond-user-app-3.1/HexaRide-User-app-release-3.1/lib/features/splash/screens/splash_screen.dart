@@ -21,6 +21,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late Animation<double> _fadeAnimation;
   late AnimationController _lottieController;
   bool _hasCheckedConnectivity = false;
+  bool _isConnected = true;
 
   @override
   void initState() {
@@ -52,24 +53,36 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (_hasCheckedConnectivity) return; // Only run once on initial check
     _hasCheckedConnectivity = true;
 
-    bool isConnected = results.any((result) => 
+    _isConnected = results.any((result) => 
         result == ConnectivityResult.wifi || 
         result == ConnectivityResult.mobile ||
         result == ConnectivityResult.ethernet);
 
+    // Remove any existing snackbars
     ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
-    ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
-    ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(
-      backgroundColor: isConnected ? Colors.green : Colors.red,
-      duration: Duration(seconds: isConnected ? 3 : 6),
-      content: Text(
-        isConnected ? 'connected'.tr : 'no_connection'.tr,
-        textAlign: TextAlign.center,
-      ),
-    ));
 
-    if (isConnected) {
+    if (_isConnected) {
       LoginHelper().handleIncomingLinks(widget.notificationData);
+    } else {
+      // Show retry option for no connectivity
+      showDialog(
+        context: Get.context!,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: Text('no_connection'.tr),
+          content: Text('please_check_internet_and_try_again'.tr),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                setState(() => _hasCheckedConnectivity = false);
+                _checkConnectivity();
+              },
+              child: Text('retry'.tr),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -97,11 +110,26 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 ),
               ),
               child: Center(
-                child: Lottie.asset(
-                  'assets/lottie/splash_3d.json',
-                  controller: _lottieController,
-                  width: 200,
-                  height: 200,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Lottie.asset(
+                      'assets/lottie/splash_3d.json',
+                      controller: _lottieController,
+                      width: 200,
+                      height: 200,
+                    ),
+                    const SizedBox(height: 24),
+                    // Loading indicator with localized text
+                    if (!_isConnected) ...[
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'checking_connection'.tr,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

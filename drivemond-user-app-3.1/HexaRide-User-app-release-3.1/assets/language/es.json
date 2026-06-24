@@ -504,6 +504,8 @@
     "maintenance_text": "Estamos realizando un mantenimiento programado. Volveremos lo antes posible. Vuelve a comprobarlo pronto.",
     "try_few_minute_latter": "Inténtalo dentro de unos minutos",
     "retry": "Reintentar",
+    "please_check_internet_and_try_again": "Por favor, compruebe su conexión a Internet e inténtelo de nuevo",
+    "checking_connection": "Verificando conexión...",
     "privacy_policy": "Política de privacidad",
     "legal": "Legal",
     "ongoing_ride": "Viaje en curso",

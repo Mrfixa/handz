@@ -268,4 +268,25 @@ class PusherHelper {
 
   }
 
+  /// Unsubscribes from all trip-related channels to prevent memory leaks
+  void disposeTripChannels() {
+    try {
+      if (pusherClient != null) {
+        pusherDriverAccepted.unsubscribe();
+        driverTripStarted.unsubscribe();
+        driverTripCancelled.unsubscribe();
+        driverTripCompleted.unsubscribe();
+        driverPaymentReceived.unsubscribe();
+      }
+    } catch (_) {}
+  }
+
+  /// Disconnects and cleans up pusher client completely
+  static void cleanup() {
+    try {
+      pusherClient?.disconnect();
+      pusherClient = null;
+    } catch (_) {}
+  }
+
 }
