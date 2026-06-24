@@ -127,8 +127,23 @@ class AuthRepository implements AuthRepositoryInterface{
 
         FirebaseMessaging.instance.subscribeToTopic(AppConstants.topic);
 
+        // Listen for FCM token refresh to handle Android/iOS token rotation
+        FirebaseMessaging.instance.onTokenRefresh.listen((refreshedToken) {
+          _updateFcmTokenOnServer(refreshedToken);
+        });
     }
     return await apiClient.postData(AppConstants.fcmTokenUpdate, {"_method": "put", "fcm_token": deviceToken});
+  }
+
+  Future<void> _updateFcmTokenOnServer(String? newToken) async {
+    if (newToken != null && newToken != '@') {
+      try {
+        await apiClient.postData(AppConstants.fcmTokenUpdate, {"_method": "put", "fcm_token": newToken});
+        log('FCM token refreshed and updated to server: ${newToken.substring(0, 20)}...');
+      } catch (e) {
+        log('Failed to update refreshed FCM token: $e');
+      }
+    }
   }
 
   Future<String?> _saveDeviceToken() async {

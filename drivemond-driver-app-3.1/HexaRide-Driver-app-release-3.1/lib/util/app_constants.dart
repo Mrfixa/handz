@@ -7,7 +7,7 @@ class AppConstants {
   static const String baseUrl = 'https://dacatlon.store';
   static const String polylineMapKey =
       String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
-  static const double appVersion = 3.1;   /// Flutter SDK 3.41.4
+  static const double appVersion = 1.5;   /// App version 1.5.0
   static const String configUri = '/api/driver/configuration';
   static const String registration = '/api/driver/auth/registration';
   static const String loginUri = '/api/driver/auth/login';
@@ -168,6 +168,7 @@ class AppConstants {
   static const String topic = 'notify';
   static const String zoneId = 'zoneId';
   static const String lastRefund = 'refund';
+  static const String driverOnlineState = 'driver_online_state';
 
   static List<LanguageModel> languages = [
     LanguageModel(imageUrl: Images.unitedKingdom, languageName: 'English', countryCode: 'US', languageCode: 'en'),

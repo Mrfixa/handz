@@ -204,6 +204,13 @@ class TripRequestController extends Controller
         if ($validator->fails()) {
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 400);
         }
+        
+        // Authorization: verify the driver owns this trip
+        $trip = $this->tripRequestService->findOneBy(criteria: ['id' => $request->trip_request_id]);
+        if (!$trip || $trip->driver_id !== auth('api')->id()) {
+            return response()->json(responseFormatter(constant: TRIP_REQUEST_403), 403);
+        }
+        
         $tripCoordinate = $this->tripRequestCoordinateService->findOneBy(criteria: ['trip_request_id' => $request->trip_request_id]);
         $data = match ($request->is_reached) {
             'coordinate_1' => ['is_reached_1' => true],
