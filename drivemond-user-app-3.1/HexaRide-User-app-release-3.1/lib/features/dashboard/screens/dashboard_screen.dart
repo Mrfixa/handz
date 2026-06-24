@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/dashboard/domain/models/navigation_model.dart';
 import 'package:ride_sharing_user_app/features/home/screens/home_screen.dart';
@@ -132,7 +133,10 @@ class CustomMenuItem extends StatelessWidget {
     return InkWell(
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: Padding(padding: const EdgeInsets.all(8),
         child: SizedBox(width: isSelected ? 90 : 50, child: Column(crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [

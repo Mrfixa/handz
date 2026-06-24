@@ -514,6 +514,7 @@ class _ServiceCardState extends State<_ServiceCard> with SingleTickerProviderSta
         onTapDown: (_) => _animCtrl.forward(),
         onTapUp: (_) {
           _animCtrl.reverse();
+          HapticFeedback.mediumImpact();
           widget.onTap();
         },
         onTapCancel: () => _animCtrl.reverse(),

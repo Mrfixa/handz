@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/custom_asset_image_widget.dart';
 import 'package:ride_sharing_user_app/features/wallet/controllers/wallet_controller.dart';
@@ -124,7 +125,10 @@ class CustomMenuItem extends StatelessWidget {
     return InkWell(
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: SizedBox(
