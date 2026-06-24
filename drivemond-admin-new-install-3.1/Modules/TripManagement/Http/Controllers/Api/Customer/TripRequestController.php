@@ -202,10 +202,24 @@ class TripRequestController extends Controller
         }
 
         if (array_key_exists('bid', $request->all()) && $request['bid']) {
-            // Bid mode: driver proposes a fare, accepted by customer — that fare is already
-            // validated server-side before the bid was created, so keep it for now.
-            $estimatedFare = $request['actual_fare'];
-            $actualFare = $request['actual_fare'];
+            // Bid mode: driver proposes a fare, accepted by customer.
+            // Verify the fare matches a valid bid from the fare_biddings table.
+            $tripBidding = $this->fareBiddingService->findOneBy(criteria: [
+                'trip_request_id' => $request['trip_request_id'],
+                'driver_id' => $request['driver_id'],
+                'is_ignored' => 0
+            ]);
+            
+            if (!$tripBidding) {
+                return response()->json(responseFormatter(constant: [
+                    'response_code' => 'invalid_bid_403',
+                    'message' => translate('No valid bid found for this trip'),
+                ]), 403);
+            }
+            
+            // Use the bid fare from the database, not the client-sent value
+            $estimatedFare = $tripBidding->bid_fare;
+            $actualFare = $tripBidding->bid_fare;
             $riseRequestCount = 1;
             $returnFee = $request->type == PARCEL ? $request->return_fee : 0;
             $cancellationFee = $request->type == PARCEL ? $request->cancellation_fee : 0;
@@ -1248,7 +1262,11 @@ class TripRequestController extends Controller
         if (!$trip || $trip->ride_request_type == 'regular' || $trip->current_status === ACCEPTED) {
             return response()->json(responseFormatter(constant: TRIP_REQUEST_404), 404);
         }
-
+        
+        // Authorization: verify the customer owns this trip
+        if ($trip->customer_id !== auth('api')->id()) {
+            return response()->json(responseFormatter(constant: TRIP_REQUEST_404), 403);
+        }
 
         $driverRequestNotifyTime = businessConfig(key: 'driver_request_notify_time', settingsType: SCHEDULE_TRIP_SETTINGS)->value ?? 0;
         $driverRequestNotifyTimeType = businessConfig(key: 'driver_request_notify_time_type', settingsType: SCHEDULE_TRIP_SETTINGS)->value ?? 'minute';

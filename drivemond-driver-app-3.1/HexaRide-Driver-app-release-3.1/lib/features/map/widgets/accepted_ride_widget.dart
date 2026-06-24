@@ -111,7 +111,8 @@ class _AcceptedRiderWidgetState extends State<AcceptedRiderWidget> {
                 textColor: Get.isDarkMode ? Colors.white : Colors.black,
                 borderColor: Theme.of(context).hintColor,
                 radius: Dimensions.paddingSizeSmall,
-                onPressed: (){
+                isLoading: rideController.isStatusUpdating,
+                onPressed: rideController.isStatusUpdating ? null : (){
                   rideController.remainingDistance(rideController.tripDetail!.id!, mapBound: true);
                   rideController.tripStatusUpdate(
                     'cancelled', rideController.tripDetail!.id!,
@@ -174,7 +175,8 @@ class _AcceptedRiderWidgetState extends State<AcceptedRiderWidget> {
               borderColor: Theme.of(context).primaryColor,
               textColor: Theme.of(context).cardColor,
               radius: Dimensions.paddingSizeSmall,
-              onPressed: (){
+              isLoading: rideController.isStatusUpdating,
+              onPressed: rideController.isStatusUpdating ? null : (){
                 rideController.tripStatusUpdate(
                   'cancelled', rideController.tripDetail!.id!,
                   "parcel_cancelled_successfully",

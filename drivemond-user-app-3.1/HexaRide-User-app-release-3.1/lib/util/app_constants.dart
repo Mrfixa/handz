@@ -6,7 +6,7 @@ import 'package:ride_sharing_user_app/util/images.dart';
 class AppConstants {
   static const String appName = 'Vito';
   static const String baseUrl = 'https://dacatlon.store';
-  static const double appVersion = 3.1; /// Flutter SDK 3.41.4
+  static const double appVersion = 1.5; /// App version 1.5.0
   static const String fontFamily = 'SFProText';
   static const double coverageRadiusInMeter = 50;
   static const String configUri = '/api/customer/configuration';

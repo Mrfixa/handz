@@ -17,6 +17,8 @@ import 'package:ride_sharing_user_app/features/splash/controllers/splash_control
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/helper/file_validation_helper.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
+import 'package:ride_sharing_user_app/util/app_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
 import 'package:ride_sharing_user_app/features/profile/domain/models/categoty_model.dart';
@@ -138,6 +140,8 @@ class ProfileController extends GetxController implements GetxService{
       } else {
         stopLocationRecord();
       }
+      // Restore online state if driver was online when app was closed/crashed
+      _restoreOnlineState();
     }else{
       ApiChecker.checkApi(response);
     }
@@ -202,9 +206,11 @@ class ProfileController extends GetxController implements GetxService{
       if(isOnline == "0"){
         isOnline = "1";
         startLocationRecord();
+        await _persistOnlineState(true);
       }else if(isOnline == "1"){
         isOnline = "0";
         stopLocationRecord();
+        await _persistOnlineState(false);
       }
     }else{
       Get.back();
@@ -215,6 +221,31 @@ class ProfileController extends GetxController implements GetxService{
     update();
     return response;
 
+  }
+
+  /// Persist driver online state to SharedPreferences for crash recovery
+  Future<void> _persistOnlineState(bool online) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(AppConstants.driverOnlineState, online);
+    } catch (e) {
+      debugPrint('Failed to persist online state: $e');
+    }
+  }
+
+  /// Restore driver online state on app launch
+  Future<void> _restoreOnlineState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wasOnline = prefs.getBool(AppConstants.driverOnlineState) ?? false;
+      if (wasOnline && isOnline == "0") {
+        // Driver was online when app was closed, sync with backend
+        debugPrint('Restoring driver online state from local storage');
+        await profileOnlineOffline(true);
+      }
+    } catch (e) {
+      debugPrint('Failed to restore online state: $e');
+    }
   }
 
   List<Brand> brandList = [];
