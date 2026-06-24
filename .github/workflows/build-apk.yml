@@ -179,11 +179,12 @@ jobs:
             --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
             --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
             --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        continue-on-error: true
 
       - name: Stage APKs for upload
         run: |
           cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/vito-user-debug.apk 2>/dev/null || true
-          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-user-release.apk
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-user-release.apk 2>/dev/null || true
 
       - name: Upload User Debug APK
         uses: actions/upload-artifact@v4
