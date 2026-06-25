@@ -87,7 +87,7 @@ jobs:
         with:
           name: vito-driver-release-apk
           path: vito-driver-release.apk
-        continue-on-error: true
+          retention-days: 14
 
   build-user-apk:
     name: Build User APK
@@ -160,7 +160,7 @@ jobs:
         with:
           name: vito-user-release-apk
           path: vito-user-release.apk
-        continue-on-error: true
+          retention-days: 14
 
   build-admin-zip:
     name: Build Admin ZIP
@@ -256,6 +256,7 @@ jobs:
         with:
           name: vito-driver-release-apk
           path: release-assets/
+        continue-on-error: true
 
       - name: Download User Debug APK
         uses: actions/download-artifact@v4
@@ -269,6 +270,7 @@ jobs:
         with:
           name: vito-user-release-apk
           path: release-assets/
+        continue-on-error: true
 
       - name: Download Admin ZIP
         uses: actions/download-artifact@v4
