@@ -14,4 +14,13 @@ class MartCategoryModel {
       image: json['image']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'slug': slug,
+      'image': image,
+    };
+  }
 }

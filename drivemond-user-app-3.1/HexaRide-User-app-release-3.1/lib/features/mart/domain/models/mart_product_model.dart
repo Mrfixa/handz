@@ -32,5 +32,18 @@ class MartProductModel {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'price': price,
+      'image': image,
+      'category': category,
+      'is_active': isActive,
+      'stock': stock,
+    };
+  }
+
   bool get inStock => isActive && stock > 0;
 }

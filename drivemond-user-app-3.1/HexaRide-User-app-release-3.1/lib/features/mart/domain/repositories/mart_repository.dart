@@ -54,6 +54,11 @@ class MartRepository implements MartRepositoryInterface {
   }
 
   @override
+  Future<Response> createOrder(Map<String, dynamic> orderData) async {
+    return await apiClient.postData(AppConstants.martCreateOrder, orderData);
+  }
+
+  @override
   Future add(value) => throw UnimplementedError();
   @override
   Future delete(String id) => throw UnimplementedError();

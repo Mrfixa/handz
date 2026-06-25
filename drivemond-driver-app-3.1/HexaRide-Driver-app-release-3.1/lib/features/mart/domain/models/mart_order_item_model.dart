@@ -31,4 +31,15 @@ class MartOrderItemModel {
   }
 
   String get displayName => product?.name ?? 'Item';
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'product_id': productId,
+      'quantity': quantity,
+      'unit_price': unitPrice,
+      'total_price': totalPrice,
+      if (product != null) 'product': product!.toJson(),
+    };
+  }
 }

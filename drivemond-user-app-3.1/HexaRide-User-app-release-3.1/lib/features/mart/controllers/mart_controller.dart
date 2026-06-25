@@ -245,4 +245,60 @@ class MartController extends GetxController implements GetxService {
     ApiChecker.checkApi(response);
     return false;
   }
+
+  /// Creates a mart order through the service layer.
+  /// Returns a tuple of (success, orderId, errorMessage)
+  Future<({bool success, String? orderId, String? error})> createOrder({
+    required List<Map<String, dynamic>> items,
+    required String deliveryAddress,
+    String? notes,
+    required String paymentMethod,
+    double? deliveryLat,
+    double? deliveryLng,
+    double? tipAmount,
+    String? promoCode,
+  }) async {
+    isActionLoading = true;
+    update();
+
+    final body = <String, dynamic>{
+      'items': items,
+      'delivery_address': deliveryAddress,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      'payment_method': paymentMethod,
+      if (deliveryLat != null) 'delivery_lat': deliveryLat,
+      if (deliveryLng != null) 'delivery_lng': deliveryLng,
+      if (tipAmount != null && tipAmount > 0) 'tip_amount': tipAmount,
+      if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
+    };
+
+    final response = await martServiceInterface.createOrder(body);
+    isActionLoading = false;
+    update();
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = response.body['data'];
+      final orderId = (data?['id'] ?? data?['order_id'] ?? '').toString();
+      if (orderId.isEmpty) {
+        return (success: false, orderId: null, error: 'invalid_order_response'.tr);
+      }
+      return (success: true, orderId: orderId, error: null);
+    }
+
+    // Extract error message
+    String? errorMsg;
+    try {
+      final errors = response.body['errors'];
+      if (errors is List && errors.isNotEmpty) {
+        final first = errors.first;
+        if (first is Map && first['message'] != null) {
+          errorMsg = first['message'].toString();
+        }
+      }
+      if (errorMsg == null && response.body['message'] is String) {
+        errorMsg = response.body['message'];
+      }
+    } catch (_) {}
+    return (success: false, orderId: null, error: errorMsg ?? 'order_failed'.tr);
+  }
 }

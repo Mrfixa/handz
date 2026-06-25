@@ -64,4 +64,27 @@ class MartOrderModel {
   }
 
   int get itemCount => items.fold(0, (sum, i) => sum + i.quantity);
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'ref_id': refId,
+      'status': status,
+      'total_amount': totalAmount,
+      'tip_amount': tipAmount,
+      'discount_amount': discountAmount,
+      'payment_status': paymentStatus,
+      'payment_method': paymentMethod,
+      'delivery_address': deliveryAddress,
+      'notes': notes,
+      'customer_id': customerId,
+      'customer': {
+        'first_name': customerName?.split(' ').first,
+        'last_name': customerName?.split(' ').skip(1).join(' '),
+        'phone': customerPhone,
+      },
+      'created_at': createdAt,
+      'items': items.map((i) => i.toJson()).toList(),
+    };
+  }
 }

@@ -27,23 +27,21 @@ class MartStoreScreen extends StatefulWidget {
 
 class _MartStoreScreenState extends State<MartStoreScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, dynamic>> _products = [];
-  bool _isLoading = true;
   bool _isOffline = false;
-  bool _hasError = false;
-  String _selectedCategory = 'all';
   Timer? _searchDebounce;
+  String _selectedCategory = 'all';
+  Future<void> Function() _loadProducts = () async {};
 
   MartController get _martController => Get.find<MartController>();
 
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
-    // Ensure categories are loaded
+    // Ensure categories and products are loaded
     if (_martController.categories.isEmpty) {
       _martController.getCategories();
     }
+    _martController.getProducts();
   }
 
   @override
@@ -53,47 +51,11 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     super.dispose();
   }
 
-  Future<void> _loadProducts() => _fetchProducts();
-
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       if (mounted) setState(() {});
     });
-  }
-
-  Future<void> _fetchProducts() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-      _isOffline = false;
-    });
-    try {
-      final response = await Get.find<ApiClient>().getData(AppConstants.martProducts);
-      if (!mounted) return;
-      if (response.statusCode == 200 && response.body['data'] != null) {
-        setState(() {
-          _products.clear();
-          final rawData = response.body['data'];
-          final items = rawData is Map ? rawData['data'] : rawData;
-          for (final item in (items as List)) {
-            _products.add(Map<String, dynamic>.from(item));
-          }
-          _isLoading = false;
-        });
-      } else {
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      debugPrint('Mart error: $e');
-      if (!mounted) return;
-      setState(() {
-        _isOffline = true;
-        _hasError = false;
-        _isLoading = false;
-      });
-    }
   }
 
   @override
@@ -147,11 +109,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
         _buildSearchBar(context),
         _buildCategoryFilter(context),
         Expanded(
-          child: _isLoading
-              ? _buildShimmerGrid(context) // B18: shimmer loading
-              : _hasError
-                  ? _buildErrorState(context) // B20: error state
-                  : _buildAnimatedContent(context), // B12: animated switcher
+          child: _buildAnimatedContent(context), // B12: animated switcher with loading handled inside
         ),
       ],
     );
@@ -224,11 +182,7 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
                   onSelected: (selected) {
                     HapticFeedback.selectionClick();
                     setState(() => _selectedCategory = category);
-                    if (category == 'all') {
-                      _fetchProducts();
-                    } else {
-                      controller.getProducts(category: category);
-                    }
+                    controller.setCategory(category);
                   },
                   selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                   checkmarkColor: Theme.of(context).primaryColor,
@@ -243,24 +197,34 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
 
   // B12: AnimatedSwitcher keyed by category + live search query
   Widget _buildAnimatedContent(BuildContext context) {
-    final query = _searchController.text.trim().toLowerCase();
-    var filtered = _selectedCategory == 'all'
-        ? List<Map<String, dynamic>>.from(_products)
-        : _products.where((p) => p['category'] == _selectedCategory).toList();
+    return GetBuilder<MartController>(
+      builder: (controller) {
+        final query = _searchController.text.trim().toLowerCase();
+        
+        // Convert products from model to map for filtering
+        var filtered = controller.products.map((p) => p.toJson()).toList();
+        
+        if (_selectedCategory != 'all') {
+          filtered = filtered.where((p) => p['category'] == _selectedCategory).toList();
+        }
 
-    if (query.isNotEmpty) {
-      filtered = filtered
-          .where((p) => (p['name']?.toString().toLowerCase() ?? '').contains(query))
-          .toList();
-    }
+        if (query.isNotEmpty) {
+          filtered = filtered
+              .where((p) => (p['name']?.toString().toLowerCase() ?? '').contains(query))
+              .toList();
+        }
 
-    final stateKey = '${_selectedCategory}_$query';
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-      child: filtered.isEmpty
-          ? _buildEmptyState(context, key: ValueKey('empty_$stateKey'))
-          : _buildProductGrid(context, filtered, key: ValueKey('grid_$stateKey')),
+        final stateKey = '${_selectedCategory}_$query';
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+          child: controller.isLoading
+              ? _buildShimmerGrid(context)
+              : filtered.isEmpty
+                  ? _buildEmptyState(context, key: ValueKey('empty_$stateKey'))
+                  : _buildProductGrid(context, filtered, key: ValueKey('grid_$stateKey')),
+        );
+      },
     );
   }
 
@@ -577,6 +541,8 @@ class _MartCartScreenState extends State<MartCartScreen> {
 
   // B27: checkout error state
   String? _checkoutError;
+
+  MartController get _martController => Get.find<MartController>();
 
   final List<double> _tipOptions = [0, 2, 5, 10];
 
@@ -1186,57 +1152,42 @@ class _MartCartScreenState extends State<MartCartScreen> {
       _checkoutError = null;
     });
 
-    try {
-      final items = widget.cartItems
-          .map((item) => {
-                'product_id': item['id'],
-                'quantity': item['quantity'] ?? 1,
-              })
-          .toList();
+    final items = widget.cartItems
+        .map((item) => {
+              'product_id': item['id'],
+              'quantity': item['quantity'] ?? 1,
+            })
+        .toList();
 
-      // Server computes the authoritative total; client sends tip and promo only
-      final body = <String, dynamic>{
-        'items': items,
-        'delivery_address': _addressController.text,
-        'notes': _notesController.text,
-        'payment_method': _paymentMethod,
-        if (_deliveryLat != null) 'delivery_lat': _deliveryLat,
-        if (_deliveryLng != null) 'delivery_lng': _deliveryLng,
-        if (_tipAmount > 0) 'tip_amount': _tipAmount,
-        if (_appliedPromoCode != null) 'promo_code': _appliedPromoCode,
-      };
+    // Use service layer through MartController
+    final result = await _martController.createOrder(
+      items: items,
+      deliveryAddress: _addressController.text,
+      notes: _notesController.text,
+      paymentMethod: _paymentMethod,
+      deliveryLat: _deliveryLat,
+      deliveryLng: _deliveryLng,
+      tipAmount: _tipAmount > 0 ? _tipAmount : null,
+      promoCode: _appliedPromoCode,
+    );
 
-      final response = await Get.find<ApiClient>().postData(
-        AppConstants.martCreateOrder,
-        body,
-      );
+    if (!mounted) return;
 
-      if (!mounted) return;
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = response.body['data'];
-        final orderId = (data?['id'] ?? data?['order_id'] ?? '').toString();
-        // Validate the order id BEFORE popping so the flow never dead-ends.
-        if (orderId.isEmpty) {
-          setState(() => _checkoutError = 'invalid_order_response'.tr);
-          return;
-        }
-        Get.back();
-        Get.snackbar('success'.tr, 'order_placed_successfully'.tr);
-        if (_paymentMethod == 'card') {
-          Get.to(() => MartPaymentScreen(orderId: orderId, totalAmount: _totalAmount));
-        } else {
-          Get.to(() => MartOrderTrackingScreen(orderId: orderId));
-        }
+    if (result.success) {
+      Get.back();
+      // Clear the cart after successful order placement
+      _martController.clearCart();
+      Get.snackbar('success'.tr, 'order_placed_successfully'.tr);
+      if (_paymentMethod == 'card') {
+        Get.to(() => MartPaymentScreen(orderId: result.orderId!, totalAmount: _totalAmount));
       } else {
-        setState(() => _checkoutError = _extractErrorMessage(response.body));
+        Get.to(() => MartOrderTrackingScreen(orderId: result.orderId!));
       }
-    } catch (e) {
-      debugPrint('Mart error: $e');
-      // B27: set checkout error state
-      if (mounted) setState(() => _checkoutError = 'checkout_error'.tr);
-    } finally {
-      if (mounted) setState(() => _isOrdering = false);
+    } else {
+      setState(() => _checkoutError = result.error);
     }
+
+    if (mounted) setState(() => _isOrdering = false);
   }
 
   // Pulls a human-readable message out of any backend error shape.

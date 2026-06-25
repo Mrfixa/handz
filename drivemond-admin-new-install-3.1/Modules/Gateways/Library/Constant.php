@@ -453,7 +453,6 @@ const LANGUAGES = [
     ["code" => "ak", "name" => "Akan", "nativeName" => "Akan"],
     ["code" => "sq", "name" => "Albanian", "nativeName" => "Shqip"],
     ["code" => "am", "name" => "Amharic", "nativeName" => "አማርኛ"],
-    ["code" => "ar", "name" => "Arabic", "nativeName" => "العربية"],
     ["code" => "an", "name" => "Aragonese", "nativeName" => "Aragonés"],
     ["code" => "hy", "name" => "Armenian", "nativeName" => "Հայերեն"],
     ["code" => "as", "name" => "Assamese", "nativeName" => "অসমীয়া"],

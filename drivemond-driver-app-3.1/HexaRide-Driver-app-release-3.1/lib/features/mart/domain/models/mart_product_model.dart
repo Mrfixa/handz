@@ -14,4 +14,13 @@ class MartProductModel {
       price: double.tryParse(json['price']?.toString() ?? '') ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'image': image,
+      'price': price,
+    };
+  }
 }

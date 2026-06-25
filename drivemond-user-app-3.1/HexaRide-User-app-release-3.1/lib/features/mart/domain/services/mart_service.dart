@@ -27,4 +27,8 @@ class MartService implements MartServiceInterface {
   @override
   Future reviewOrder(String id, int rating, String? comment) async =>
       await martRepositoryInterface.reviewOrder(id, rating, comment);
+
+  @override
+  Future createOrder(Map<String, dynamic> orderData) async =>
+      await martRepositoryInterface.createOrder(orderData);
 }
