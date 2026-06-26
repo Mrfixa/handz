@@ -76,7 +76,7 @@ class PusherHelper {
 
   void pusherDriverStatus(String tripId) async {
     if (pusherClient == null) return;
-    await _currentRideChannel?.unsubscribe();
+    _currentRideChannel?.unsubscribe();
 
     if (Get.find<ConfigController>().pusherConnectionStatus != null || Get.find<ConfigController>().pusherConnectionStatus == 'Connected'){
       pusherDriverAccepted = pusherClient!.privateChannel("private-driver-trip-accepted.$tripId", authorizationDelegate:
