@@ -62,9 +62,12 @@ class WalletController extends GetxController implements GetxService{
       if(offset == 1){
         transactionModel = TransactionModel.fromJson(response.body);
       }else{
-        transactionModel!.data!.addAll(TransactionModel.fromJson(response.body).data!);
-        transactionModel!.offset = TransactionModel.fromJson(response.body).offset;
-        transactionModel!.totalSize = TransactionModel.fromJson(response.body).totalSize;
+        final newData = TransactionModel.fromJson(response.body);
+        if (transactionModel?.data != null && newData.data != null) {
+          transactionModel!.data!.addAll(newData.data!);
+        }
+        transactionModel!.offset = newData.offset;
+        transactionModel!.totalSize = newData.totalSize;
       }
 
     }else{

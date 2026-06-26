@@ -658,6 +658,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
         setState(() {
           final id = item['id'];
           widget.cartItems.removeWhere((e) => e['id'] == id);
+          _appliedPromoCode = null;
+          _discount = 0.0;
+          _promoController.clear();
         });
       },
       child: Card(
@@ -699,6 +702,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
                     } else {
                       widget.cartItems.removeAt(index);
                     }
+                    _appliedPromoCode = null;
+                    _discount = 0.0;
+                    _promoController.clear();
                   });
                 },
                 icon: const Icon(Icons.remove_circle_outline),
@@ -710,6 +716,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
                   if (current < 100) {
                     setState(() {
                       item['quantity'] = current + 1;
+                      _appliedPromoCode = null;
+                      _discount = 0.0;
+                      _promoController.clear();
                     });
                   }
                 },
@@ -1081,9 +1090,13 @@ class _MartCartScreenState extends State<MartCartScreen> {
 
       if (!mounted) return;
       if (response.statusCode == 200 && response.body['data'] != null) {
+        final rawDiscount = response.body['data']?['discount'];
+        if (rawDiscount is! num || (rawDiscount as num) < 0) {
+          Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
+          return;
+        }
         setState(() {
-          _discount =
-              (response.body['data']['discount'] as num?)?.toDouble() ?? 0.0;
+          _discount = rawDiscount.toDouble();
           _appliedPromoCode = code;
           _promoController.clear();
         });

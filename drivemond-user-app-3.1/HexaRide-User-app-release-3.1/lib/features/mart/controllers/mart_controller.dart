@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ride_sharing_user_app/data/api_checker.dart';
+import 'package:ride_sharing_user_app/data/offline_queue.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_category_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_product_model.dart';
@@ -14,6 +15,10 @@ class MartController extends GetxController implements GetxService {
 
   bool isLoading = false;
   bool isActionLoading = false;
+
+  // Idempotency key for order creation; regenerated after each failed attempt
+  // so that retries are treated as new requests by the backend middleware.
+  String _orderIdempotencyKey = OfflineQueue.generateIdempotencyKey();
 
   List<MartProductModel> products = [];
   List<MartCategoryModel> categories = [];
@@ -272,7 +277,7 @@ class MartController extends GetxController implements GetxService {
       if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
     };
 
-    final response = await martServiceInterface.createOrder(body);
+    final response = await martServiceInterface.createOrder(body, idempotencyKey: _orderIdempotencyKey);
     isActionLoading = false;
     update();
 
@@ -280,10 +285,17 @@ class MartController extends GetxController implements GetxService {
       final data = response.body['data'];
       final orderId = (data?['id'] ?? data?['order_id'] ?? '').toString();
       if (orderId.isEmpty) {
+        // Rotate the key so a retry is a new request.
+        _orderIdempotencyKey = OfflineQueue.generateIdempotencyKey();
         return (success: false, orderId: null, error: 'invalid_order_response'.tr);
       }
+      // Success: rotate so the next distinct order uses a fresh key.
+      _orderIdempotencyKey = OfflineQueue.generateIdempotencyKey();
       return (success: true, orderId: orderId, error: null);
     }
+
+    // Rotate the key on failure so a retry is not treated as a duplicate.
+    _orderIdempotencyKey = OfflineQueue.generateIdempotencyKey();
 
     // Extract error message
     String? errorMsg;

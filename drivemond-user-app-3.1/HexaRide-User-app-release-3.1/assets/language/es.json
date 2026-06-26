@@ -1115,5 +1115,7 @@
     "in_stock": "En stock",
     "add_to_cart": "Añadir al carrito",
     "description": "Descripción",
-    "invalid_weight_format": "Por favor ingrese un peso válido"
+    "invalid_weight_format": "Por favor ingrese un peso válido",
+    "just_one_step_away": "¡Solo un paso más! Esto ayudará a que tu perfil sea más personalizado.",
+    "location_permission_required": "Se requiere permiso de ubicación para enviar una alerta de seguridad"
 }

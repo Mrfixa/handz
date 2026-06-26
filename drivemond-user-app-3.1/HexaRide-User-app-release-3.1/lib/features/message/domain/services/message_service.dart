@@ -44,4 +44,9 @@ class MessageService implements MessageServiceInterface{
     return messageRepositoryInterface.findChannelRideStatus(channelId);
   }
 
+  @override
+  Future findChannelMartOrderStatus(String orderId) {
+    return messageRepositoryInterface.findChannelMartOrderStatus(orderId);
+  }
+
 }

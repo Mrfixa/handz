@@ -441,4 +441,23 @@ class MessageController extends GetxController implements GetxService{
     update();
   }
 
+  bool _channelMartOrderStatus = true;
+  bool get channelMartOrderStatus => _channelMartOrderStatus;
+  void findChannelMartOrderStatus(String orderId) async {
+    try {
+      final response = await messageServiceInterface.findChannelMartOrderStatus(orderId);
+      if (response.statusCode == 200) {
+        final status = response.body['data']?['status']?.toString() ?? '';
+        if (status == 'delivered' || status == 'cancelled') {
+          _channelMartOrderStatus = false;
+        } else {
+          _channelMartOrderStatus = true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to check mart order status: $e');
+    }
+    update();
+  }
+
 }

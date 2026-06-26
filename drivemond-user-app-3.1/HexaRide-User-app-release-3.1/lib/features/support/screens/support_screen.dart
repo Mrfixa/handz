@@ -28,8 +28,8 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> {
   void initState() {
     Get.find<HelpSupportController>().updateCurrentTabIndex(0);
     super.initState();
-    data = '${Get.find<ConfigController>().config!.termsAndConditions?.shortDescription ?? ''}'
-        '\n${Get.find<ConfigController>().config!.termsAndConditions?.longDescription ?? ''}';
+    data = '${Get.find<ConfigController>().config?.termsAndConditions?.shortDescription ?? ''}'
+        '\n${Get.find<ConfigController>().config?.termsAndConditions?.longDescription ?? ''}';
   }
 
   @override

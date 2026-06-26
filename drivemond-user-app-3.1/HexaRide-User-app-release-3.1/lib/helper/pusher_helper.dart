@@ -72,8 +72,10 @@ class PusherHelper {
   late PrivateChannel driverTripCancelled;
   late PrivateChannel driverTripCompleted;
   late PrivateChannel driverPaymentReceived;
+  PrivateChannel? _currentRideChannel;
 
-  void pusherDriverStatus(String tripId){
+  void pusherDriverStatus(String tripId) async {
+    await _currentRideChannel?.unsubscribe();
 
     if (Get.find<ConfigController>().pusherConnectionStatus != null || Get.find<ConfigController>().pusherConnectionStatus == 'Connected'){
       pusherDriverAccepted = pusherClient!.privateChannel("private-driver-trip-accepted.$tripId", authorizationDelegate:
@@ -86,6 +88,7 @@ class PusherHelper {
           'Access-Control-Allow-Methods':"PUT, GET, POST, DELETE, OPTIONS"
         },
       ));
+      _currentRideChannel = pusherDriverAccepted;
 
       if(pusherDriverAccepted.currentStatus ==  null){
         pusherDriverAccepted.subscribe();

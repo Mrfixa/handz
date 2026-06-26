@@ -636,12 +636,14 @@ class NotificationHelper {
 
 Future<dynamic> myBackgroundMessageHandler(RemoteMessage remoteMessage) async {
   customPrint('onBackground: ${remoteMessage.data}');
-  // var androidInitialize = new AndroidInitializationSettings('notification_icon');
-  // var iOSInitialize = new IOSInitializationSettings();
-  // var initializationsSettings = new InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
-  // FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  // flutterLocalNotificationsPlugin.initialize(initializationsSettings);
-  // NotificationHelper.showNotification(message, flutterLocalNotificationsPlugin, true);
+  if (remoteMessage.data['status'] == '1') {
+    var androidInitialize = const AndroidInitializationSettings('notification_icon');
+    var iOSInitialize = const DarwinInitializationSettings();
+    var initializationsSettings = InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
+    FlutterLocalNotificationsPlugin fln = FlutterLocalNotificationsPlugin();
+    await fln.initialize(settings: initializationsSettings);
+    await NotificationHelper.showNotification(remoteMessage, fln, true);
+  }
 }
 
 Future<dynamic> myBackgroundMessageReceiver(NotificationResponse response) async {
