@@ -12,7 +12,8 @@ usually answer "where is X" without reading source:
 |-----|----------------|
 | `CODEBASE_MAP.md` | Directory/feature layout of all 3 sub-projects; "Where to Look" task→file table |
 | `API_INDEX.md` | Every Vito API endpoint → exact `Controller@method`, scope, throttle, middleware |
-| `USER_APP_AUDIT.md` | Known bugs/gaps in the user app (36 findings, severity-ranked) — check before "fixing" |
+| `USER_APP_AUDIT.md` | Known bugs/gaps in the user app (61 findings, severity-ranked) — check before "fixing" |
+| `CLIENT_APP_FLOWS.md` | Screen-by-screen flow map of every customer-app journey (auth, ride, mart, parcel, wallet, chat) |
 | `AUTH_AUDIT.md` / `VITO_AUDIT.md` / `AUDIT.md` | Prior audit findings + decisions already made |
 
 **Working efficiently in this repo:**

@@ -9,11 +9,11 @@
 
 | Severity | Count |
 |----------|-------|
-| 🔴 CRITICAL — crash, data integrity, or CI-blocking | 6 |
-| 🟠 HIGH — feature broken or security gap | 8 |
-| 🟡 MEDIUM — degraded UX or error-prone edge case | 14 |
-| 🔵 LOW — polish, dead code, minor inconsistency | 8 |
-| **Total** | **36** |
+| 🔴 CRITICAL — crash, data integrity, or CI-blocking | 9 |
+| 🟠 HIGH — feature broken or security gap | 18 |
+| 🟡 MEDIUM — degraded UX or error-prone edge case | 28 |
+| 🔵 LOW — polish, dead code, minor inconsistency | 6 |
+| **Total** | **61** |
 
 ---
 
@@ -397,6 +397,317 @@ No upper bound. A breaking `8.x` release would silently pull in an incompatible 
 
 ---
 
+---
+
+## 🔴 CRITICAL (new — round 2)
+
+### C7 — Chat message insert crashes before API load
+**File:** `lib/features/message/controllers/message_controller.dart:306`
+
+```dart
+messageModel!.data!.insert(0, Message.fromJson(eventData));
+```
+
+Called when a Pusher event arrives. If the user opens the chat screen before `getConversationList()` completes (race condition on slow networks), `messageModel` or `messageModel.data` is null. The force-unwrap crashes the app.
+
+**Fix:** Guard with `if (messageModel?.data != null)` before inserting. If null, buffer the incoming message and prepend after the initial API response arrives.
+
+---
+
+### C8 — Parcel submission crashes if fare estimate was skipped
+**File:** `lib/features/ride/controllers/ride_controller.dart:298–299`
+
+```dart
+estimatedDistance: parcelEstimatedFare!.data!.estimatedDistance!.toString(),
+estimatedTime:     parcelEstimatedFare!.data!.estimatedDuration!.replaceFirst('min', ''),
+```
+
+`parcelEstimatedFare` is nullable. If the fare estimate API call timed out (or the user never reached the estimate step), all three force-unwraps throw a null-pointer exception and crash the app on parcel submission.
+
+**Fix:**
+```dart
+estimatedDistance: parcelEstimatedFare?.data?.estimatedDistance?.toString() ?? '0',
+estimatedTime:     parcelEstimatedFare?.data?.estimatedDuration?.replaceFirst('min', '') ?? '0',
+```
+
+---
+
+### C9 — Ride/parcel submits Null Island coordinates when address missing
+**File:** `lib/features/ride/controllers/ride_controller.dart:268–289`
+
+When `LocationController.fromAddress` (or `parcelSenderAddress`) is null, the code falls back to `Address()` — an object with `latitude: null, longitude: null`. These are then serialized as the string `"null"` and sent to the backend, which silently creates a trip with invalid coordinates at (0, 0) — Null Island in the Atlantic.
+
+**Reproduction:** Start a ride before location services initialize fully → backend receives `pickupLat: "null"`.
+
+**Fix:** Do not fall back to `Address()`. Instead, return early and show an error: "Unable to determine your location. Please try again."
+
+---
+
+## 🟠 HIGH (new — round 2)
+
+### H9 — Trip history pagination permanently broken
+**File:** `lib/features/trip/controllers/trip_controller.dart:51`
+
+```dart
+if (response.body['date'] != []) {   // ← typo: 'date' should be 'data'
+```
+
+Because `response.body['date']` is always `null` (the key doesn't exist), this condition is always true, so pagination logic appends zero trips every time. Users see only the first page of their trip history — no further trips load on scroll.
+
+**Fix:** Change `'date'` → `'data'`.
+
+---
+
+### H10 — Force-unwrap on `rideDetails` in HomeScreen
+**File:** `lib/features/home/screens/home_screen.dart:361`
+
+```dart
+rideController.rideDetails!.id!
+```
+
+The null guard at line 124 (`if (rideDetails != null)`) does not cover line 361, which is inside a different conditional branch. If `rideDetails` becomes null between the two checks (concurrent update), this throws.
+
+**Fix:** Use `rideController.rideDetails?.id ?? ''` and guard the call site.
+
+---
+
+### H11 — User address force-unwrapped without null guard
+**File:** `lib/features/home/screens/home_screen.dart:137–145`
+
+`getUserAddress()` returns nullable `Address?`, but the return value is immediately force-unwrapped (`.latitude!`, `.longitude!`) without a null check. Crashes when location is unavailable at the time the home screen loads.
+
+**Fix:** Use null-safe access and show a "location unavailable" placeholder rather than crashing.
+
+---
+
+### H12 — QR token validation reads nested key without null guard
+**File:** `lib/features/auth/screens/token_gate_screen.dart:276`
+
+```dart
+response.body['data']['valid']
+```
+
+If the server returns `{"data": null}` (e.g., token already used), accessing `['valid']` on `null` throws. The outer `catch (_)` catches the crash but swallows it silently, leaving the user with no error message.
+
+**Fix:** `response.body['data']?['valid'] ?? false` and surface the error explicitly.
+
+---
+
+### H13 — Phone number substring crash for short numbers
+**File:** `lib/features/auth/screens/verification_screen.dart:97`
+
+```dart
+widget.number.substring(0, 5) + '****' + widget.number.substring(widget.number.length - 3, widget.number.length)
+```
+
+Throws `RangeError` if `widget.number` has fewer than 8 characters. Some locales have 7-digit phone numbers.
+
+**Fix:** Check `widget.number.length` before slicing; fall back to showing the full number if too short to mask safely.
+
+---
+
+### H14 — Pusher singleton not cleared on logout
+**File:** `lib/helper/pusher_helper.dart`
+
+`pusherClient` is a static singleton registered in `di_container.dart`. It is never disconnected or re-initialized on logout. The next user to log in on the same device inherits the old Pusher connection, which carries the previous user's auth token. Subscriptions fail with 403 until the connection is manually reset.
+
+**Fix:** Call `pusherClient?.disconnect()` and reset the static reference in the logout flow (`VitoAuthController.logout()`).
+
+---
+
+### H15 — User profile data leaks across sessions
+**File:** `lib/features/profile/controllers/profile_controller.dart`
+
+`profileModel` is never cleared on logout. The next user who logs in on the same device sees the previous user's name, photo, wallet balance, and rating until a fresh `getProfileInfo()` call completes (which may take several seconds on a slow network).
+
+**Fix:** Call `profileController.profileModel = null; update();` in the logout flow before navigating to `SignInScreen`.
+
+---
+
+### H16 — Background FCM messages silently dropped
+**File:** `lib/helper/notification_helper.dart:637`
+
+```dart
+Future<void> myBackgroundMessageHandler(RemoteMessage message) async {}
+```
+
+The handler registered with `FirebaseMessaging.onBackgroundMessage()` is an empty stub. Any push notification delivered while the app is in the background is lost — no storage, no badge update, no routing on next open.
+
+**Fix:** Implement the handler to at minimum persist the notification to a local store (e.g., `shared_preferences` or SQLite), so it can be replayed when the app comes to the foreground.
+
+---
+
+### H17 — Refund reasons never loaded on screen open
+**File:** `lib/features/refund_request/screens/refund_request_screen.dart`
+
+`RefundRequestController.getParcelRefundReasonList()` is never called in `initState`. The refund reason dropdown is always empty unless something else triggers the load. Users see a blank list and cannot submit a refund.
+
+**Fix:** Call `Get.find<RefundRequestController>().getParcelRefundReasonList()` in the screen's `initState`.
+
+---
+
+### H18 — Safety alert sends Null Island when location permission denied
+**File:** `lib/features/safety_setup/controllers/safety_alert_controller.dart:99`
+
+```dart
+final latLng = await getCurrentPosition();
+// latLng is null if permission denied
+final body = {
+  'latitude': (latLng?.latitude ?? '').toString(),  // sends "" → backend receives ""
+  ...
+};
+```
+
+`(null?.latitude ?? '')` produces the empty string `''`, which the backend may reject or silently store as 0.0. An emergency alert with no coordinates is useless.
+
+**Fix:** If `latLng` is null, block the submission and show "Location required to send a safety alert. Please enable location permissions."
+
+---
+
+## 🟡 MEDIUM (new — round 2)
+
+### M15 — Cart not cleared after failed order
+**File:** `lib/features/mart/screens/mart_store_screen.dart:1179,1187`
+
+On a failed `createOrder()` call, the cart remains populated. If the user immediately retries, they risk double-submitting. If the failure was a payment error after the order was partially created, a second submit creates a duplicate order.
+
+**Fix:** On failure, either clear the cart and show a "start over" state, or show a specific retry affordance that prevents duplicate submission.
+
+---
+
+### M16 — Promo discount not invalidated on cart modification
+**File:** `lib/features/mart/screens/mart_store_screen.dart:657–709`
+
+After a promo code is applied (discount stored in `_discount`), the user can swipe-to-delete items or change quantities. The discount value is not recalculated — it remains fixed against the old subtotal. The user can pay less than the promo-adjusted price should be.
+
+**Fix:** Clear `_appliedPromoCode` and reset `_discount = 0` whenever the cart contents change, and prompt the user to re-apply.
+
+---
+
+### M17 — Promo discount not type-validated in response
+**File:** `lib/features/mart/screens/mart_store_screen.dart:1083–1095`
+
+```dart
+_discount = (response.body['data']['discount'] as num?)?.toDouble() ?? 0.0;
+```
+
+If the server returns `'discount': 'invalid'` (a string), the cast returns `null` and `_discount` silently becomes `0.0`. The promo is marked as applied but grants no discount, with no user-visible error.
+
+**Fix:** Validate that the parsed value is a positive number before accepting the promo. Show an error if the discount value is unexpected.
+
+---
+
+### M18 — Fare data not reset between ride bookings
+**File:** `lib/features/ride/controllers/ride_controller.dart:82–92`
+
+`initData()` (called when starting a new booking) resets UI state but leaves `estimatedFare`, `actualFare`, and `fareList` populated from the previous booking. On a subsequent fare request, there is a brief window where stale prices appear in the UI before the fresh estimate loads.
+
+**Fix:** Add `estimatedFare = 0; actualFare = 0; fareList = []; selectedType = null;` to `initData()`.
+
+---
+
+### M19 — Cancellation reason list grows on every call
+**File:** `lib/features/trip/controllers/trip_controller.dart:92,105`
+
+`'other'.tr` is appended to the cancellation reason list each time `getRideCancellationReasonList()` or `getParcelCancellationReasonList()` is called. Calling either method twice (e.g., after a network retry) results in duplicate "Other" entries.
+
+**Fix:** Clear the list before populating, or check for the entry before appending.
+
+---
+
+### M20 — Wallet transaction list crashes on null data
+**File:** `lib/features/wallet/controllers/wallet_controller.dart:62–63`
+
+```dart
+transactionModel!.data!.addAll(response_data);
+```
+
+No null check before force-unwrapping `data`. If the API returns `{"data": null}` (empty wallet, first-time user), this throws.
+
+**Fix:** Guard with `if (transactionModel?.data != null)` or initialize `data` to an empty list in the model.
+
+---
+
+### M21 — Read notification badge doesn't update
+**File:** `lib/features/notification/controllers/notification_controller.dart:36–45`
+
+`sendReadStatus()` updates the backend but never calls `update()`. The unread-notification badge on the bottom nav never clears until the user navigates away and back.
+
+**Fix:** Call `update()` at the end of `sendReadStatus()`.
+
+---
+
+### M22 — Safety alert timer leaks on controller dispose
+**File:** `lib/features/safety_setup/controllers/safety_alert_controller.dart:221`
+
+`checkDriverNeedSafety()` starts a periodic `Timer` that is not stored in a cancellable reference and is not cancelled in `onClose()`. If the controller is disposed while the timer is active (e.g., user navigates away from the safety screen during an active alert), the timer continues firing on a dead controller.
+
+**Fix:** Store the timer reference (`Timer? _safetyPollTimer`) and cancel it in `onClose()`.
+
+---
+
+### M23 — Offer offset parse crashes on null
+**File:** `lib/features/my_offer/controllers/offer_controller.dart:92,124`
+
+```dart
+int.parse(bestOfferModel!.offset.toString())
+```
+
+If `bestOfferModel.offset` is `null`, `.toString()` returns the string `"null"` and `int.parse("null")` throws a `FormatException`.
+
+**Fix:** Use `int.tryParse(bestOfferModel?.offset?.toString() ?? '0') ?? 0`.
+
+---
+
+### M24 — Pusher ride channel accumulates without unsubscribe
+**File:** `lib/helper/pusher_helper.dart:76–111`
+
+Each call to `pusherDriverStatus(tripId)` subscribes to a new `PrivateChannel` without unsubscribing from the previous one. Over multiple back-to-back rides, the app holds open multiple dead Pusher channels, consuming memory and WebSocket connections.
+
+**Fix:** Unsubscribe from the current channel (`_rideChannel?.unsubscribe()`) before subscribing to the new one. Do the same in `onClose()`.
+
+---
+
+### M25 — Support screen crashes if config not loaded
+**File:** `lib/features/support/screens/support_screen.dart:78`
+
+The Terms & Conditions tab renders raw HTML from `ConfigController.config.termsAndConditions` without a null guard. If the config fetch failed during splash (e.g., no network), this throws a null-dereference when the user opens Support.
+
+**Fix:** Use `config?.termsAndConditions ?? ''` and show a "Content unavailable" placeholder when empty.
+
+---
+
+### M26 — Hardcoded English text in OTP signup
+**File:** `lib/features/auth/screens/otp_signup_screen.dart:68`
+
+The string `'Just one step away!…'` is written as a literal in the source and appended with `.tr`. Because it is not a translation key in `en.json`, the `.tr` call returns the raw string unchanged. Non-English users see English text.
+
+**Fix:** Add a proper key (e.g., `'just_one_step_away'`) to all three language files and reference it as `'just_one_step_away'.tr`.
+
+---
+
+### M27 — Unsafe context access in SplashScreen
+**File:** `lib/features/splash/screens/splash_screen.dart:60`
+
+```dart
+ScaffoldMessenger.of(Get.context!).showSnackBar(...)
+```
+
+`Get.context` can be null during the brief window between app start and widget tree construction. The force-unwrap throws a null check failure before the splash screen is even visible.
+
+**Fix:** Wrap in `if (Get.context != null)` or use `Get.snackbar(...)` which handles context internally.
+
+---
+
+### M28 — Profile screen shows stale data on re-entry
+**File:** `lib/features/profile/screens/profile_screen.dart`
+
+`initState()` does not call `ProfileController.getProfileInfo()`. When the user navigates away (e.g., edits profile, completes a ride) and returns to the Profile tab, they see the cached version until something else triggers a reload.
+
+**Fix:** Call `Get.find<ProfileController>().getProfileInfo()` in `initState()`.
+
+---
+
 ## Suggested Fix Priority
 
 ### Immediate (blocks CI or crashes on first launch)
@@ -404,13 +715,25 @@ No upper bound. A breaking `8.x` release would silently pull in an incompatible 
 2. **C2** — Create `OtpSignupScreen` or redirect (crash on unregistered OTP user)
 3. **C1** — Fix mart status test assertions (CI fails every run)
 4. **C5** — Add `ar.json` (CI parity test)
+5. **C7** — Guard `messageModel!.data!.insert()` in message controller (crash on chat open)
+6. **C8** — Fix `parcelEstimatedFare` force-unwraps in ride controller (crash on parcel submit)
+7. **C9** — Guard address fallback in ride submission (silent data corruption)
+
+### Next sprint (feature broken or security gap)
+8. **C4** — Fix forgot-password endpoint
+9. **H8** — Add username field to sign-up form
+10. **H9** — Fix `'date'` → `'data'` key in trip pagination
+11. **H14** — Clear Pusher singleton on logout
+12. **H15** — Clear `profileModel` on logout
+13. **H16** — Implement background FCM handler
+14. **H17** — Call `getParcelRefundReasonList()` in refund screen initState
+15. **H18** — Block safety alert submission if location is null
 
 ### Next sprint (feature broken)
-5. **C4** — Fix forgot-password endpoint
-6. **H8** — Add username field to sign-up form
-7. **H1** — Fix mart message screen status check
-8. **H3** — Add wallet balance pre-check at mart checkout
-9. **H5** — Subscribe to FCM token refresh
+16. **H1** — Fix mart message screen status check
+17. **H3** — Add wallet balance pre-check at mart checkout
+18. **H5** — Subscribe to FCM token refresh
+19. **H10**, **H11**, **H12**, **H13** — Null-safety crashes in home/verification/token-gate
 
 ### Backlog
-- C6, H2, H4, H6, H7, all Medium items
+- C6, H2, H4, H6, H7, all Medium items (M15–M28), Low items
