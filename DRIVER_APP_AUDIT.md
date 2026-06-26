@@ -8,13 +8,18 @@
 
 ## Executive Summary
 
-| Severity | Count |
-|----------|-------|
-| 🔴 CRITICAL — crash, data integrity, or auth bypass | 2 |
-| 🟠 HIGH — feature broken, silent failure, or session leak | 9 |
-| 🟡 MEDIUM — degraded UX or error-prone edge case | 19 |
-| 🔵 LOW — polish, dead code, minor inconsistency | 4 |
-| **Total** | **34** |
+> **Reconciled 2026-06-26 (v2.2.0).** Most findings below are **resolved** — see the
+> "Fixed / verified in v2.2.0" and "Fixed in v2.1.0" tables near the end of this file before
+> acting on any item. Only **D1, D2, D15** remain genuinely open (deferred: large refactor or
+> backend-dependent). The per-severity table below is the *original* full inventory.
+
+| Severity | Original count | Open after v2.2.0 |
+|----------|----------------|-------------------|
+| 🔴 CRITICAL — crash, data integrity, or auth bypass | 2 | 2 (D1, D2 — deferred) |
+| 🟠 HIGH — feature broken, silent failure, or session leak | 9 | 0 |
+| 🟡 MEDIUM — degraded UX or error-prone edge case | 19 | 1 (D15 — needs backend) |
+| 🔵 LOW — polish, dead code, minor inconsistency | 4 | 0 |
+| **Total** | **34** | **3 (all deferred)** |
 
 ---
 
@@ -336,3 +341,30 @@ The delivery proof upload (multipart POST) does not set the `Idempotency-Key` he
 | D24 | Tooltip controllers hidden before dispose |
 | D27 | Map screen lifecycle reconnects Pusher on app resume when disconnected |
 | D28 | StreamController `isClosed` guard before `add()` in sign-up flow |
+
+## ✅ Fixed / verified in v2.2.0 (2026-06-26)
+
+Wave 5 + Wave 6. The "open" findings below were either fixed this cycle or **verified already
+fixed in source** (the earlier sections of this doc had drifted out of date).
+
+| ID | Status | Evidence |
+|----|--------|----------|
+| D3 | Fixed (Wave 5) | `proof_uploaded_$orderId` persisted to SharedPreferences; retry skips re-upload |
+| D4 | Fixed (Wave 5) | typed `Get.find<LocationController>()` + null-guarded lat/lng in `_submitDeliveredStatus` |
+| D11 | Fixed (Wave 5) | `_isFetching` guard in `_fetchOrderDetails()` |
+| D21 | Fixed (Wave 5) | signature `_renderToBytes()` wrapped in try/catch → `signature_capture_failed` |
+| D30 | Fixed (Wave 5) | per-session `Idempotency-Key` header on status update |
+| D22 | Fixed (Wave 6) | photo path + signature bytes persisted per `orderId`, restored in `initState`, cleared on delivery |
+| D23 | Fixed (Wave 6) | signature stroke threshold 50→200 px + `signature_too_short` inline hint |
+| D29 | Fixed (Wave 6) | pusher guard now `status == 'Connected' && pusherClient != null` (5 sites); was always-true |
+| D29b | Fixed (Wave 6) | broadcasting/auth URL derives scheme from `config.websocketScheme ?? 'https'` |
+| D6 | Verified fixed | `FileValidationHelper.getMaxFileSize` enforced on identity/vehicle photo pick |
+| D13 | Verified fixed | `tabController.addListener` refreshes wallet on tab switch |
+| D16 | Verified fixed | form-2 submit guarded by `authController.isLoading` spinner |
+| D25 | Verified fixed | `RideState.accepted` set only inside `statusCode == 200`; `_isAccepting` debounce present |
+| D26 | Verified fixed | EN/ES parity enforced by driver `vito_flows_test.dart` |
+
+**Still genuinely open (deferred — large or backend-dependent):**
+- **D1** — `MartDeliveryScreen` full GetX controller migration (architectural, large)
+- **D2** — backend QR/invite gate on OTP driver registration (backend change)
+- **D15** — real-time username-uniqueness check (needs backend `check-username` endpoint)

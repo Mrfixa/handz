@@ -48,11 +48,28 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     super.initState();
     // D30: unique key per delivery session for idempotent proof upload + status update
     _idempotencyKey = 'delivery_${widget.orderId}_${DateTime.now().millisecondsSinceEpoch}';
-    // D3: restore persisted proof-upload flag so a retry skips the upload step
+    // D3/D22: restore persisted proof state so it survives an app kill mid-delivery
     SharedPreferences.getInstance().then((prefs) {
-      if (prefs.getBool('proof_uploaded_${widget.orderId}') == true) {
-        if (mounted) setState(() => _deliveryProofUploaded = true);
-      }
+      if (!mounted) return;
+      setState(() {
+        if (prefs.getBool('proof_uploaded_${widget.orderId}') == true) {
+          _deliveryProofUploaded = true;
+        }
+        // Restore captured photo if the file is still on disk
+        final savedPhoto = prefs.getString('proof_photo_${widget.orderId}');
+        if (savedPhoto != null && File(savedPhoto).existsSync()) {
+          _deliveryPhotoPath = savedPhoto;
+          _hasDeliveryPhoto = true;
+        }
+        // Restore captured signature bytes
+        final savedSig = prefs.getString('proof_signature_${widget.orderId}');
+        if (savedSig != null && savedSig.isNotEmpty) {
+          try {
+            _signatureBytes = base64Decode(savedSig);
+            _hasSignature = true;
+          } catch (_) {/* corrupt cache — ignore */}
+        }
+      });
     });
     _fetchOrderDetails();
   }
@@ -486,6 +503,9 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
                     _hasDeliveryPhoto = true;
                     _deliveryPhotoPath = photo.path;
                   });
+                  // D22: persist so the photo survives an app kill before submit
+                  SharedPreferences.getInstance().then((prefs) =>
+                      prefs.setString('proof_photo_${widget.orderId}', photo.path));
                 }
               },
               child: Container(
@@ -721,6 +741,12 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
           _orderStatus = 'delivered';
           _isUpdating = false;
         });
+        // D22: delivery confirmed — clear the persisted proof cache for this order
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.remove('proof_uploaded_${widget.orderId}');
+          prefs.remove('proof_photo_${widget.orderId}');
+          prefs.remove('proof_signature_${widget.orderId}');
+        });
         Get.back();
         showCustomSnackBar('delivery_completed'.tr, isError: false);
       } else {
@@ -742,6 +768,9 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
             _hasSignature = true;
             _signatureBytes = bytes;
           });
+          // D22: persist so the signature survives an app kill before submit
+          SharedPreferences.getInstance().then((prefs) =>
+              prefs.setString('proof_signature_${widget.orderId}', base64Encode(bytes)));
         },
       ),
     );
@@ -787,7 +816,8 @@ class _SignatureDialogState extends State<SignatureDialog> {
   double _totalStrokeLength = 0.0;
   static const double _canvasWidth = 320;
   static const double _canvasHeight = 200;
-  static const double _minStrokeLength = 50.0;
+  // D23: require a substantial signature (not a single dot/swipe) before accepting
+  static const double _minStrokeLength = 200.0;
   final GlobalKey _canvasKey = GlobalKey();
 
   Future<Uint8List> _renderToBytes() async {
@@ -863,6 +893,17 @@ class _SignatureDialogState extends State<SignatureDialog> {
               ),
             ),
           ),
+          if (_points.isNotEmpty && _totalStrokeLength < _minStrokeLength)
+            Padding(
+              padding: const EdgeInsets.only(top: Dimensions.paddingSizeSmall),
+              child: Text(
+                'signature_too_short'.tr,
+                style: textRegular.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: Dimensions.fontSizeSmall,
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
             child: Row(

@@ -7,8 +7,13 @@
 
 ## Executive Summary
 
-| Severity | Count |
-|----------|-------|
+> **Reconciled 2026-06-26 (v2.2.0).** Many findings below are **resolved** — all C-series criticals
+> and the audited H-series are fixed and shipped (v2.1.0/v2.2.0). See the "Fixed in v2.1.0" and
+> "Fixed / verified in v2.2.0" tables near the end of this file. The counts below are the *original*
+> full inventory; **verify against source before acting on any individual item.**
+
+| Severity | Original count |
+|----------|----------------|
 | 🔴 CRITICAL — crash, data integrity, or CI-blocking | 13 |
 | 🟠 HIGH — feature broken or security gap | 23 |
 | 🟡 MEDIUM — degraded UX or error-prone edge case | 35 |
@@ -1052,3 +1057,30 @@ The following findings were resolved and shipped in release `v2.1.0`:
 | U17 | Zero-coordinate validation before fare request |
 | U20 | 429 "too many attempts" shown as localised error on OTP verify |
 | U22 | Scheduled trip time validated against current time |
+
+## ✅ Fixed / verified in v2.2.0 (2026-06-26)
+
+Wave 5 + Wave 6 reconciliation. Several findings still listed as "open critical/high" above were
+**verified already fixed in source** — the body of this doc had drifted out of date. Confirmed:
+
+| ID | Status | Evidence |
+|----|--------|----------|
+| U9 | Fixed (Wave 5) | `live_location_screen` animates camera to follow driver (`_animateCameraIfMoved` via `addPostFrameCallback`) |
+| U11 | Fixed (Wave 5) | `loyality_point_screen` `initState` calls `getLoyaltyPointList(1)` when uncached |
+| C2 | Verified fixed | `lib/features/auth/screens/otp_signup_screen.dart` exists |
+| C3 | Verified fixed | `lib/localization/language_selection_screen.dart` exists |
+| C4 | Verified fixed | `forgetPassword()` posts to `AppConstants.forgetPassword` (not config URI) |
+| C5 | Verified fixed | `assets/language/ar.json` exists (EN/ES/AR present) |
+| C8 | Verified fixed | parcel fare now `parcelEstimatedFare?.data?...?.toString() ?? '0'` |
+| H8 | Verified fixed | sign-up form has username field + `min 3 / max 50` validation |
+| H9 | Verified fixed | trip pagination reads `response.body['data']` (typo gone) |
+| H17 | Verified fixed | safety screen `initState` calls `getPrecautionList()` (reasons load on open) |
+| U6/U7 | Verified fixed | refund reason list no longer force-unwrapped |
+| U8 | Verified fixed | `my_level_screen` `initState` calls `getProfileLevelInfo()` |
+| U13 | Verified fixed | safety description uses `?? ''` (no literal "null") |
+| U14 | Verified fixed | safety submit state controller-managed (no stuck `_isLoading`) |
+| U18/U19 | Verified fixed | image size validated via `FileValidationHelper`; alert types refetched in `initState` |
+
+**Note for future sessions:** the remaining Medium/Low items in the body (M1–M28, etc.) were *not*
+all re-verified this cycle — several are design decisions (e.g. M1/M2 env-config). Check the actual
+source before "fixing" any item; this doc is historical, not a live open-issues list.

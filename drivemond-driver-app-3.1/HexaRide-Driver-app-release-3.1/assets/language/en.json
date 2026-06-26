@@ -1014,6 +1014,7 @@
     "location_permission_required": "Location permission is required to go online",
     "upload_failed_try_again": "Upload failed. Please try again.",
     "signature_capture_failed": "Signature capture failed. Please try again.",
+    "signature_too_short": "Signature too short — please sign again.",
     "too_many_requests": "Too many requests. Please try again later.",
     "server_error": "Server error. Please try again.",
     "proof_of_delivery": "Proof of Delivery",

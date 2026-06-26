@@ -64,10 +64,10 @@ class PusherHelper{
 
   late PrivateChannel driverTripSubscribe;
   void driverTripRequestSubscribe(String id){
-    if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
+    if (Get.find<SplashController>().pusherConnectionStatus == 'Connected' && pusherClient != null){
       driverTripSubscribe = pusherClient!.privateChannel("private-customer-trip-request.$id", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<SplashController>().config?.websocketScheme ?? 'https'}://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -117,10 +117,10 @@ class PusherHelper{
   late PrivateChannel customerInitialTripCancelChannel;
 
   void customerInitialTripCancel(String tripId, String userId){
-    if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
+    if (Get.find<SplashController>().pusherConnectionStatus == 'Connected' && pusherClient != null){
       customerInitialTripCancelChannel = pusherClient!.privateChannel("private-customer-trip-cancelled.$tripId.$userId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<SplashController>().config?.websocketScheme ?? 'https'}://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -155,10 +155,10 @@ class PusherHelper{
   late PrivateChannel anotherDriverAcceptedTripChannel;
 
   void anotherDriverAcceptedTrip(String tripId, String userId){
-    if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
+    if (Get.find<SplashController>().pusherConnectionStatus == 'Connected' && pusherClient != null){
       anotherDriverAcceptedTripChannel = pusherClient!.privateChannel("private-another-driver-trip-accepted.$tripId.$userId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<SplashController>().config?.websocketScheme ?? 'https'}://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -190,10 +190,10 @@ class PusherHelper{
   late PrivateChannel tripCancelAfterOngoingChannel;
 
   void tripCancelAfterOngoing(String tripId){
-    if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
+    if (Get.find<SplashController>().pusherConnectionStatus == 'Connected' && pusherClient != null){
       tripCancelAfterOngoingChannel = pusherClient!.privateChannel("private-customer-trip-cancelled-after-ongoing.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<SplashController>().config?.websocketScheme ?? 'https'}://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -230,10 +230,10 @@ class PusherHelper{
   late PrivateChannel tripPaymentSuccessfulChannel;
 
   void tripPaymentSuccessful(String tripId){
-    if (Get.find<SplashController>().pusherConnectionStatus != null || Get.find<SplashController>().pusherConnectionStatus == 'Connected'){
+    if (Get.find<SplashController>().pusherConnectionStatus == 'Connected' && pusherClient != null){
       tripPaymentSuccessfulChannel = pusherClient!.privateChannel("private-customer-trip-payment-successful.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<SplashController>().config?.websocketScheme ?? 'https'}://${Get.find<SplashController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
