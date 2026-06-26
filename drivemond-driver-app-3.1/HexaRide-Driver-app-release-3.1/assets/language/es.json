@@ -1013,6 +1013,7 @@
     "you_are_offline": "Estás desconectado",
     "location_permission_required": "Se requiere permiso de ubicación para estar en línea",
     "upload_failed_try_again": "Carga fallida. Inténtelo de nuevo.",
+    "signature_capture_failed": "Error al capturar la firma. Inténtelo de nuevo.",
     "too_many_requests": "Demasiadas solicitudes. Inténtelo más tarde.",
     "server_error": "Error del servidor. Inténtelo de nuevo.",
     "proof_of_delivery": "Prueba de Entrega",

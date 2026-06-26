@@ -6,8 +6,10 @@ import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/chat/controllers/chat_controller.dart';
+import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -34,6 +36,8 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   bool _isOffline = false;
   bool _isLoading = true;
   bool _deliveryProofUploaded = false;
+  bool _isFetching = false;
+  String _idempotencyKey = '';
 
   Map<String, dynamic> _orderData = {};
   String? _deliveryPhotoPath;
@@ -42,6 +46,14 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   @override
   void initState() {
     super.initState();
+    // D30: unique key per delivery session for idempotent proof upload + status update
+    _idempotencyKey = 'delivery_${widget.orderId}_${DateTime.now().millisecondsSinceEpoch}';
+    // D3: restore persisted proof-upload flag so a retry skips the upload step
+    SharedPreferences.getInstance().then((prefs) {
+      if (prefs.getBool('proof_uploaded_${widget.orderId}') == true) {
+        if (mounted) setState(() => _deliveryProofUploaded = true);
+      }
+    });
     _fetchOrderDetails();
   }
 
@@ -53,6 +65,8 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   }
 
   Future<void> _fetchOrderDetails() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final response = await Get.find<ApiClient>().getData(
         '${AppConstants.martOrderDetails}${widget.orderId}',
@@ -72,6 +86,8 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         _isOffline = true;
         _isLoading = false;
       });
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -594,16 +610,13 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   Future<void> _updateStatusViaApi(String newStatus) async {
     setState(() => _isUpdating = true);
 
-    // Get current driver location for real-time tracking
+    // D4: use typed LocationController; use synchronous position field
     double? driverLat;
     double? driverLng;
     try {
-      final locationController = Get.find<dynamic>();
-      if (locationController != null && locationController.getCurrentPosition() != null) {
-        final position = locationController.getCurrentPosition();
-        driverLat = position?.latitude;
-        driverLng = position?.longitude;
-      }
+      final lc = Get.find<LocationController>();
+      driverLat = lc.position.latitude;
+      driverLng = lc.position.longitude;
     } catch (_) {
       // Location not available, proceed without it
     }
@@ -666,9 +679,10 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
         if (mounted) showCustomSnackBar('upload_failed_try_again'.tr);
         return;
       }
-      // Proof is now stored on the server; cache this so a status-update retry
-      // can skip the upload step if the network drops between the two calls.
+      // D3: persist proof-upload flag so a retry skips re-uploading
       if (mounted) setState(() => _deliveryProofUploaded = true);
+      SharedPreferences.getInstance().then((prefs) =>
+          prefs.setBool('proof_uploaded_${widget.orderId}', true));
 
       await _submitDeliveredStatus();
     } catch (_) {
@@ -678,21 +692,19 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
   }
 
   Future<void> _submitDeliveredStatus() async {
-    // Get current driver location for real-time tracking
+    // D4: use typed LocationController
     double? driverLat;
     double? driverLng;
     try {
-      final locationController = Get.find<dynamic>();
-      if (locationController != null && locationController.getCurrentPosition() != null) {
-        final position = locationController.getCurrentPosition();
-        driverLat = position?.latitude;
-        driverLng = position?.longitude;
-      }
+      final lc = Get.find<LocationController>();
+      driverLat = lc.position.latitude;
+      driverLng = lc.position.longitude;
     } catch (_) {
       // Location not available, proceed without it
     }
 
     try {
+      // D30: pass idempotency key to prevent duplicate status updates on retry
       final response = await Get.find<ApiClient>().putData(
         AppConstants.martUpdateStatus,
         {
@@ -701,6 +713,7 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
           if (driverLat != null) 'driver_lat': driverLat,
           if (driverLng != null) 'driver_lng': driverLng,
         },
+        headers: {'Idempotency-Key': _idempotencyKey},
       );
 
       if (response.statusCode == 200) {
@@ -873,9 +886,13 @@ class _SignatureDialogState extends State<SignatureDialog> {
                       ? null
                       : () async {
                           HapticFeedback.lightImpact();
-                          final bytes = await _renderToBytes();
-                          widget.onSave(bytes);
-                          Get.back();
+                          try {
+                            final bytes = await _renderToBytes();
+                            widget.onSave(bytes);
+                            Get.back();
+                          } catch (_) {
+                            showCustomSnackBar('signature_capture_failed'.tr);
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,

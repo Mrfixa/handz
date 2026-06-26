@@ -56,6 +56,17 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
     });
   }
 
+  LatLng? _lastCameraPosition;
+
+  void _animateCameraIfMoved(LatLng newPos) {
+    if (_mapController == null) return;
+    final last = _lastCameraPosition;
+    if (last == null || last.latitude != newPos.latitude || last.longitude != newPos.longitude) {
+      _lastCameraPosition = newPos;
+      _mapController!.animateCamera(CameraUpdate.newLatLng(newPos));
+    }
+  }
+
   @override
   void dispose() {
     _mapController?.dispose();
@@ -66,6 +77,12 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<LocationTrackingController>(builder: (locationTrackingController) {
+      // U9: animate camera to follow driver when position changes after each poll
+      if (locationTrackingController.rideTrackDetailsModel != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _animateCameraIfMoved(locationTrackingController.currentPosition);
+        });
+      }
       return Scaffold(body: PopScope(
         canPop: false,
         onPopInvokedWithResult: (res,data){

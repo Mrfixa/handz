@@ -23,6 +23,15 @@ class _LoyaltyPointScreenState extends State<LoyaltyPointScreen> {
   final ScrollController scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    final wc = Get.find<WalletController>();
+    if (wc.loyaltyPointModel == null) {
+      wc.getLoyaltyPointList(1);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GetBuilder<WalletController>(builder: (walletController) {
       return  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
