@@ -347,7 +347,7 @@ class MartController extends GetxController implements GetxService {
     if (code.trim().isEmpty) return;
     isApplyingPromo = true;
     update();
-    final response = await martService.applyPromoCode(code.trim(), orderTotal);
+    final response = await martServiceInterface.applyPromoCode(code.trim(), orderTotal);
     isApplyingPromo = false;
     if (response.statusCode == 200) {
       final data = response.body;

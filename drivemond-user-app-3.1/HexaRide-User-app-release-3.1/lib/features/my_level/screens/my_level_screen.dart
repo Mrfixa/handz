@@ -74,7 +74,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                 ]),
                 const SizedBox(height: Dimensions.paddingSizeSmall),
 
-                if(!levelController.levelModel?.data?.isCompleted == true)
+                if(levelController.levelModel?.data?.isCompleted != true)
                 Align(
                   alignment: Get.find<LocalizationController>().isLtr ?
                   Alignment.centerLeft : Alignment.centerRight,
@@ -85,7 +85,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                   ),
                 ),
 
-                if(!levelController.levelModel?.data?.isCompleted == true)
+                if(levelController.levelModel?.data?.isCompleted != true)
                 Row(children: [
                   Expanded(child: LinearProgressIndicator(
 
@@ -118,7 +118,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                   )
                 ]),
 
-                if(!levelController.levelModel?.data?.isCompleted == true)
+                if(levelController.levelModel?.data?.isCompleted != true)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -166,7 +166,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
 
                   ],
                 ),
-                if(!levelController.levelModel?.data?.isCompleted == true)
+                if(levelController.levelModel?.data?.isCompleted != true)
                 const SizedBox(height: Dimensions.paddingSizeLarge),
 
                !(((levelController.levelModel?.data?.currentLevel?.targetedRide ?? 0) <=

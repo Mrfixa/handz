@@ -596,34 +596,15 @@ class NotificationHelper {
 
 }
 
-// D8: background FCM handler — must be a top-level function
+// D8: background FCM handler — must be a top-level function.
+// FCM automatically shows notifications that have a "notification" payload;
+// this handler is only invoked for data-only messages, so no need to call plugin.show().
 @pragma('vm:entry-point')
 Future<dynamic> myBackgroundMessageHandler(RemoteMessage remoteMessage) async {
   customPrint('onBackground: ${remoteMessage.data}');
-  // Show a local notification so the driver is alerted while the app is backgrounded
-  final plugin = FlutterLocalNotificationsPlugin();
-  const android = AndroidInitializationSettings('notification_icon');
-  const ios = DarwinInitializationSettings();
-  await plugin.initialize(
-    const InitializationSettings(android: android, iOS: ios),
-    onDidReceiveNotificationResponse: (_) {},
-    onDidReceiveBackgroundNotificationResponse: myBackgroundMessageReceiver,
-  );
-  final androidDetails = AndroidNotificationDetails(
-    'vito_driver',
-    'Vito Driver',
-    importance: Importance.max,
-    priority: Priority.high,
-    playSound: true,
-  );
-  await plugin.show(
-    0,
-    remoteMessage.notification?.title ?? 'Vito Driver',
-    remoteMessage.notification?.body ?? '',
-    NotificationDetails(android: androidDetails),
-  );
 }
 
+@pragma('vm:entry-point')
 Future<dynamic> myBackgroundMessageReceiver(NotificationResponse response) async {
   customPrint('onBackgroundClicked: ${response.payload}');
 }

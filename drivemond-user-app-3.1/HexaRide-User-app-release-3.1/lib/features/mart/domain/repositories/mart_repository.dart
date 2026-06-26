@@ -59,6 +59,14 @@ class MartRepository implements MartRepositoryInterface {
   }
 
   @override
+  Future<Response> applyPromoCode(String code, double orderTotal) async {
+    return await apiClient.postData(AppConstants.martApplyPromo, {
+      'code': code,
+      'order_total': orderTotal,
+    });
+  }
+
+  @override
   Future add(value) => throw UnimplementedError();
   @override
   Future delete(String id) => throw UnimplementedError();

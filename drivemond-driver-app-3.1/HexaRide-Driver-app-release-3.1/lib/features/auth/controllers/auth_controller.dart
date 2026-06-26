@@ -230,7 +230,7 @@ class AuthController extends GetxController implements GetxService {
 
       // D7: clear profile model so next session doesn't see previous driver's data
       try {
-        Get.find<ProfileController>().profileModel = null;
+        Get.find<ProfileController>().profileInfo = null;
         Get.find<ProfileController>().update();
       } catch (_) {}
       PusherHelper().pusherDisconnectPusher();

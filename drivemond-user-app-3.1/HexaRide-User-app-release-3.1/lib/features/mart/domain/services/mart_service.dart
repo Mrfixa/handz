@@ -31,4 +31,8 @@ class MartService implements MartServiceInterface {
   @override
   Future createOrder(Map<String, dynamic> orderData, {String? idempotencyKey}) async =>
       await martRepositoryInterface.createOrder(orderData, idempotencyKey: idempotencyKey);
+
+  @override
+  Future applyPromoCode(String code, double orderTotal) async =>
+      await martRepositoryInterface.applyPromoCode(code, orderTotal);
 }
