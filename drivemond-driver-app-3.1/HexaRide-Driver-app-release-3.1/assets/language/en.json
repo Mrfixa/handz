@@ -1034,6 +1034,7 @@
     "username": "Username",
     "pin_must_be_6_digits": "PIN must be 6 digits",
     "username_min_3_characters": "Username must be at least 3 characters",
+    "username_already_taken": "Username already taken. Please choose another.",
     "decline": "Decline",
     "decline_ride": "Decline Ride",
     "today_earnings": "Today's Earnings",

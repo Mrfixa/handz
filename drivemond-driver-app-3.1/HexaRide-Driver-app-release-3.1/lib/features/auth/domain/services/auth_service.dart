@@ -39,6 +39,11 @@ class AuthService implements AuthServiceInterface{
   }
 
   @override
+  Future checkUsername({required String username}) {
+    return authRepositoryInterface.checkUsername(username: username);
+  }
+
+  @override
   String getDeviceToken() {
     return authRepositoryInterface.getDeviceToken();
   }

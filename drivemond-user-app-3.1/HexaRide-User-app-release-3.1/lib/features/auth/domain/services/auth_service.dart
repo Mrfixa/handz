@@ -22,6 +22,11 @@ class AuthService implements AuthServiceInterface{
   }
 
   @override
+  Future checkUsername({required String username}) async{
+   return await authRepositoryInterface.checkUsername(username: username);
+  }
+
+  @override
   bool clearSharedAddress() {
     return authRepositoryInterface.clearSharedAddress();
   }

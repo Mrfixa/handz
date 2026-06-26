@@ -53,6 +53,11 @@ class AuthRepository implements AuthRepositoryInterface{
   }
 
   @override
+  Future<Response?> checkUsername({required String username}) async {
+    return await apiClient.getData('${AppConstants.checkUsername}?username=$username');
+  }
+
+  @override
   Future<Response?> verifyOtp({required String phone, required String otp}) async {
     return await apiClient.postData(AppConstants.otpVerification,
         {"phone_or_email": phone,

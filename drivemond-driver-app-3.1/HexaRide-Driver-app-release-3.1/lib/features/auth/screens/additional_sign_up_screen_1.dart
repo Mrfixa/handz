@@ -146,7 +146,8 @@ class _AdditionalSignUpScreen1State extends State<AdditionalSignUpScreen1> {
                   margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
                   radius: Dimensions.radiusExtraLarge,
                   buttonText: 'next'.tr,
-                  onPressed: () {
+                  isLoading: authController.isCheckingUsername,
+                  onPressed: () async {
                     final String username = authController.usernameController.text.trim();
                     final String fName = authController.fNameController.text;
                     final String password = authController.passwordController.text;
@@ -174,7 +175,15 @@ class _AdditionalSignUpScreen1State extends State<AdditionalSignUpScreen1> {
                         _confirmPinErrorController.add(ErrorAnimationType.shake);
                       }
                     } else {
-                      Get.to(() => const AdditionalSignUpScreen2());
+                      // D15: confirm the username is free before advancing so the
+                      // driver isn't bounced back after the full registration submit.
+                      final bool available = await authController.isUsernameAvailable(username);
+                      if (!available) {
+                        showCustomSnackBar('username_already_taken'.tr);
+                        FocusScope.of(context).requestFocus(authController.usernameNode);
+                      } else {
+                        Get.to(() => const AdditionalSignUpScreen2());
+                      }
                     }
                   },
                 ),

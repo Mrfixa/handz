@@ -274,6 +274,33 @@ class VitoAuthController extends Controller
         return response()->json(responseFormatter(REGISTRATION_200));
     }
 
+    /**
+     * GET /api/{customer|driver}/auth/check-username?username=foo
+     * D15: lets the sign-up form check username availability before submit so the
+     * user isn't bounced back after a full registration attempt. Usernames are
+     * globally unique (matching the `unique:users,username` rule on pinRegister).
+     */
+    public function checkUsername(Request $request): JsonResponse
+    {
+        $request->merge(['username' => trim((string) $request->username)]);
+
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|max:50|regex:/^[a-zA-Z0-9_-]+$/',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        $available = !User::where('username', $request->username)->exists();
+
+        return response()->json([
+            'available' => $available,
+            'username'  => $request->username,
+            'message'   => $available ? 'Username available' : 'Username already taken',
+        ]);
+    }
+
     private function authenticate($user, $accessType): array
     {
         $token = $user->createToken($user->phone ?? $user->username, [$accessType])->accessToken;

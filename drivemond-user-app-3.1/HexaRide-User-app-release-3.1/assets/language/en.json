@@ -1000,6 +1000,7 @@
     "current_pin_is_required": "Current PIN is required",
     "new_pin_is_required": "New PIN is required",
     "username_min_3_characters": "Username must be at least 3 characters",
+    "username_already_taken": "Username already taken. Please choose another.",
     "confirm_booking": "Confirm Booking",
     "confirm_booking_message": "Are you sure you want to book this ride?",
     "too_many_requests": "Too many requests. Please try again later.",

@@ -1034,6 +1034,7 @@
     "username": "Usuario",
     "pin_must_be_6_digits": "El PIN debe tener 6 dígitos",
     "username_min_3_characters": "El usuario debe tener al menos 3 caracteres",
+    "username_already_taken": "El usuario ya está en uso. Elija otro.",
     "decline": "Rechazar",
     "decline_ride": "Rechazar Viaje",
     "today_earnings": "Ganancias de Hoy",

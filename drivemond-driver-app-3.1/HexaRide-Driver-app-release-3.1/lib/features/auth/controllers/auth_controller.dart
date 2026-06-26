@@ -344,6 +344,29 @@ class AuthController extends GetxController implements GetxService {
     return response;
   }
 
+  // D15: pre-submit username availability check. Returns true (available) on any
+  // error so registration is never blocked by a transient failure — the backend's
+  // `unique:users,username` rule remains the authoritative guard.
+  bool _isCheckingUsername = false;
+  bool get isCheckingUsername => _isCheckingUsername;
+
+  Future<bool> isUsernameAvailable(String username) async {
+    _isCheckingUsername = true;
+    update();
+    bool available = true;
+    try {
+      final Response? response = await authServiceInterface.checkUsername(username: username);
+      if (response != null && response.statusCode == 200) {
+        available = response.body['available'] == true;
+      }
+    } catch (_) {
+      available = true;
+    }
+    _isCheckingUsername = false;
+    update();
+    return available;
+  }
+
   Future<Response> sendOtp({required String countryCode,  required String number}) async{
     _isOtpSending = true;
     update();

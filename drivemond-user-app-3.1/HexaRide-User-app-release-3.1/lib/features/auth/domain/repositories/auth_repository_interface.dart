@@ -9,6 +9,7 @@ abstract class AuthRepositoryInterface implements RepositoryInterface{
   Future<dynamic> registration({required SignUpBody signUpBody});
   Future<dynamic> sendOtp({required String phone});
   Future<dynamic> isUserRegistered({required String phone});
+  Future<dynamic> checkUsername({required String username});
   Future<dynamic> verifyOtp({required String phone, required String otp});
   Future<dynamic> otpLogin({required String phone, required String otp});
   Future<dynamic> resetPassword(String phoneOrEmail, String password);

@@ -59,11 +59,13 @@ Route::controller(\Modules\AuthManagement\Http\Controllers\Api\VitoAuthControlle
     Route::group(['prefix' => 'customer/auth', 'middleware' => 'throttle:20,1'], function () {
         Route::post('pin-login', 'pinLogin');
         Route::post('pin-register', 'pinRegister');
+        Route::get('check-username', 'checkUsername');
     });
 
     Route::group(['prefix' => 'driver/auth', 'middleware' => 'throttle:20,1'], function () {
         Route::post('pin-login', 'pinLogin');
         Route::post('pin-register', 'pinRegister');
+        Route::get('check-username', 'checkUsername');
     });
 
     Route::group(['middleware' => ['auth:api', 'maintenance_mode']], function () {

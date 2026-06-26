@@ -8,6 +8,7 @@ abstract class AuthServiceInterface{
   Future<dynamic> registration({required SignUpBody signUpBody});
   Future<dynamic> sendOtp({required String phone});
   Future<dynamic> isUserRegistered({required String phone});
+  Future<dynamic> checkUsername({required String username});
   Future<dynamic> verifyOtp({required String phone, required String otp});
   Future<dynamic> verifyFirebaseOtp({required String phone, required String otp, required String session});
   Future<dynamic> otpLogin({required String phone, required String otp});

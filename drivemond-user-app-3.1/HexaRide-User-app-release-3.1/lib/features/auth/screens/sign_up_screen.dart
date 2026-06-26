@@ -66,7 +66,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _submit(AuthController authController) {
+  Future<void> _submit(AuthController authController) async {
     HapticFeedback.mediumImpact();
     final username = authController.usernameController.text.trim();
     final fName = authController.fNameController.text.trim();
@@ -103,6 +103,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showCustomSnackBar('password_is_mismatch'.tr);
       FocusScope.of(context).requestFocus(_confirmPasswordNode);
     } else {
+      // D15: confirm the username is free before starting OTP so the user isn't
+      // bounced back after verification + the full registration submit.
+      final bool usernameFree = await authController.isUsernameAvailable(username);
+      if (!mounted) return;
+      if (!usernameFree) {
+        showCustomSnackBar('username_already_taken'.tr);
+        FocusScope.of(context).requestFocus(_usernameNode);
+        return;
+      }
       final fullPhone = authController.countryDialCode + phone;
       authController.checkOAuth(countryCode: authController.countryDialCode, number: phone).then((value) {
         if (value.statusCode == 200 || value.statusCode == 404) {

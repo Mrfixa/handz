@@ -319,4 +319,9 @@ class AuthRepository implements AuthRepositoryInterface {
         {"phone_or_email": phone});
   }
 
+  @override
+  Future<Response?> checkUsername({required String username}) async {
+    return await apiClient.getData('${AppConstants.checkUsername}?username=$username');
+  }
+
 }

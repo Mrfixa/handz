@@ -40,4 +40,5 @@ abstract class AuthRepositoryInterface implements RepositoryInterface{
   Future<String> remainingTime();
   String getLoginCountryCode();
   Future<dynamic> isUserRegistered({required String phone});
+  Future<dynamic> checkUsername({required String username});
 }

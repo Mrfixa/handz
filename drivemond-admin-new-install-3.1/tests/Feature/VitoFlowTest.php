@@ -729,6 +729,71 @@ class VitoFlowTest extends TestCase
     }
 
     // ========================================================================
+    // 3b. Username availability check (D15)
+    // ========================================================================
+
+    public function test_check_username_availability(): void
+    {
+        // Unused username → available
+        $resp = $this->getJson('/api/customer/auth/check-username?username=freshname');
+        $resp->assertOk();
+        $this->assertTrue($resp->json('available'));
+
+        // Existing username → not available (globally unique, both scopes)
+        $this->createUser('customer', ['username' => 'takenname']);
+
+        $resp = $this->getJson('/api/customer/auth/check-username?username=takenname');
+        $resp->assertOk();
+        $this->assertFalse($resp->json('available'));
+
+        // Driver route shares the same global uniqueness check
+        $resp = $this->getJson('/api/driver/auth/check-username?username=takenname');
+        $resp->assertOk();
+        $this->assertFalse($resp->json('available'));
+
+        // Invalid username (too short / bad chars) → 422 validation error
+        $resp = $this->getJson('/api/customer/auth/check-username?username=a');
+        $resp->assertStatus(422);
+    }
+
+    // ========================================================================
+    // 3c. OTP registration is customer-only — no driver auth bypass (D2)
+    // ========================================================================
+
+    public function test_otp_registration_cannot_create_driver(): void
+    {
+        // Complete the customer OTP registration flow
+        $this->postJson('/api/customer/auth/send-otp', ['phone_or_email' => '+15557770000']);
+        $send = $this->postJson('/api/customer/auth/send-otp', ['phone_or_email' => '+15557770001']);
+        $otp = $send->json('otp');
+
+        $this->postJson('/api/customer/auth/otp-verification', [
+            'phone_or_email' => '+15557770001',
+            'otp'            => $otp,
+        ]);
+
+        $reg = $this->postJson('/api/customer/auth/registration-from-otp', [
+            'phone'      => '+15557770001',
+            'first_name' => 'Otp',
+            'last_name'  => 'User',
+        ]);
+        $reg->assertStatus(200);
+
+        // The OTP path must only ever create a CUSTOMER, never a driver.
+        $user = User::where('phone', '+15557770001')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('customer', $user->user_type);
+
+        // There is no driver OTP-registration endpoint at all (404, not a working bypass).
+        $driverOtp = $this->postJson('/api/driver/auth/registration-from-otp', [
+            'phone'      => '+15557770002',
+            'first_name' => 'Bad',
+            'last_name'  => 'Driver',
+        ]);
+        $this->assertEquals(404, $driverOtp->getStatusCode());
+    }
+
+    // ========================================================================
     // 4. PIN Login & Lockout
     // ========================================================================
 
