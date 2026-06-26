@@ -521,7 +521,7 @@
     "give_review": "Give review",
     "permanently_delete_account": "Permanently Delete Account",
     "you_could't_replay_you_have_no_trip": "You can not reply as you do not have any ongoing trips",
-    "are_you_sure_permanent_delete_smg": "Are you sure? You want to permanently delete your account. You can't retrieve this account in future",
+    "are_you_sure_permanent_delete_smg": "Are you sure? You want to permanently delete your account. You can't retrieve this account in future. This will permanently delete your trips, wallet balance, and messages.",
     "please_input_point": "Please input point",
     "cancelled": "Cancelled",
     "completed": "Completed",
@@ -1115,5 +1115,13 @@
     "in_stock": "In stock",
     "add_to_cart": "Add to cart",
     "description": "Description",
-    "invalid_weight_format": "Please enter a valid weight"
+    "invalid_weight_format": "Please enter a valid weight",
+    "just_one_step_away": "Just one step away! This will help make your profile more personalized.",
+    "location_permission_required": "Location permission is required to send a safety alert",
+    "stock_limit_exceeded": "You've reached the maximum available stock for this item",
+    "item_added_to_cart": "Item added to cart",
+    "notification_channel_name": "Vito",
+    "notification_channel_description": "Ride and delivery notifications",
+    "about": "About",
+    "tap_to_expand": "Tap to expand"
 }

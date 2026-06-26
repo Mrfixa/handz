@@ -110,6 +110,8 @@ class AuthController extends GetxController implements GetxService {
       LoginHelper.checkLoginMedium();
       showCustomSnackBar('successfully_logout'.tr, isError: false);
       clearSharedData();
+      // Clear cached profile so stale data is not shown on next login.
+      Get.find<ProfileController>().profileModel = null;
       // Tear down the realtime connection so stale private channels are not
       // left subscribed after logout.
       try { PusherHelper.pusherClient?.disconnect(); } catch (_) {}
@@ -239,6 +241,7 @@ class AuthController extends GetxController implements GetxService {
       }else if(from == VerificationForm.verifyUser){
         registrationFromOtp(
           SignUpBody(
+              username: usernameController.text.trim(),
               fName: fNameController.text.trim(),
               lName: lNameController.text.trim(),
               phone: countryDialCode + phoneController.text.trim(),

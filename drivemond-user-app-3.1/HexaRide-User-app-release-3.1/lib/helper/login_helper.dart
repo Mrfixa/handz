@@ -32,6 +32,7 @@ class LoginHelper{
     Get.find<RefundRequestController>().getParcelRefundReasonList();
     Get.find<PaymentController>().getPaymentGetWayList();
     FirebaseHelper().subscribeFirebaseTopic();
+    FirebaseHelper().listenForTokenRefresh();
     String? path = await initDynamicLinks();
 
     Get.find<ConfigController>().getConfigData()

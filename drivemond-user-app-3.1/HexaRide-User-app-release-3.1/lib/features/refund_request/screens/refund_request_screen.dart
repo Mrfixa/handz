@@ -35,7 +35,9 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   @override
   void initState() {
     Get.find<RefundRequestController>().onClearRefundData();
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.find<RefundRequestController>().getParcelRefundReasonList();
+    });
     super.initState();
   }
 

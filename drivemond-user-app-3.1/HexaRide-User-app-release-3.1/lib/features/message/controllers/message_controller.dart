@@ -47,10 +47,6 @@ class MessageController extends GetxController implements GetxService{
   bool get paginationLoading => _paginationLoading;
 
 
-  final String _name='';
-  String get name => _name;
-  final String _image='';
-  String get image => _image;
 
 
   var conversationController = TextEditingController();
@@ -437,6 +433,25 @@ class MessageController extends GetxController implements GetxService{
       _channelRideStatus = false;
     }else{
       _channelRideStatus = true;
+    }
+    update();
+  }
+
+  bool _channelMartOrderStatus = true;
+  bool get channelMartOrderStatus => _channelMartOrderStatus;
+  void findChannelMartOrderStatus(String orderId) async {
+    try {
+      final response = await messageServiceInterface.findChannelMartOrderStatus(orderId);
+      if (response.statusCode == 200) {
+        final status = response.body['data']?['status']?.toString() ?? '';
+        if (status == 'delivered' || status == 'cancelled') {
+          _channelMartOrderStatus = false;
+        } else {
+          _channelMartOrderStatus = true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to check mart order status: $e');
     }
     update();
   }

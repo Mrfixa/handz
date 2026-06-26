@@ -54,7 +54,7 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
     if (Get.find<ProfileController>().profileModel?.data?.id == null) {
       await Get.find<ProfileController>().getProfileInfo();
     }
-    Get.find<MessageController>().findChannelRideStatus(widget.channelId);
+    Get.find<MessageController>().findChannelMartOrderStatus(widget.orderId);
     Get.find<MessageController>().getConversation(widget.channelId, 1);
     Get.find<MessageController>().subscribeMartMessageChannel(widget.orderId);
   }
@@ -179,7 +179,7 @@ class _MartMessageScreenState extends State<MartMessageScreen> {
 
                 const SizedBox(height: 20),
 
-                messageController.channelRideStatus
+                messageController.channelMartOrderStatus
                     ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Expanded(
                           child: Container(

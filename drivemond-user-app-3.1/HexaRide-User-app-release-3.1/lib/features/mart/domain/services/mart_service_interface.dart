@@ -6,5 +6,5 @@ abstract class MartServiceInterface {
   Future<dynamic> getOrderDetails(String id);
   Future<dynamic> cancelOrder(String id);
   Future<dynamic> reviewOrder(String id, int rating, String? comment);
-  Future<dynamic> createOrder(Map<String, dynamic> orderData);
+  Future<dynamic> createOrder(Map<String, dynamic> orderData, {String? idempotencyKey});
 }

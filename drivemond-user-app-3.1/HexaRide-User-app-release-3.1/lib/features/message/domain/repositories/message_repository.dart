@@ -77,6 +77,11 @@ class MessageRepository implements MessageRepositoryInterface{
   }
 
   @override
+  Future<Response> findChannelMartOrderStatus(String orderId) async {
+    return await apiClient.getData('${AppConstants.martOrderDetails}$orderId');
+  }
+
+  @override
   Future add(value) {
     // TODO: implement add
     throw UnimplementedError();

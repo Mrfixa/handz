@@ -48,7 +48,7 @@ class TripController extends GetxController implements GetxService {
       update();
     }
     Response response = await tripServiceInterface.getTripList('ride_request', offset, _filterStartDate, _filterEndDate, _filterList[filterIndex], _statusList[statusIndex]);
-    if (response.statusCode == 200 && response.body['date'] != []) {
+    if (response.statusCode == 200 && response.body['data'] != []) {
       if(offset == 1) {
         tripModel = TripModel.fromJson(response.body);
       }else {
@@ -85,24 +85,34 @@ class TripController extends GetxController implements GetxService {
 
 
   void getRideCancellationReasonList() async{
+    rideCancellationReasonList = null;
     Response response = await tripServiceInterface.getRideCancellationReasonList();
 
     if(response.statusCode == 200){
       rideCancellationReasonList = TripCancellationCauseList.fromJson(response.body);
-      rideCancellationReasonList?.data?.ongoingRide?.add('other'.tr);
-      rideCancellationReasonList?.data?.acceptedRide?.add('other'.tr);
+      if(!(rideCancellationReasonList?.data?.ongoingRide?.contains('other'.tr) ?? false)){
+        rideCancellationReasonList?.data?.ongoingRide?.add('other'.tr);
+      }
+      if(!(rideCancellationReasonList?.data?.acceptedRide?.contains('other'.tr) ?? false)){
+        rideCancellationReasonList?.data?.acceptedRide?.add('other'.tr);
+      }
     }else{
       ApiChecker.checkApi(response);
     }
   }
 
   void getParcelCancellationReasonList() async{
+    parcelCancellationReasonList = null;
     Response response = await tripServiceInterface.getParcelCancellationReasonList();
 
     if(response.statusCode == 200){
       parcelCancellationReasonList = TripCancellationCauseList.fromJson(response.body);
-      parcelCancellationReasonList?.data?.ongoingRide?.add('other'.tr);
-      parcelCancellationReasonList?.data?.acceptedRide?.add('other'.tr);
+      if(!(parcelCancellationReasonList?.data?.ongoingRide?.contains('other'.tr) ?? false)){
+        parcelCancellationReasonList?.data?.ongoingRide?.add('other'.tr);
+      }
+      if(!(parcelCancellationReasonList?.data?.acceptedRide?.contains('other'.tr) ?? false)){
+        parcelCancellationReasonList?.data?.acceptedRide?.add('other'.tr);
+      }
 
     }else{
       ApiChecker.checkApi(response);

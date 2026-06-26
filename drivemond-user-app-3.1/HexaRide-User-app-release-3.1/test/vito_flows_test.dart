@@ -11,10 +11,12 @@ void main() {
   group('Localization Parity', () {
     late Map<String, dynamic> en;
     late Map<String, dynamic> es;
+    late Map<String, dynamic> ar;
 
     setUpAll(() {
       en = jsonDecode(File('assets/language/en.json').readAsStringSync());
       es = jsonDecode(File('assets/language/es.json').readAsStringSync());
+      ar = jsonDecode(File('assets/language/ar.json').readAsStringSync());
     });
 
     test('EN and ES have the same number of keys', () {
@@ -32,6 +34,23 @@ void main() {
       final extraInEs = es.keys.where((k) => !en.containsKey(k)).toList();
       expect(extraInEs, isEmpty,
           reason: 'Extra keys in ES not in EN: $extraInEs');
+    });
+
+    test('EN and AR have the same number of keys', () {
+      expect(ar.length, en.length,
+          reason: 'AR should have the same keys as EN');
+    });
+
+    test('All EN keys exist in AR', () {
+      final missingInAr = en.keys.where((k) => !ar.containsKey(k)).toList();
+      expect(missingInAr, isEmpty,
+          reason: 'Keys missing in AR: $missingInAr');
+    });
+
+    test('All AR keys exist in EN', () {
+      final extraInAr = ar.keys.where((k) => !en.containsKey(k)).toList();
+      expect(extraInAr, isEmpty,
+          reason: 'Extra keys in AR not in EN: $extraInAr');
     });
 
     test('Vito-specific EN keys have non-empty values', () {
@@ -143,16 +162,19 @@ void main() {
   group('Mart Order Logic', () {
     test('Order status flow is valid', () {
       final statusFlow = [
-        'placed',
-        'confirmed',
-        'preparing',
-        'ready',
-        'dispatched',
+        'pending',
+        'accepted',
+        'picked_up',
         'delivered',
       ];
-      expect(statusFlow.length, 6);
-      expect(statusFlow.first, 'placed');
+      expect(statusFlow.length, 4);
+      expect(statusFlow.first, 'pending');
       expect(statusFlow.last, 'delivered');
+      // Verify the full transition sequence matches the backend canonical map.
+      expect(statusFlow[0], 'pending');
+      expect(statusFlow[1], 'accepted');
+      expect(statusFlow[2], 'picked_up');
+      expect(statusFlow[3], 'delivered');
     });
 
     test('Cart total calculation', () {

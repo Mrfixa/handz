@@ -17,6 +17,8 @@ import 'package:ride_sharing_user_app/features/mart/screens/mart_product_details
 import 'package:ride_sharing_user_app/features/mart/screens/mart_payment_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
 import 'package:ride_sharing_user_app/util/app_colors.dart';
+import 'package:ride_sharing_user_app/features/profile/controllers/profile_controller.dart';
+import 'package:ride_sharing_user_app/helper/display_helper.dart';
 
 class MartStoreScreen extends StatefulWidget {
   const MartStoreScreen({super.key});
@@ -328,7 +330,12 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   }
 
   void _addToCart(Map<String, dynamic> product) {
-    _martController.addToCart(product);
+    // FIX 4: addToCart returns true only when the item was actually added/incremented.
+    // The controller handles its own error snackbars for out-of-stock / stock-cap cases.
+    final added = _martController.addToCart(product);
+    if (added) {
+      showCustomSnackBar('item_added_to_cart'.tr, isError: false);
+    }
   }
 
   void _navigateToCart() {
@@ -658,6 +665,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
         setState(() {
           final id = item['id'];
           widget.cartItems.removeWhere((e) => e['id'] == id);
+          _appliedPromoCode = null;
+          _discount = 0.0;
+          _promoController.clear();
         });
       },
       child: Card(
@@ -699,6 +709,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
                     } else {
                       widget.cartItems.removeAt(index);
                     }
+                    _appliedPromoCode = null;
+                    _discount = 0.0;
+                    _promoController.clear();
                   });
                 },
                 icon: const Icon(Icons.remove_circle_outline),
@@ -710,6 +723,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
                   if (current < 100) {
                     setState(() {
                       item['quantity'] = current + 1;
+                      _appliedPromoCode = null;
+                      _discount = 0.0;
+                      _promoController.clear();
                     });
                   }
                 },
@@ -1081,9 +1097,13 @@ class _MartCartScreenState extends State<MartCartScreen> {
 
       if (!mounted) return;
       if (response.statusCode == 200 && response.body['data'] != null) {
+        final rawDiscount = response.body['data']?['discount'];
+        if (rawDiscount is! num || (rawDiscount as num) < 0) {
+          Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
+          return;
+        }
         setState(() {
-          _discount =
-              (response.body['data']['discount'] as num?)?.toDouble() ?? 0.0;
+          _discount = rawDiscount.toDouble();
           _appliedPromoCode = code;
           _promoController.clear();
         });
@@ -1145,6 +1165,18 @@ class _MartCartScreenState extends State<MartCartScreen> {
       Get.snackbar('error'.tr, 'please_enter_delivery_address'.tr);
       return;
     }
+
+    // FIX 2: check wallet balance before submitting a wallet order
+    if (_paymentMethod == 'wallet') {
+      final profileController = Get.find<ProfileController>();
+      final walletBalance =
+          profileController.profileModel?.data?.wallet?.walletBalance ?? 0.0;
+      if (walletBalance < _totalAmount) {
+        showCustomSnackBar('insufficient_wallet_balance'.tr);
+        return;
+      }
+    }
+
     if (_isOrdering) return; // guard against double submit
 
     setState(() {
@@ -1179,7 +1211,9 @@ class _MartCartScreenState extends State<MartCartScreen> {
       _martController.clearCart();
       Get.snackbar('success'.tr, 'order_placed_successfully'.tr);
       if (_paymentMethod == 'card') {
-        Get.to(() => MartPaymentScreen(orderId: result.orderId!, totalAmount: _totalAmount));
+        // FIX 1: use the backend-computed total, not the locally computed one
+        final paymentTotal = result.serverTotal > 0 ? result.serverTotal : _totalAmount;
+        Get.to(() => MartPaymentScreen(orderId: result.orderId!, totalAmount: paymentTotal));
       } else {
         Get.to(() => MartOrderTrackingScreen(orderId: result.orderId!));
       }
