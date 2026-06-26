@@ -8,18 +8,17 @@
 
 ## Executive Summary
 
-> **Reconciled 2026-06-26 (v2.2.0).** Most findings below are **resolved** — see the
-> "Fixed / verified in v2.2.0" and "Fixed in v2.1.0" tables near the end of this file before
-> acting on any item. Only **D1, D2, D15** remain genuinely open (deferred: large refactor or
-> backend-dependent). The per-severity table below is the *original* full inventory.
+> **Reconciled 2026-06-26 (v2.2.0 + Wave 7–8).** **All audited findings are now resolved** —
+> D2 and D15 closed in Wave 7, D1 in Wave 8. See the "Fixed" tables near the end of this file
+> for evidence. Nothing remains open. The per-severity table below is the *original* full inventory.
 
-| Severity | Original count | Open after v2.2.0 |
-|----------|----------------|-------------------|
-| 🔴 CRITICAL — crash, data integrity, or auth bypass | 2 | 2 (D1, D2 — deferred) |
+| Severity | Original count | Open now |
+|----------|----------------|----------|
+| 🔴 CRITICAL — crash, data integrity, or auth bypass | 2 | 0 |
 | 🟠 HIGH — feature broken, silent failure, or session leak | 9 | 0 |
-| 🟡 MEDIUM — degraded UX or error-prone edge case | 19 | 1 (D15 — needs backend) |
+| 🟡 MEDIUM — degraded UX or error-prone edge case | 19 | 0 |
 | 🔵 LOW — polish, dead code, minor inconsistency | 4 | 0 |
-| **Total** | **34** | **3 (all deferred)** |
+| **Total** | **34** | **0** |
 
 ---
 
@@ -364,7 +363,12 @@ fixed in source** (the earlier sections of this doc had drifted out of date).
 | D25 | Verified fixed | `RideState.accepted` set only inside `statusCode == 200`; `_isAccepting` debounce present |
 | D26 | Verified fixed | EN/ES parity enforced by driver `vito_flows_test.dart` |
 
-**Still genuinely open (deferred — large or backend-dependent):**
-- **D1** — `MartDeliveryScreen` full GetX controller migration (architectural, large)
-- **D2** — backend QR/invite gate on OTP driver registration (backend change)
-- **D15** — real-time username-uniqueness check (needs backend `check-username` endpoint)
+## ✅ Fixed in Wave 7–8 (post v2.2.0) — last open items closed
+
+| ID | Status | Evidence |
+|----|--------|----------|
+| D15 | Fixed (Wave 7) | `GET {customer,driver}/auth/check-username` endpoint + `Mart-style` 4-layer wiring; sign-up does a pre-submit availability check (`username_already_taken`). Backend test `test_check_username_availability`. |
+| D2 | Resolved (Wave 7) | Verified **not a real bypass**: OTP path (`ClientOtpAuthController`) is customer-only (`user_type=customer`, `AccessToCustomer`); no driver OTP-registration route exists. Locked by `test_otp_registration_cannot_create_driver` (driver OTP route → 404). |
+| D1 | Fixed (Wave 8) | `MartDeliveryScreen` network layer moved onto `MartController` — all 4 direct `ApiClient` calls (order fetch, status×2, proof upload) now go through the DI chain (`fetchOrderDetailMap`, `updateStatus(idempotencyKey:)`, `uploadDeliveryProof`); multipart/base64 assembly lives in the repository. Driver `vito_flows_test.dart` exercises the new controller methods and force-compiles the concrete repo/service. UI state (signature/photo/persistence) stays local; full `MartOrderModel` rendering adoption is a later step. |
+
+**Open findings remaining: none.** All 34 audited driver-app findings are resolved.

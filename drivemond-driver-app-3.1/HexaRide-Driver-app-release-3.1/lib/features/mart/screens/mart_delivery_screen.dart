@@ -7,10 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/chat/controllers/chat_controller.dart';
 import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
-import 'package:ride_sharing_user_app/util/app_constants.dart';
+import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
@@ -85,12 +84,11 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     if (_isFetching) return;
     _isFetching = true;
     try {
-      final response = await Get.find<ApiClient>().getData(
-        '${AppConstants.martOrderDetails}${widget.orderId}',
-      );
-      if (response.statusCode == 200 && response.body['data'] != null) {
+      // D1: order fetch via MartController instead of a direct ApiClient call
+      final data = await Get.find<MartController>().fetchOrderDetailMap(widget.orderId);
+      if (data != null) {
         if (mounted) setState(() {
-          _orderData = Map<String, dynamic>.from(response.body['data']);
+          _orderData = data;
           _orderStatus = _orderData['status'] ?? 'accepted';
           _isLoading = false;
           _isOffline = false;
@@ -642,17 +640,11 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     }
 
     try {
-      final response = await Get.find<ApiClient>().putData(
-        AppConstants.martUpdateStatus,
-        {
-          'order_id': widget.orderId,
-          'status': newStatus,
-          if (driverLat != null) 'driver_lat': driverLat,
-          if (driverLng != null) 'driver_lng': driverLng,
-        },
-      );
+      // D1: status update via MartController instead of a direct ApiClient call
+      final ok = await Get.find<MartController>().updateStatus(
+        widget.orderId, newStatus, driverLat: driverLat, driverLng: driverLng);
 
-      if (response.statusCode == 200) {
+      if (ok) {
         if (mounted) setState(() {
           _orderStatus = newStatus;
           _isUpdating = false;
@@ -672,29 +664,16 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     setState(() => _isUpdating = true);
 
     try {
-      // Upload delivery proof (photo as file, signature as base64)
-      final fields = {'order_id': widget.orderId};
-      final multipartFiles = <MultipartBody>[];
-
-      if (_deliveryPhotoPath != null && File(_deliveryPhotoPath!).existsSync()) {
-        multipartFiles.add(MultipartBody('delivery_photo', XFile(_deliveryPhotoPath!)));
-      }
-
-      // Signature bytes are uploaded as a base64 field alongside the multipart
-      final extraFields = <String, String>{...fields};
-      if (_signatureBytes != null) {
-        extraFields['signature_base64'] = base64Encode(_signatureBytes!);
-      }
-
-      final uploadResponse = await Get.find<ApiClient>().postMultipartData(
-        AppConstants.martUploadProof,
-        extraFields,
-        multipartFiles,
-        null,
-        <MultipartDocument>[],
+      // D1: delivery-proof upload (photo + signature) via MartController; the
+      // multipart/base64 assembly now lives in the repository layer.
+      final uploaded = await Get.find<MartController>().uploadDeliveryProof(
+        widget.orderId,
+        photoPath: _deliveryPhotoPath,
+        signatureBytes: _signatureBytes,
+        idempotencyKey: _idempotencyKey,
       );
 
-      if (uploadResponse.statusCode != 200) {
+      if (!uploaded) {
         if (mounted) setState(() => _isUpdating = false);
         if (mounted) showCustomSnackBar('upload_failed_try_again'.tr);
         return;
@@ -724,19 +703,14 @@ class _MartDeliveryScreenState extends State<MartDeliveryScreen> {
     }
 
     try {
-      // D30: pass idempotency key to prevent duplicate status updates on retry
-      final response = await Get.find<ApiClient>().putData(
-        AppConstants.martUpdateStatus,
-        {
-          'order_id': widget.orderId,
-          'status': 'delivered',
-          if (driverLat != null) 'driver_lat': driverLat,
-          if (driverLng != null) 'driver_lng': driverLng,
-        },
-        headers: {'Idempotency-Key': _idempotencyKey},
+      // D1 + D30: delivered status via MartController, idempotency key preserved
+      final ok = await Get.find<MartController>().updateStatus(
+        widget.orderId, 'delivered',
+        driverLat: driverLat, driverLng: driverLng,
+        idempotencyKey: _idempotencyKey,
       );
 
-      if (response.statusCode == 200) {
+      if (ok) {
         if (mounted) setState(() {
           _orderStatus = 'delivered';
           _isUpdating = false;

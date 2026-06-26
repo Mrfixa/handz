@@ -19,6 +19,10 @@ class MartService implements MartServiceInterface {
   Future acceptOrder(String orderId) async => await martRepositoryInterface.acceptOrder(orderId);
 
   @override
-  Future updateStatus(String orderId, String status, {String? reason, double? driverLat, double? driverLng}) async =>
-      await martRepositoryInterface.updateStatus(orderId, status, reason: reason, driverLat: driverLat, driverLng: driverLng);
+  Future updateStatus(String orderId, String status, {String? reason, double? driverLat, double? driverLng, String? idempotencyKey}) async =>
+      await martRepositoryInterface.updateStatus(orderId, status, reason: reason, driverLat: driverLat, driverLng: driverLng, idempotencyKey: idempotencyKey);
+
+  @override
+  Future uploadDeliveryProof(String orderId, {String? photoPath, List<int>? signatureBytes, String? idempotencyKey}) async =>
+      await martRepositoryInterface.uploadDeliveryProof(orderId, photoPath: photoPath, signatureBytes: signatureBytes, idempotencyKey: idempotencyKey);
 }

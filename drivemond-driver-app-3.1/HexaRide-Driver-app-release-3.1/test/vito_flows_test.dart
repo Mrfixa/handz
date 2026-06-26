@@ -1,9 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/data/api_checker.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/models/signup_body.dart';
 import 'package:ride_sharing_user_app/features/ride/domain/models/remaining_distance_model.dart';
+import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/services/mart_service_interface.dart';
+// Imported so CI compiles the concrete repository/service (multipart + header code) — D1.
+import 'package:ride_sharing_user_app/features/mart/domain/repositories/mart_repository.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/services/mart_service.dart';
 
 /// Unit tests for VITO-specific flows in the driver app.
 /// These validate localization, token logic, atomic acceptance,
@@ -287,4 +293,73 @@ void main() {
       expect(ApiChecker.shouldInvalidateSession(null, handleUnauthorized: true), false);
     });
   });
+
+  // D1: MartDeliveryScreen's network layer now goes through MartController.
+  // These exercise the new controller methods (and importing the concrete
+  // MartRepository/MartService above forces CI to compile the multipart/header code).
+  group('MartController delivery flow (D1)', () {
+    test('fetchOrderDetailMap returns the order data map', () async {
+      final c = MartController(martServiceInterface: _FakeMartService());
+      final map = await c.fetchOrderDetailMap('order-1');
+      expect(map, isNotNull);
+      expect(map!['id'], 'order-1');
+      expect(map['status'], 'accepted');
+    });
+
+    test('updateStatus forwards the idempotency key and returns true on 200', () async {
+      final fake = _FakeMartService();
+      final c = MartController(martServiceInterface: fake);
+      final ok = await c.updateStatus('order-1', 'delivered', idempotencyKey: 'idem-123');
+      expect(ok, true);
+      expect(fake.capturedStatusKey, 'idem-123');
+    });
+
+    test('uploadDeliveryProof returns true on 200 and forwards the idempotency key', () async {
+      final fake = _FakeMartService();
+      final c = MartController(martServiceInterface: fake);
+      final ok = await c.uploadDeliveryProof('order-1', signatureBytes: [1, 2, 3], idempotencyKey: 'idem-xyz');
+      expect(ok, true);
+      expect(fake.capturedProofKey, 'idem-xyz');
+    });
+
+    test('concrete MartRepository and MartService are wired (compile guard)', () {
+      expect(MartRepository, isNotNull);
+      expect(MartService, isNotNull);
+    });
+  });
+}
+
+/// Fake service capturing the idempotency keys the controller forwards.
+class _FakeMartService implements MartServiceInterface {
+  String? capturedStatusKey;
+  String? capturedProofKey;
+
+  @override
+  Future getOrderDetails(String id) async =>
+      Response(statusCode: 200, body: {'data': {'id': id, 'status': 'accepted'}});
+
+  @override
+  Future updateStatus(String orderId, String status,
+      {String? reason, double? driverLat, double? driverLng, String? idempotencyKey}) async {
+    capturedStatusKey = idempotencyKey;
+    return Response(statusCode: 200, body: {'data': true});
+  }
+
+  @override
+  Future uploadDeliveryProof(String orderId,
+      {String? photoPath, List<int>? signatureBytes, String? idempotencyKey}) async {
+    capturedProofKey = idempotencyKey;
+    return Response(statusCode: 200, body: {});
+  }
+
+  @override
+  Future getPendingOrders({int limit = 20}) async =>
+      Response(statusCode: 200, body: {'data': []});
+
+  @override
+  Future getMyOrders({int limit = 20}) async =>
+      Response(statusCode: 200, body: {'data': []});
+
+  @override
+  Future acceptOrder(String orderId) async => Response(statusCode: 200, body: {});
 }
