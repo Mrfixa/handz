@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Reference Docs — read these BEFORE exploring (token protocol)
+
+This is a large repo (1 489 backend PHP files, ~840 Dart files). To avoid burning tokens
+re-discovering structure, consult these committed index docs first; they are kept current and
+usually answer "where is X" without reading source:
+
+| Doc | Use it to find |
+|-----|----------------|
+| `CODEBASE_MAP.md` | Directory/feature layout of all 3 sub-projects; "Where to Look" task→file table |
+| `API_INDEX.md` | Every Vito API endpoint → exact `Controller@method`, scope, throttle, middleware |
+| `USER_APP_AUDIT.md` | Known bugs/gaps in the user app (36 findings, severity-ranked) — check before "fixing" |
+| `AUTH_AUDIT.md` / `VITO_AUDIT.md` / `AUDIT.md` | Prior audit findings + decisions already made |
+
+**Working efficiently in this repo:**
+- Resolve a task to specific files via the docs above, then `Read` only those files (use `offset`/`limit` for big files).
+- Prefer `Grep`/`Glob` with targeted patterns over reading whole directories. The route files and `CODEBASE_MAP.md` tell you which module/feature owns a concern.
+- When you change the API surface, feature layout, or fix an audited gap, update the matching index doc in the same commit so it stays trustworthy.
+- Don't spawn Explore/Plan subagents for questions the index docs already answer.
+
 ## Repository Overview
 
 Three-part system called **Vito**: a Laravel 12 backend, a Flutter customer app, and a Flutter driver app. All share the same API.
