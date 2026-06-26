@@ -57,16 +57,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         result == ConnectivityResult.mobile ||
         result == ConnectivityResult.ethernet);
 
-    ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
-    ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
-    ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(
+    Get.closeAllSnackbars();
+    Get.snackbar(
+      '',
+      isConnected ? 'connected'.tr : 'no_connection'.tr,
+      snackPosition: SnackPosition.BOTTOM,
       backgroundColor: isConnected ? Colors.green : Colors.red,
+      colorText: Colors.white,
       duration: Duration(seconds: isConnected ? 3 : 6),
-      content: Text(
+      titleText: const SizedBox.shrink(),
+      messageText: Text(
         isConnected ? 'connected'.tr : 'no_connection'.tr,
         textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white),
       ),
-    ));
+    );
 
     if (isConnected) {
       LoginHelper().handleIncomingLinks(widget.notificationData);

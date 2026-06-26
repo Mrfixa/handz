@@ -148,7 +148,7 @@ class AuthRepository implements AuthRepositoryInterface{
 
   @override
   Future<Response?> forgetPassword(String? phone) async {
-    return await apiClient.postData(AppConstants.configUri, {"phone_or_email": phone});
+    return await apiClient.postData(AppConstants.forgetPassword, {"phone_or_email": phone});
   }
 
   @override

@@ -54,8 +54,8 @@ class MartRepository implements MartRepositoryInterface {
   }
 
   @override
-  Future<Response> createOrder(Map<String, dynamic> orderData) async {
-    return await apiClient.postData(AppConstants.martCreateOrder, orderData);
+  Future<Response> createOrder(Map<String, dynamic> orderData, {String? idempotencyKey}) async {
+    return await apiClient.postData(AppConstants.martCreateOrder, orderData, idempotencyKey: idempotencyKey);
   }
 
   @override

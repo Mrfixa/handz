@@ -7,6 +7,7 @@ on:
     branches:
       - 'master'
       - 'claude/analyze-mart-qr-code-FySPn'
+      - 'claude/init-yn5zw0'
   workflow_dispatch:
     inputs:
       version:
@@ -64,29 +65,37 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
+          set -o pipefail
           flutter build apk --release \
             --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
             --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
             --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }} \
             2>&1 | tee build.log
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Upload build log on failure
-        if: failure() && steps.build.outputs.exit_code != '0'
+        if: failure()
         run: |
           cat build.log
-          ls -la build/app/outputs/flutter-apk/ 2>/dev/null || echo "APK directory not found"
+          find build/app/outputs -name "*.apk" 2>/dev/null || echo "No APKs found"
           cat android/app/build.gradle.kts 2>/dev/null | head -30
 
-      - name: Stage APKs for upload
+      - name: Stage Driver APK
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-driver-release.apk 2>/dev/null || echo "APK not found"
+          APK=$(find build/app/outputs/flutter-apk -name "*.apk" ! -name "*unsigned*" 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No signed APK found in build/app/outputs/flutter-apk/"
+            find build/app/outputs -name "*.apk" 2>/dev/null || true
+            exit 1
+          fi
+          echo "Staging: $APK"
+          cp "$APK" "$GITHUB_WORKSPACE/vito-driver-release.apk"
 
       - name: Upload Driver Release APK
         uses: actions/upload-artifact@v4
         with:
           name: vito-driver-release-apk
-          path: vito-driver-release.apk
+          path: ${{ github.workspace }}/vito-driver-release.apk
+          if-no-files-found: error
           retention-days: 14
 
   build-user-apk:
@@ -138,28 +147,36 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
+          set -o pipefail
           flutter build apk --release \
             --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
             --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
             --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }} \
             2>&1 | tee build.log
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Upload build log on failure
-        if: failure() && steps.build.outputs.exit_code != '0'
+        if: failure()
         run: |
           cat build.log
-          ls -la build/app/outputs/flutter-apk/ 2>/dev/null || echo "APK directory not found"
+          find build/app/outputs -name "*.apk" 2>/dev/null || echo "No APKs found"
 
-      - name: Stage APKs for upload
+      - name: Stage User APK
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/vito-user-release.apk 2>/dev/null || echo "APK not found"
+          APK=$(find build/app/outputs/flutter-apk -name "*.apk" ! -name "*unsigned*" 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No signed APK found in build/app/outputs/flutter-apk/"
+            find build/app/outputs -name "*.apk" 2>/dev/null || true
+            exit 1
+          fi
+          echo "Staging: $APK"
+          cp "$APK" "$GITHUB_WORKSPACE/vito-user-release.apk"
 
       - name: Upload User Release APK
         uses: actions/upload-artifact@v4
         with:
           name: vito-user-release-apk
-          path: vito-user-release.apk
+          path: ${{ github.workspace }}/vito-user-release.apk
+          if-no-files-found: error
           retention-days: 14
 
   build-admin-zip:

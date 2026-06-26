@@ -169,7 +169,10 @@ class _AdditionalSignUpScreen1State extends State<AdditionalSignUpScreen1> {
                       showCustomSnackBar('confirm_password_is_required'.tr);
                     } else if (password != confirmPassword) {
                       showCustomSnackBar('password_is_mismatch'.tr);
-                      _confirmPinErrorController.add(ErrorAnimationType.shake);
+                      // D28: guard against adding to a closed stream
+                      if (!_confirmPinErrorController.isClosed) {
+                        _confirmPinErrorController.add(ErrorAnimationType.shake);
+                      }
                     } else {
                       Get.to(() => const AdditionalSignUpScreen2());
                     }

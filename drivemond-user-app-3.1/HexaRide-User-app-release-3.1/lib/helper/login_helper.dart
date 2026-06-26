@@ -4,6 +4,8 @@ import 'package:app_links/app_links.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/sign_in_screen.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ride_sharing_user_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
 import 'package:ride_sharing_user_app/features/location/view/access_location_screen.dart';
@@ -32,6 +34,7 @@ class LoginHelper{
     Get.find<RefundRequestController>().getParcelRefundReasonList();
     Get.find<PaymentController>().getPaymentGetWayList();
     FirebaseHelper().subscribeFirebaseTopic();
+    FirebaseHelper().listenForTokenRefresh();
     String? path = await initDynamicLinks();
 
     Get.find<ConfigController>().getConfigData()
@@ -147,8 +150,22 @@ class LoginHelper{
     }
   }
 
-  static void checkLoginMedium(){
-    Get.offAll(() => const SignInScreen());
+  // H6: new installs are routed through the QR token gate so the OTP path
+  // cannot bypass registration gating. After first registration, a flag is
+  // persisted so returning users go straight to sign-in.
+  static void checkLoginMedium() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasRegistered = prefs.getBool('has_registered_before') ?? false;
+    if (hasRegistered) {
+      Get.offAll(() => const SignInScreen());
+    } else {
+      Get.offAll(() => const TokenGateScreen());
+    }
+  }
+
+  static Future<void> markRegistered() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_registered_before', true);
   }
 
 }

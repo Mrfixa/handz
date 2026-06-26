@@ -11,5 +11,6 @@ abstract class MessageRepositoryInterface implements RepositoryInterface{
   Future<Response> sendMessage(String message,String channelID, String tripId, List<MultipartBody> file, PlatformFile? platformFile);
   Future<Response> sendMartMessage(String message, String channelId, String orderId, List<MultipartBody> file, PlatformFile? platformFile);
   Future<Response> findChannelRideStatus(String channelId);
+  Future<Response> findChannelMartOrderStatus(String orderId);
 
 }

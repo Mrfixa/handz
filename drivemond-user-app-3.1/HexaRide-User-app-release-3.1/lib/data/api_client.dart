@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
 import 'package:ride_sharing_user_app/data/error_response.dart';
@@ -62,15 +64,34 @@ class ApiClient extends GetxService {
     updateHeader('', null);
   }
 
+  // M8: retries transient network errors up to 2 times with exponential back-off.
+  // Only SocketException (no network) and TimeoutException trigger a retry;
+  // business-logic errors (4xx/5xx) are returned immediately.
+  Future<T> _withRetry<T>(Future<T> Function() fn) async {
+    int attempt = 0;
+    while (true) {
+      try {
+        return await fn();
+      } catch (e) {
+        if ((e is SocketException || e is TimeoutException) && attempt < 2) {
+          attempt++;
+          await Future.delayed(Duration(milliseconds: 500 * attempt));
+          continue;
+        }
+        rethrow;
+      }
+    }
+  }
+
   Future<Response> getData(String uri, {Map<String, dynamic>? query, Map<String, String>? headers}) async {
     try {
       if(kDebugMode) {
         print('====> API Call: $uri\nHeader: $_mainHeaders');
       }
-      http.Response response = await http.get(
+      http.Response response = await _withRetry(() => http.get(
         Uri.parse(appBaseUrl+uri),
         headers: headers ?? _mainHeaders,
-      ).timeout(Duration(seconds: timeoutInSeconds));
+      ).timeout(Duration(seconds: timeoutInSeconds)));
       return handleResponse(response, uri);
     } catch (e) {
       return Response(statusCode: 1, statusText: noInternetMessage);
@@ -85,11 +106,11 @@ class ApiClient extends GetxService {
       }
       final effectiveHeaders = Map<String, String>.from(headers ?? _mainHeaders);
       if (idempotencyKey != null) effectiveHeaders['Idempotency-Key'] = idempotencyKey;
-      http.Response response = await http.post(
+      http.Response response = await _withRetry(() => http.post(
         Uri.parse(appBaseUrl+uri),
         body: jsonEncode(body),
         headers: effectiveHeaders,
-      ).timeout(Duration(seconds: timeoutInSeconds));
+      ).timeout(Duration(seconds: timeoutInSeconds)));
       return handleResponse(response, uri);
     } catch (e) {
       return Response(statusCode: 1, statusText: noInternetMessage);

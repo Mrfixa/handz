@@ -25,12 +25,34 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
   GoogleMapController? _mapController;
   Timer? _timer;
   String? trackingId;
+  int _consecutiveFailures = 0;
+  bool _timedOut = false;
+
   @override
   void initState() {
     super.initState();
     trackingId = widget.trackingUrl?.split('/').last;
-    _timer = Timer.periodic(Duration(seconds: 10), (time){
-      Get.find<LocationTrackingController>().getTrackingDetails(trackingId ?? '');
+    // U4: don't start polling if the tracking ID is missing
+    if (trackingId == null || trackingId!.isEmpty) return;
+    _startPolling();
+  }
+
+  void _startPolling() {
+    final controller = Get.find<LocationTrackingController>();
+    _timer = Timer.periodic(const Duration(seconds: 10), (time) {
+      final prevModel = controller.rideTrackDetailsModel;
+      controller.getTrackingDetails(trackingId ?? '');
+      // U5: if we've polled many times and still have no data, give up and show retry
+      if (prevModel == null) {
+        _consecutiveFailures++;
+        if (_consecutiveFailures >= 5) {
+          _timer?.cancel();
+          if (mounted) setState(() => _timedOut = true);
+        }
+      } else {
+        _consecutiveFailures = 0;
+        _timedOut = false;
+      }
     });
   }
 
@@ -56,7 +78,22 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
               _onBackPress();
             },
           ),
-          body: locationTrackingController.rideTrackDetailsModel == null ?
+          // U5: show retry UI when 5 consecutive polls failed without data
+          body: _timedOut ? Center(child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('tracking_update_failed'.tr),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() { _timedOut = false; _consecutiveFailures = 0; });
+                  _startPolling();
+                },
+                child: Text('retry'.tr),
+              ),
+            ],
+          )) :
+          locationTrackingController.rideTrackDetailsModel == null ?
           LoaderWidget() :
           Stack(children: [
             GoogleMap(

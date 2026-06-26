@@ -89,7 +89,7 @@ class _MyOfferScreenState extends State<MyOfferScreen> {
                               await offerController.getOfferList(offset!);
                             },
                             totalSize: offerController.bestOfferModel?.totalSize,
-                            offset: int.parse(offerController.bestOfferModel!.offset.toString()),
+                            offset: int.tryParse(offerController.bestOfferModel?.offset?.toString() ?? '0') ?? 0,
                             itemView: ListView.separated(
                               shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
                               padding: const EdgeInsets.only(top: Dimensions.paddingSizeDefault),
@@ -121,7 +121,7 @@ class _MyOfferScreenState extends State<MyOfferScreen> {
                               await couponController.getCouponList(offset!);
                             },
                             totalSize: couponController.couponModel?.totalSize,
-                            offset: int.parse(couponController.couponModel!.offset.toString()),
+                            offset: int.tryParse(couponController.couponModel?.offset?.toString() ?? '0') ?? 0,
                             itemView:  ListView.separated(shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               padding: const EdgeInsets.only(top: Dimensions.paddingSizeDefault),

@@ -282,7 +282,12 @@ class PusherHelper{
 
 
   void pusherDisconnectPusher(){
-    pusherClient!.disconnect();
+    // D5: unsubscribe all active channels before disconnecting
+    try { driverTripSubscribe.unsubscribe(); } catch (_) {}
+    try { customerInitialTripCancelChannel.unsubscribe(); } catch (_) {}
+    try { anotherDriverAcceptedTripChannel.unsubscribe(); } catch (_) {}
+    pusherClient?.disconnect();
+    PusherHelper.pusherClient = null;
   }
 
 

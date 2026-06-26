@@ -85,7 +85,7 @@ class _SafetySetupScreenState extends State<SafetySetupScreen> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall,horizontal: Dimensions.paddingSizeExtraLarge),
-                              child: Text('${safetyAlertController.precautionListModel?.data?[index].description}'),
+                              child: Text(safetyAlertController.precautionListModel?.data?[index].description ?? ''),
                             )
                           ],
                         ),

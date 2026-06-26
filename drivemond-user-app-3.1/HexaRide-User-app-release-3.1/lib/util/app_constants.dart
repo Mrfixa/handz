@@ -5,8 +5,11 @@ import 'package:ride_sharing_user_app/util/images.dart';
 
 class AppConstants {
   static const String appName = 'Vito';
-  static const String baseUrl = 'https://dacatlon.store';
-  static const double appVersion = 3.1; /// Flutter SDK 3.41.4
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'https://dacatlon.store',
+  );
+  static const double appVersion = 2.0; /// v2.0.0 release
   static const String fontFamily = 'SFProText';
   static const double coverageRadiusInMeter = 50;
   static const String configUri = '/api/customer/configuration';
@@ -20,6 +23,7 @@ class AppConstants {
   static const String resetPassword = '/api/customer/auth/reset-password';
   static const String changePassword = '/api/user/change-password';
   static const String forgetPassword = '/api/customer/auth/forget-password';
+  static const String forgetPasswordUri = '/api/auth/forgot-password';
   static const String socialLogin = '/api/customer/auth/social-login';
   static const String profileInfo = '/api/customer/info';
   static const String updateProfileInfo = '/api/customer/update/profile';
@@ -173,6 +177,7 @@ class AppConstants {
   static List<LanguageModel> languages = [
     LanguageModel(imageUrl: Images.unitedKingdom, languageName: 'English', countryCode: 'US', languageCode: 'en'),
     LanguageModel(imageUrl: 'flags/es.png', imagePackage: 'country_code_picker', languageName: 'Español', countryCode: 'ES', languageCode: 'es'),
+    LanguageModel(imageUrl: 'flags/sa.png', imagePackage: 'country_code_picker', languageName: 'العربية', countryCode: 'SA', languageCode: 'ar'),
   ];
 
 

@@ -18,6 +18,7 @@ import 'package:ride_sharing_user_app/features/payment/screens/review_screen.dar
 import 'package:ride_sharing_user_app/features/profile/controllers/profile_controller.dart';
 import 'package:ride_sharing_user_app/features/refer_and_earn/controllers/refer_and_earn_controller.dart';
 import 'package:ride_sharing_user_app/features/refer_and_earn/screens/refer_and_earn_screen.dart';
+import 'package:ride_sharing_user_app/features/mart/screens/mart_order_tracking_screen.dart';
 import 'package:ride_sharing_user_app/features/ride/widgets/confirmation_trip_dialog.dart';
 import 'package:ride_sharing_user_app/features/safety_setup/controllers/safety_alert_controller.dart';
 import 'package:ride_sharing_user_app/features/settings/domain/html_enum_types.dart';
@@ -329,8 +330,8 @@ class NotificationHelper {
     );
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'vito',
-      'vito',
-      channelDescription: 'progress channel description',
+      'notification_channel_name'.tr,
+      channelDescription: 'notification_channel_description'.tr,
       styleInformation: bigTextStyleInformation,
       channelShowBadge: true,
       importance: Importance.max,
@@ -393,7 +394,8 @@ class NotificationHelper {
     }
     final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'vito',
-      'vito',
+      'notification_channel_name'.tr,
+      channelDescription: 'notification_channel_description'.tr,
       priority: Priority.max,
       importance: Importance.max,
       playSound: true,
@@ -549,6 +551,18 @@ class NotificationHelper {
 
     }else if(data['action'] == 'trip_accepted'){
       _toRoute(formSplash, TripDetailsScreen(tripId: data['ride_request_id']));
+    }else if(data['action'] == 'mart_order_accepted' ||
+             data['action'] == 'mart_order_picked_up' ||
+             data['action'] == 'mart_order_delivered' ||
+             data['action'] == 'mart_order_cancelled' ||
+             data['action'] == 'new_mart_order'){
+      final String? orderId = data['ride_request_id'];
+      if (orderId != null && orderId.isNotEmpty) {
+        _toRoute(formSplash, MartOrderTrackingScreen(orderId: orderId));
+      } else {
+        Get.find<BottomMenuController>().setTabIndex(0);
+        Get.offAll(const DashboardScreen());
+      }
     }else if(data['action'] == 'fund_added_digitally'){
 
     }else{
@@ -636,12 +650,14 @@ class NotificationHelper {
 
 Future<dynamic> myBackgroundMessageHandler(RemoteMessage remoteMessage) async {
   customPrint('onBackground: ${remoteMessage.data}');
-  // var androidInitialize = new AndroidInitializationSettings('notification_icon');
-  // var iOSInitialize = new IOSInitializationSettings();
-  // var initializationsSettings = new InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
-  // FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  // flutterLocalNotificationsPlugin.initialize(initializationsSettings);
-  // NotificationHelper.showNotification(message, flutterLocalNotificationsPlugin, true);
+  if (remoteMessage.data['status'] == '1') {
+    var androidInitialize = const AndroidInitializationSettings('notification_icon');
+    var iOSInitialize = const DarwinInitializationSettings();
+    var initializationsSettings = InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
+    FlutterLocalNotificationsPlugin fln = FlutterLocalNotificationsPlugin();
+    await fln.initialize(settings: initializationsSettings);
+    await NotificationHelper.showNotification(remoteMessage, fln, true);
+  }
 }
 
 Future<dynamic> myBackgroundMessageReceiver(NotificationResponse response) async {

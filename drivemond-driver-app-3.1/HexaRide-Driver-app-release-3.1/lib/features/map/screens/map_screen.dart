@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart';
@@ -119,7 +120,25 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
 
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
-        debugPrint("Permission Denied");
+        // D18: show dialog directing driver to settings instead of silent fail
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => AlertDialog(
+                title: Text('location_required'.tr),
+                content: Text('location_permission_denied_message'.tr),
+                actions: [
+                  TextButton(
+                    onPressed: () { Get.back(); openAppSettings(); },
+                    child: Text('open_settings'.tr),
+                  ),
+                ],
+              ),
+            );
+          }
+        });
       }
     }
   }

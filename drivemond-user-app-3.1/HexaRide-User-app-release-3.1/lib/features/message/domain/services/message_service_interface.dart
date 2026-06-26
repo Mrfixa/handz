@@ -10,5 +10,6 @@ abstract class MessageServiceInterface{
   Future<Response> sendMessage(String message,String channelID, String tripId, List<MultipartBody> file, PlatformFile? platformFile);
   Future<Response> sendMartMessage(String message, String channelId, String orderId, List<MultipartBody> file, PlatformFile? platformFile);
   Future<dynamic> findChannelRideStatus(String channelId);
+  Future<dynamic> findChannelMartOrderStatus(String orderId);
 
 }

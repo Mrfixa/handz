@@ -71,19 +71,7 @@ class NotificationHelper {
     );
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      AndroidInitializationSettings androidInitialize = const AndroidInitializationSettings('notification_icon');
-      var iOSInitialize = const DarwinInitializationSettings();
-      var initializationsSettings = InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
-      flutterLocalNotificationsPlugin.initialize(
-        settings: initializationsSettings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) async {
-          notificationToRoute(message.data);
-          return;
-        },
-
-        onDidReceiveBackgroundNotificationResponse: myBackgroundMessageReceiver,
-
-      );
+      // D20: plugin already initialized above; do not re-initialize on every message
 
       /// Show log for debug
       if(kDebugMode){
@@ -608,14 +596,32 @@ class NotificationHelper {
 
 }
 
+// D8: background FCM handler — must be a top-level function
+@pragma('vm:entry-point')
 Future<dynamic> myBackgroundMessageHandler(RemoteMessage remoteMessage) async {
   customPrint('onBackground: ${remoteMessage.data}');
-  // var androidInitialize = new AndroidInitializationSettings('notification_icon');
-  // var iOSInitialize = new IOSInitializationSettings();
-  // var initializationsSettings = new InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
-  // FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  // flutterLocalNotificationsPlugin.initialize(initializationsSettings);
-  // NotificationHelper.showNotification(message, flutterLocalNotificationsPlugin, true);
+  // Show a local notification so the driver is alerted while the app is backgrounded
+  final plugin = FlutterLocalNotificationsPlugin();
+  const android = AndroidInitializationSettings('notification_icon');
+  const ios = DarwinInitializationSettings();
+  await plugin.initialize(
+    const InitializationSettings(android: android, iOS: ios),
+    onDidReceiveNotificationResponse: (_) {},
+    onDidReceiveBackgroundNotificationResponse: myBackgroundMessageReceiver,
+  );
+  final androidDetails = AndroidNotificationDetails(
+    'vito_driver',
+    'Vito Driver',
+    importance: Importance.max,
+    priority: Priority.high,
+    playSound: true,
+  );
+  await plugin.show(
+    0,
+    remoteMessage.notification?.title ?? 'Vito Driver',
+    remoteMessage.notification?.body ?? '',
+    NotificationDetails(android: androidDetails),
+  );
 }
 
 Future<dynamic> myBackgroundMessageReceiver(NotificationResponse response) async {

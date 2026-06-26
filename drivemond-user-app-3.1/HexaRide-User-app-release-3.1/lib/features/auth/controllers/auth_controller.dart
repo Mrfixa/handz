@@ -110,6 +110,8 @@ class AuthController extends GetxController implements GetxService {
       LoginHelper.checkLoginMedium();
       showCustomSnackBar('successfully_logout'.tr, isError: false);
       clearSharedData();
+      // Clear cached profile so stale data is not shown on next login.
+      Get.find<ProfileController>().profileModel = null;
       // Tear down the realtime connection so stale private channels are not
       // left subscribed after logout.
       try { PusherHelper.pusherClient?.disconnect(); } catch (_) {}
@@ -129,6 +131,9 @@ class AuthController extends GetxController implements GetxService {
 
     Response? response = await authServiceInterface.registration(signUpBody: signUpBody);
     if(response!.statusCode == 200){
+      // H6: mark this device as having completed registration so returning
+      // users bypass the QR token gate and go straight to sign-in.
+      LoginHelper.markRegistered();
       login('', signUpBody.username ?? '', signUpBody.password!);
     } else if(response.statusCode == 407){
       Get.bottomSheet(ManualAuthWaringBottomSheetWidget(phoneNumber: '', from: VerificationForm.verifyUser));
@@ -239,6 +244,7 @@ class AuthController extends GetxController implements GetxService {
       }else if(from == VerificationForm.verifyUser){
         registrationFromOtp(
           SignUpBody(
+              username: usernameController.text.trim(),
               fName: fNameController.text.trim(),
               lName: lNameController.text.trim(),
               phone: countryDialCode + phoneController.text.trim(),

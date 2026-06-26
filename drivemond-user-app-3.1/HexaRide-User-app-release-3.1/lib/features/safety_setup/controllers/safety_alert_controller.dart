@@ -97,12 +97,18 @@ class SafetyAlertController extends GetxController implements GetxService {
     }
 
     LatLng? latLng = await Get.find<LocationController>().getCurrentPosition();
+    if (latLng == null) {
+      showCustomSnackBar('location_permission_required'.tr, isError: true);
+      isStoring = false;
+      update();
+      return false;
+    }
 
     Response response = await safetyAlertServiceInterface.storeSafetyAlert(
         Get.find<RideController>().currentTripDetails?.id ?? Get.find<RideController>().rideDetails?.id ?? '',
         comments,
-        (latLng?.latitude ?? '').toString(),
-        (latLng?.longitude ?? '').toString(),
+        latLng.latitude.toString(),
+        latLng.longitude.toString(),
         reasons
     );
 
@@ -247,5 +253,10 @@ class SafetyAlertController extends GetxController implements GetxService {
     oldPosition = newLocation = null;
   }
 
+  @override
+  void onClose() {
+    _timer?.cancel();
+    super.onClose();
+  }
 
 }

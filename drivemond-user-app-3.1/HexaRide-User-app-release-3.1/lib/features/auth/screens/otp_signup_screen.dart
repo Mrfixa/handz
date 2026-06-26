@@ -65,7 +65,7 @@ class _OtpSignUpScreenState extends State<OtpSignupScreen> {
                 const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
                 Text(
-                  'Just one step away! This will help make your profile more personalized.'.tr,
+                  'just_one_step_away'.tr,
                   style: textMedium.copyWith(
                     color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                     fontSize: Dimensions.fontSizeSmall,

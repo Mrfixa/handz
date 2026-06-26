@@ -94,7 +94,7 @@ class VerificationScreenState extends State<VerificationScreen> {
                   const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
                   Text(
-                    '${'we_have_send_a_varification_code_to'.tr} ${widget.number.substring(0, 5)}*****${widget.number.substring(widget.number.length - 3, widget.number.length)}',
+                    '${'we_have_send_a_varification_code_to'.tr} ${widget.number.length >= 8 ? widget.number.substring(0, 5) + '****' + widget.number.substring(widget.number.length - 3) : widget.number}',
                     style: textMedium.copyWith(color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),fontSize: Dimensions.fontSizeSmall),
                     maxLines: 2,
                   ),

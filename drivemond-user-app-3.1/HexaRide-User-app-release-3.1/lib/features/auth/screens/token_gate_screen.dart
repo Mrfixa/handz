@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/qr_scanner_screen.dart';
@@ -27,6 +27,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
   List<Map<String, dynamic>> _tokenHistory = [];
 
   static const String _tokenHistoryKey = 'customer_token_history';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -41,8 +42,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
   }
 
   Future<void> _loadTokenHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getString(_tokenHistoryKey);
+    final historyJson = await _secureStorage.read(key: _tokenHistoryKey);
     if (historyJson != null) {
       final List<dynamic> decoded = jsonDecode(historyJson);
       setState(() {
@@ -52,7 +52,6 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
   }
 
   Future<void> _saveTokenToHistory(String token, bool isValid) async {
-    final prefs = await SharedPreferences.getInstance();
     final entry = {
       'token': '...${token.substring(token.length >= 8 ? token.length - 8 : 0)}',
       'validated_at': DateTime.now().toIso8601String(),
@@ -62,7 +61,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
     if (_tokenHistory.length > 20) {
       _tokenHistory = _tokenHistory.sublist(0, 20);
     }
-    await prefs.setString(_tokenHistoryKey, jsonEncode(_tokenHistory));
+    await _secureStorage.write(key: _tokenHistoryKey, value: jsonEncode(_tokenHistory));
     setState(() {});
   }
 
@@ -213,8 +212,7 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
             Text('token_history'.tr, style: textBold.copyWith(fontSize: Dimensions.fontSizeDefault)),
             TextButton(
               onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove(_tokenHistoryKey);
+                await _secureStorage.delete(key: _tokenHistoryKey);
                 setState(() => _tokenHistory.clear());
               },
               child: Text('clear'.tr, style: textRegular.copyWith(

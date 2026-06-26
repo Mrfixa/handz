@@ -9,5 +9,6 @@ abstract class MartRepositoryInterface implements RepositoryInterface {
   Future<Response> getOrderDetails(String id);
   Future<Response> cancelOrder(String id);
   Future<Response> reviewOrder(String id, int rating, String? comment);
-  Future<Response> createOrder(Map<String, dynamic> orderData);
+  Future<Response> createOrder(Map<String, dynamic> orderData, {String? idempotencyKey});
+  Future<Response> applyPromoCode(String code, double orderTotal);
 }
