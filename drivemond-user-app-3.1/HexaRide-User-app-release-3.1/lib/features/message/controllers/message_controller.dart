@@ -47,10 +47,6 @@ class MessageController extends GetxController implements GetxService{
   bool get paginationLoading => _paginationLoading;
 
 
-  final String _name='';
-  String get name => _name;
-  final String _image='';
-  String get image => _image;
 
 
   var conversationController = TextEditingController();

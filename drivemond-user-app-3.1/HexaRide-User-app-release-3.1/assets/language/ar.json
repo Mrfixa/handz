@@ -521,7 +521,7 @@
     "give_review": "أعطِ تقييماً",
     "permanently_delete_account": "حذف الحساب نهائياً",
     "you_could't_replay_you_have_no_trip": "لا يمكنك الرد لأنه ليس لديك أي رحلات جارية",
-    "are_you_sure_permanent_delete_smg": "هل أنت متأكد؟ تريد حذف حسابك نهائياً. لن تتمكن من استرداد هذا الحساب في المستقبل",
+    "are_you_sure_permanent_delete_smg": "هل أنت متأكد؟ تريد حذف حسابك نهائياً. لن تتمكن من استرداد هذا الحساب في المستقبل. سيتم حذف رحلاتك ورصيد المحفظة والرسائل نهائياً.",
     "please_input_point": "يرجى إدخال النقاط",
     "cancelled": "ملغى",
     "completed": "مكتمل",
@@ -1117,5 +1117,11 @@
     "description": "الوصف",
     "invalid_weight_format": "يرجى إدخال وزن صالح",
     "just_one_step_away": "خطوة أخيرة فقط! سيساعد هذا في جعل ملفك الشخصي أكثر تخصيصاً.",
-    "location_permission_required": "إذن الموقع مطلوب لإرسال تنبيه أمان"
+    "location_permission_required": "إذن الموقع مطلوب لإرسال تنبيه أمان",
+    "stock_limit_exceeded": "لقد وصلت إلى الحد الأقصى للمخزون المتاح لهذا المنتج",
+    "item_added_to_cart": "تمت إضافة المنتج إلى السلة",
+    "notification_channel_name": "Vito",
+    "notification_channel_description": "إشعارات الرحلات والتوصيل",
+    "about": "حول",
+    "tap_to_expand": "اضغط للتوسيع"
 }

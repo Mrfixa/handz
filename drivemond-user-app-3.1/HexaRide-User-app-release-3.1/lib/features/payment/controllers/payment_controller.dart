@@ -147,6 +147,9 @@ class PaymentController extends GetxController implements GetxService{
       response.body.forEach((v) {
         paymentGateways!.add(PaymentGateways.fromJson(v));
       });
+      paymentTypeList = paymentGateways!.isEmpty
+          ? ['cash', 'wallet']
+          : ['cash', 'digital', 'wallet'];
       checkPreviousPaymentMethod();
     }else{
       ApiChecker.checkApi(response);

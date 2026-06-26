@@ -8,6 +8,7 @@ import 'package:ride_sharing_user_app/features/mart/domain/models/mart_category_
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_product_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/services/mart_service_interface.dart';
+import 'package:ride_sharing_user_app/helper/display_helper.dart';
 
 class MartController extends GetxController implements GetxService {
   final MartServiceInterface martServiceInterface;
@@ -79,14 +80,35 @@ class MartController extends GetxController implements GetxService {
 
   int get cartItemCount => _cartItems.length;
 
-  void addToCart(Map<String, dynamic> product, {int quantity = 1}) {
+  /// Adds [product] to the cart. Returns true if the item was successfully added
+  /// (or quantity incremented), false if blocked by a stock constraint.
+  /// Shows the appropriate error snackbar internally when returning false.
+  bool addToCart(Map<String, dynamic> product, {int quantity = 1}) {
+    final stock = int.tryParse(product['stock']?.toString() ?? '') ?? 0;
+
+    // FIX 3: reject immediately if stock is 0
+    if (stock <= 0) {
+      showCustomSnackBar('out_of_stock'.tr);
+      return false;
+    }
+
     final existingIndex = _cartItems.indexWhere(
       (item) => item['id'] == product['id'],
     );
 
     if (existingIndex >= 0) {
       final existing = Map<String, dynamic>.from(_cartItems[existingIndex]);
-      existing['quantity'] = (existing['quantity'] as int? ?? 1) + quantity;
+      final newQty = (existing['quantity'] as int? ?? 1) + quantity;
+      // FIX 3: cap at available stock
+      if (newQty > stock) {
+        existing['quantity'] = stock;
+        _cartItems[existingIndex] = existing;
+        _saveCartToStorage();
+        update();
+        showCustomSnackBar('stock_limit_exceeded'.tr);
+        return false;
+      }
+      existing['quantity'] = newQty;
       _cartItems[existingIndex] = existing;
     } else {
       _cartItems.add({
@@ -100,6 +122,7 @@ class MartController extends GetxController implements GetxService {
 
     _saveCartToStorage();
     update();
+    return true;
   }
 
   void updateCartItemQuantity(String productId, int quantity) {
@@ -252,8 +275,8 @@ class MartController extends GetxController implements GetxService {
   }
 
   /// Creates a mart order through the service layer.
-  /// Returns a tuple of (success, orderId, errorMessage)
-  Future<({bool success, String? orderId, String? error})> createOrder({
+  /// Returns a tuple of (success, orderId, serverTotal, errorMessage)
+  Future<({bool success, String? orderId, double serverTotal, String? error})> createOrder({
     required List<Map<String, dynamic>> items,
     required String deliveryAddress,
     String? notes,
@@ -287,11 +310,13 @@ class MartController extends GetxController implements GetxService {
       if (orderId.isEmpty) {
         // Rotate the key so a retry is a new request.
         _orderIdempotencyKey = OfflineQueue.generateIdempotencyKey();
-        return (success: false, orderId: null, error: 'invalid_order_response'.tr);
+        return (success: false, orderId: null, serverTotal: 0.0, error: 'invalid_order_response'.tr);
       }
+      // FIX 1: extract the backend-computed total so callers never use a client-computed value.
+      final serverTotal = double.tryParse(data?['total_amount']?.toString() ?? '') ?? 0.0;
       // Success: rotate so the next distinct order uses a fresh key.
       _orderIdempotencyKey = OfflineQueue.generateIdempotencyKey();
-      return (success: true, orderId: orderId, error: null);
+      return (success: true, orderId: orderId, serverTotal: serverTotal, error: null);
     }
 
     // Rotate the key on failure so a retry is not treated as a duplicate.
@@ -311,6 +336,6 @@ class MartController extends GetxController implements GetxService {
         errorMsg = response.body['message'];
       }
     } catch (_) {}
-    return (success: false, orderId: null, error: errorMsg ?? 'order_failed'.tr);
+    return (success: false, orderId: null, serverTotal: 0.0, error: errorMsg ?? 'order_failed'.tr);
   }
 }

@@ -75,12 +75,13 @@ class PusherHelper {
   PrivateChannel? _currentRideChannel;
 
   void pusherDriverStatus(String tripId) async {
+    if (pusherClient == null) return;
     await _currentRideChannel?.unsubscribe();
 
     if (Get.find<ConfigController>().pusherConnectionStatus != null || Get.find<ConfigController>().pusherConnectionStatus == 'Connected'){
       pusherDriverAccepted = pusherClient!.privateChannel("private-driver-trip-accepted.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<ConfigController>().config!.websocketScheme ?? 'https'}://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -117,7 +118,7 @@ class PusherHelper {
 
       driverTripStarted = pusherClient!.privateChannel("private-driver-trip-started.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<ConfigController>().config!.websocketScheme ?? 'https'}://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -169,7 +170,7 @@ class PusherHelper {
 
       driverTripCancelled = pusherClient!.privateChannel("private-driver-trip-cancelled.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<ConfigController>().config!.websocketScheme ?? 'https'}://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -191,7 +192,7 @@ class PusherHelper {
 
       driverTripCompleted = pusherClient!.privateChannel("private-driver-trip-completed.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<ConfigController>().config!.websocketScheme ?? 'https'}://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
@@ -231,7 +232,7 @@ class PusherHelper {
 
       driverPaymentReceived = pusherClient!.privateChannel("private-driver-payment-received.$tripId", authorizationDelegate:
       EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
-        authorizationEndpoint: Uri.parse('https://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse('${Get.find<ConfigController>().config!.websocketScheme ?? 'https'}://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
         headers:  {
           "Accept": "application/json",
           "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",

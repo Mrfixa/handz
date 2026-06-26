@@ -521,7 +521,7 @@
     "give_review": "Dejar reseña",
     "permanently_delete_account": "Eliminar cuenta permanentemente",
     "you_could't_replay_you_have_no_trip": "No puedes responder porque no tienes ningún viaje en curso",
-    "are_you_sure_permanent_delete_smg": "¿Estás seguro? Quieres eliminar tu cuenta permanentemente. No podrás recuperar esta cuenta en el futuro",
+    "are_you_sure_permanent_delete_smg": "¿Estás seguro? Quieres eliminar tu cuenta permanentemente. No podrás recuperar esta cuenta en el futuro. Esto eliminará permanentemente tus viajes, saldo de billetera y mensajes.",
     "please_input_point": "Introduce los puntos",
     "cancelled": "Cancelado",
     "completed": "Completado",
@@ -1117,5 +1117,11 @@
     "description": "Descripción",
     "invalid_weight_format": "Por favor ingrese un peso válido",
     "just_one_step_away": "¡Solo un paso más! Esto ayudará a que tu perfil sea más personalizado.",
-    "location_permission_required": "Se requiere permiso de ubicación para enviar una alerta de seguridad"
+    "location_permission_required": "Se requiere permiso de ubicación para enviar una alerta de seguridad",
+    "stock_limit_exceeded": "Has alcanzado el stock máximo disponible para este artículo",
+    "item_added_to_cart": "Artículo añadido al carrito",
+    "notification_channel_name": "Vito",
+    "notification_channel_description": "Notificaciones de viajes y entregas",
+    "about": "Acerca de",
+    "tap_to_expand": "Toca para expandir"
 }

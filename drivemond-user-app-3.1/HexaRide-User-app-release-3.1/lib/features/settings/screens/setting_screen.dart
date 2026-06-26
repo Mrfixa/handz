@@ -137,6 +137,12 @@ class _SettingScreenState extends State<SettingScreen> {
               leading: CustomAssetImageWidget(Images.passwordSvg, width: 20, height: 20, color: Theme.of(context).primaryColor),
             ),
 
+            ListTile(
+              title: Text('about'.tr, style: textMedium.copyWith(color: Theme.of(context).textTheme.bodyLarge!.color)),
+              subtitle: Text('v${AppConstants.appVersion}', style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).hintColor)),
+              leading: Icon(Icons.info_outline, size: 20, color: Theme.of(context).primaryColor),
+            ),
+
           ]),
         ),
       )),

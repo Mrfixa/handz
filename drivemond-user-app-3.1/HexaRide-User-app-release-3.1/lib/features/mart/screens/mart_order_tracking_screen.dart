@@ -647,22 +647,24 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
               borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
               child: CachedNetworkImage(
                 imageUrl: deliveryPhoto,
-                height: 150,
+                height: 220,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(
-                  height: 150,
+                  height: 220,
                   color: Theme.of(context).hintColor.withValues(alpha: 0.1),
                   child: const Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  height: 150,
+                  height: 220,
                   color: Theme.of(context).hintColor.withValues(alpha: 0.1),
                   child: const Icon(Icons.image_not_supported_outlined),
                 ),
               ),
             ),
           ),
+          const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+          Center(child: Text('tap_to_expand'.tr, style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).hintColor))),
         ],
         if (signatureImage != null && signatureImage.isNotEmpty) ...[
           const SizedBox(height: Dimensions.paddingSizeDefault),
