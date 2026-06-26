@@ -1011,3 +1011,44 @@ submitting.
 
 **Fix:** After picker selection, validate `selectedTime.isAfter(DateTime.now().add(Duration(minutes: 5)))`;
 show inline error otherwise.
+
+---
+
+## ✅ Fixed in v2.1.0 (released 2026-06-26)
+
+The following findings were resolved and shipped in release `v2.1.0`:
+
+| ID | Description |
+|----|-------------|
+| C6 | Server-side total for MartPaymentScreen (`result.serverTotal`) |
+| C7 | Null guard before Pusher message insert in MessageController |
+| C9 | Address fallback replaced with proper null check before fare request |
+| H3 | Wallet balance check before mart wallet payment |
+| H4 | Pusher null guards — no crash on missing config |
+| H5 | Firebase FCM token refresh subscription added |
+| H6 | New users routed via TokenGateScreen (QR gate); returning users → SignInScreen |
+| H14 | Pusher channels unsubscribed + client nulled on logout |
+| H15 | ProfileController cleared on logout |
+| H16 | Background FCM handler with `@pragma('vm:entry-point')` |
+| M3 | Pusher auth URL uses `websocketScheme` from config |
+| M6 | Mart notification routing to `MartOrderTrackingScreen` |
+| M8 | API retry logic for SocketException/TimeoutException (2 retries) |
+| M11 | Cart stock cap in `addToCart()` |
+| M13 | Notification channel display name uses translation key |
+| M14 | Payment gateway config check before presenting Stripe |
+| L4 | Settings About tile shows `AppConstants.appVersion` |
+| L5 | Token gate uses `FlutterSecureStorage` for token history |
+| L7 | Mart tracking container height 220 + `tap_to_expand` label |
+| L8 | `app_links` version constraint updated to `>=7.0.0 <8.0.0` |
+| U1 | Null-safe image URL in MyLevelScreen |
+| U2 | Image.network error builder in MyLevelScreen |
+| U3 | Force-unwrap on level completion replaced with null-safe check |
+| U4 | LiveLocationScreen: null/empty trackingId guard before polling starts |
+| U5 | LiveLocationScreen: retry UI after consecutive polling failures |
+| U10 | Media picker wrapped in try/catch; PlatformException shown as snackbar |
+| U12 | Loyalty point pagination: concurrent double-load guard |
+| U15 | Fare estimate re-fetched after pickup pin drag (goPageAndHideTextFieldAsync) |
+| U16 | OTP field cleared + error reset on resend |
+| U17 | Zero-coordinate validation before fare request |
+| U20 | 429 "too many attempts" shown as localised error on OTP verify |
+| U22 | Scheduled trip time validated against current time |

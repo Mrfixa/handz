@@ -315,3 +315,24 @@ The delivery proof upload (multipart POST) does not set the `Idempotency-Key` he
 ### Backlog (UX degradation)
 - D11–D26: stale data, missing loading states, filter reset, weak signature, tooltip leak
 - D27–D30: low-severity polish and dead code
+
+---
+
+## ✅ Fixed in v2.1.0 (released 2026-06-26)
+
+| ID | Description |
+|----|-------------|
+| D5 | Pusher channels unsubscribed on logout; `pusherClient` nulled |
+| D7 | ProfileController cleared on logout |
+| D8 | Background FCM handler with `@pragma('vm:entry-point')` |
+| D9 | Double-accept guard in ride acceptance |
+| D10 | Online/offline toggle persisted to SharedPreferences |
+| D12 | Home `loadData()` wrapped in try/catch to prevent blank screen on network error |
+| D14 | Withdrawal confirmation dialog before submitting balance update |
+| D17 | Trip filter tab restored to saved position on re-entry |
+| D18 | `permission_handler` import added to map_screen for `openAppSettings()` |
+| D19 | Pusher disconnection banner with retry button in home screen |
+| D20 | FCM plugin re-init removed from foreground message listener |
+| D24 | Tooltip controllers hidden before dispose |
+| D27 | Map screen lifecycle reconnects Pusher on app resume when disconnected |
+| D28 | StreamController `isClosed` guard before `add()` in sign-up flow |
