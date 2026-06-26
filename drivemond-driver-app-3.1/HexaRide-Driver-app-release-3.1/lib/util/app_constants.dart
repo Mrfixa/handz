@@ -7,7 +7,7 @@ class AppConstants {
   static const String baseUrl = 'https://dacatlon.store';
   static const String polylineMapKey =
       String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
-  static const double appVersion = 3.1;   /// Flutter SDK 3.41.4
+  static const double appVersion = 2.0; /// v2.0.0 release
   static const String configUri = '/api/driver/configuration';
   static const String registration = '/api/driver/auth/registration';
   static const String loginUri = '/api/driver/auth/login';
