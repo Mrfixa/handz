@@ -42,9 +42,11 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(50),
                   child: ImageWidget(height: 70, width: 70,
-                    image: Get.find<ProfileController>().profileModel?.data?.profileImage != null ?
-                    '${Get.find<ConfigController>().config!.imageBaseUrl!.profileImage!}/'
-                        '${Get.find<ProfileController>().profileModel?.data?.profileImage??''}':'',
+                    // U1: null-safe image URL — config and imageBaseUrl may be null on first load
+                    image: Get.find<ProfileController>().profileModel?.data?.profileImage != null
+                        ? '${Get.find<ConfigController>().config?.imageBaseUrl?.profileImage ?? ''}/'
+                            '${Get.find<ProfileController>().profileModel?.data?.profileImage ?? ''}'
+                        : '',
                     placeholder: Images.personPlaceholder, fit: BoxFit.cover,
                   ),
                 ),
@@ -72,7 +74,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                 ]),
                 const SizedBox(height: Dimensions.paddingSizeSmall),
 
-                if(!levelController.levelModel!.data!.isCompleted!)
+                if(!levelController.levelModel?.data?.isCompleted == true)
                 Align(
                   alignment: Get.find<LocalizationController>().isLtr ?
                   Alignment.centerLeft : Alignment.centerRight,
@@ -83,7 +85,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                   ),
                 ),
 
-                if(!levelController.levelModel!.data!.isCompleted!)
+                if(!levelController.levelModel?.data?.isCompleted == true)
                 Row(children: [
                   Expanded(child: LinearProgressIndicator(
 
@@ -111,10 +113,12 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
                   Image.network(height: 30,width: 30,
                     '${Get.find<ConfigController>().config?.imageBaseUrl?.level}/'
                         '${levelController.levelModel?.data?.nextLevel?.image}',
+                    // U2: don't crash if image URL is broken
+                    errorBuilder: (_, __, ___) => const SizedBox(width: 30, height: 30),
                   )
                 ]),
 
-                if(!levelController.levelModel!.data!.isCompleted!)
+                if(!levelController.levelModel?.data?.isCompleted == true)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -162,7 +166,7 @@ class _MyLevelScreenState extends State<MyLevelScreen> {
 
                   ],
                 ),
-                if(!levelController.levelModel!.data!.isCompleted!)
+                if(!levelController.levelModel?.data?.isCompleted == true)
                 const SizedBox(height: Dimensions.paddingSizeLarge),
 
                !(((levelController.levelModel?.data?.currentLevel?.targetedRide ?? 0) <=

@@ -228,6 +228,11 @@ class AuthController extends GetxController implements GetxService {
       Get.back();
       LoginHelper.checkLoginMedium();
 
+      // D7: clear profile model so next session doesn't see previous driver's data
+      try {
+        Get.find<ProfileController>().profileModel = null;
+        Get.find<ProfileController>().update();
+      } catch (_) {}
       PusherHelper().pusherDisconnectPusher();
       Get.find<SafetyAlertController>().cancelDriverNeedSafetyStream();
     }else{

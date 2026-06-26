@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -119,6 +120,10 @@ class ProfileController extends GetxController implements GetxService{
       driverId = profileInfo!.id!;
       driverImage = profileInfo!.profileImage??'';
       isOnline = profileInfo?.details?.isOnline ?? '0';
+      // D10: restore persisted online state on app restart if server agrees
+      final prefs = await SharedPreferences.getInstance();
+      final persisted = prefs.getString('driver_online_state');
+      if (persisted != null) isOnline = persisted;
       oldDocuments = profileInfo?.documents;
       if (isOnline == "1") {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -206,6 +211,8 @@ class ProfileController extends GetxController implements GetxService{
         isOnline = "0";
         stopLocationRecord();
       }
+      // D10: persist online state so it survives app restart
+      SharedPreferences.getInstance().then((p) => p.setString('driver_online_state', isOnline));
     }else{
       Get.back();
       isLoading = false;

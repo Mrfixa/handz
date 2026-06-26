@@ -188,6 +188,8 @@ class RideController extends GetxController implements GetxService{
   bool accepting = false;
   String? onPressedTripId ;
   Future<Response> tripAcceptOrRejected(String tripId, String action, String type, String parcelWeight, {bool showSuccess = true}) async {
+    // D9: prevent double-accept on slow network
+    if (accepting) return Response(statusCode: 0, statusText: 'already_accepting');
     onPressedTripId = tripId;
 
       accepting = true;

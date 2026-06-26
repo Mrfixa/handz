@@ -131,6 +131,9 @@ class AuthController extends GetxController implements GetxService {
 
     Response? response = await authServiceInterface.registration(signUpBody: signUpBody);
     if(response!.statusCode == 200){
+      // H6: mark this device as having completed registration so returning
+      // users bypass the QR token gate and go straight to sign-in.
+      LoginHelper.markRegistered();
       login('', signUpBody.username ?? '', signUpBody.password!);
     } else if(response.statusCode == 407){
       Get.bottomSheet(ManualAuthWaringBottomSheetWidget(phoneNumber: '', from: VerificationForm.verifyUser));

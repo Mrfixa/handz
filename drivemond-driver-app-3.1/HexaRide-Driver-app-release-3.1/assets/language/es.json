@@ -1101,5 +1101,18 @@
     "order_status_accepted": "Aceptado",
     "order_status_picked_up": "Recogido",
     "order_status_delivered": "Entregado",
-    "order_status_cancelled": "Cancelado"
+    "order_status_cancelled": "Cancelado",
+    "location_required": "Ubicación requerida",
+    "location_permission_denied_message": "Se denegó el permiso de ubicación. Actívalo en la configuración de la aplicación para usar el mapa.",
+    "open_settings": "Abrir configuración",
+    "pusher_config_missing": "Conexión en tiempo real no disponible. Verifica tu red.",
+    "retry": "Reintentar",
+    "photo_too_large": "La foto supera el límite de 5 MB. Elige una imagen más pequeña.",
+    "trip_filter_ongoing": "En curso",
+    "trip_filter_completed": "Completado",
+    "trip_filter_cancelled": "Cancelado",
+    "wallet_balance_unavailable": "No se pudo cargar el saldo de la billetera.",
+    "username_checking": "Verificando nombre de usuario…",
+    "username_available": "El nombre de usuario está disponible",
+    "username_taken": "El nombre de usuario ya está en uso"
 }

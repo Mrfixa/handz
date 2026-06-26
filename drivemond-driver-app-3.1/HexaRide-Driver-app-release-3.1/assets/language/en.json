@@ -1101,5 +1101,18 @@
     "order_status_accepted": "Accepted",
     "order_status_picked_up": "Picked Up",
     "order_status_delivered": "Delivered",
-    "order_status_cancelled": "Cancelled"
+    "order_status_cancelled": "Cancelled",
+    "location_required": "Location Required",
+    "location_permission_denied_message": "Location permission was denied. Please enable it in app settings to use the map.",
+    "open_settings": "Open Settings",
+    "pusher_config_missing": "Real-time connection unavailable. Please check your network.",
+    "retry": "Retry",
+    "photo_too_large": "Photo exceeds the 5 MB size limit. Please choose a smaller image.",
+    "trip_filter_ongoing": "Ongoing",
+    "trip_filter_completed": "Completed",
+    "trip_filter_cancelled": "Cancelled",
+    "wallet_balance_unavailable": "Wallet balance could not be loaded.",
+    "username_checking": "Checking username…",
+    "username_available": "Username is available",
+    "username_taken": "Username already taken"
 }

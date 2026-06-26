@@ -29,6 +29,7 @@ import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/sliver_delegate.dart';
 import 'package:ride_sharing_user_app/common_widgets/zoom_drawer_context_widget.dart';
+import 'package:ride_sharing_user_app/helper/pusher_helper.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 
 class HomeMenu extends GetView<ProfileController> {
@@ -87,6 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    // D24: hide tooltips before disposing to prevent overlay leak
+    try { rideShareToolTip.hideTooltip(); } catch (_) {}
+    try { parcelDeliveryToolTip.hideTooltip(); } catch (_) {}
     rideShareToolTip.dispose();
     parcelDeliveryToolTip.dispose();
     _scrollController.dispose();
@@ -252,6 +256,35 @@ class _HomeScreenState extends State<HomeScreen> {
                           ]),
                         ),
 
+
+                      // D19: show realtime-connection banner when Pusher is disconnected
+                      GetBuilder<SplashController>(builder: (splashController) {
+                        final disconnected = splashController.pusherConnectionStatus == 'Disconnected'
+                            || (splashController.pusherConnectionStatus != null && splashController.pusherConnectionStatus != 'Connected');
+                        if (!disconnected) return const SizedBox();
+                        return Container(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: Dimensions.paddingSizeDefault,
+                            vertical: Dimensions.paddingSizeSmall,
+                          ),
+                          padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+                            color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.15),
+                          ),
+                          child: Row(children: [
+                            Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error, size: 20),
+                            const SizedBox(width: Dimensions.paddingSizeSmall),
+                            Expanded(child: Text('pusher_config_missing'.tr,
+                                style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall))),
+                            GestureDetector(
+                              onTap: () => PusherHelper.initializePusher(),
+                              child: Text('retry'.tr,
+                                  style: textMedium.copyWith(color: Theme.of(context).primaryColor, fontSize: Dimensions.fontSizeSmall)),
+                            ),
+                          ]),
+                        );
+                      }),
 
                       if(Get.find<ProfileController>().profileInfo?.vehicle != null)
                         const MyActivityListViewWidget(),

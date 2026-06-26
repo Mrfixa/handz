@@ -338,4 +338,38 @@ class MartController extends GetxController implements GetxService {
     } catch (_) {}
     return (success: false, orderId: null, serverTotal: 0.0, error: errorMsg ?? 'order_failed'.tr);
   }
+
+  String? appliedPromoCode;
+  double promoDiscount = 0.0;
+  bool isApplyingPromo = false;
+
+  Future<void> applyPromo(String code, double orderTotal) async {
+    if (code.trim().isEmpty) return;
+    isApplyingPromo = true;
+    update();
+    final response = await martService.applyPromoCode(code.trim(), orderTotal);
+    isApplyingPromo = false;
+    if (response.statusCode == 200) {
+      final data = response.body;
+      appliedPromoCode = code.trim();
+      promoDiscount = double.tryParse(data?['discount']?.toString() ?? '0') ?? 0.0;
+      showCustomSnackBar('promo_applied'.tr, isError: false);
+    } else {
+      appliedPromoCode = null;
+      promoDiscount = 0.0;
+      final body = response.body;
+      String? msg;
+      try { msg = body['message'] as String?; } catch (_) {}
+      if (msg != null && msg.contains('expired')) {
+        showCustomSnackBar('promo_expired'.tr);
+      } else if (msg != null && msg.contains('limit')) {
+        showCustomSnackBar('promo_usage_limit'.tr);
+      } else if (msg != null && msg.contains('minimum')) {
+        showCustomSnackBar('promo_min_spend'.tr);
+      } else {
+        showCustomSnackBar(msg ?? 'promo_invalid'.tr);
+      }
+    }
+    update();
+  }
 }

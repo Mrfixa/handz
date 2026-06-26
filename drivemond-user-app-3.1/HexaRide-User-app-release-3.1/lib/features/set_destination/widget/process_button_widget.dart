@@ -7,6 +7,7 @@ import 'package:ride_sharing_user_app/features/map/screens/map_screen.dart';
 import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/features/splash/controllers/config_controller.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
+import 'package:ride_sharing_user_app/helper/ride_controller_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 
 class ProcessButtonWidget extends StatelessWidget {
@@ -47,7 +48,22 @@ class ProcessButtonWidget extends StatelessWidget {
                   }else if(locationController.destinationLocationController.text.isEmpty) {
                     showCustomSnackBar('destination_location_is_required'.tr);
                     FocusScope.of(context).requestFocus(destinationLocationFocus);
+                  }else if((locationController.fromAddress?.latitude ?? 0) == 0 || (locationController.fromAddress?.longitude ?? 0) == 0) {
+                    // U17: guard against null/zero coordinates before sending to backend
+                    showCustomSnackBar('select_pickup_destination'.tr);
+                  }else if((locationController.toAddress?.latitude ?? 0) == 0 || (locationController.toAddress?.longitude ?? 0) == 0) {
+                    showCustomSnackBar('destination_location_is_required'.tr);
                   }else{
+                    // U22: reject scheduled rides with a past timestamp
+                    if (rideController.rideType == RideType.scheduleRide) {
+                      final d = RideControllerHelper.dateFormatToShow(rideController.scheduleTripDate);
+                      final t = RideControllerHelper.timeFormatToShow(rideController.scheduleTripTime);
+                      final scheduled = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+                      if (scheduled.isBefore(DateTime.now())) {
+                        showCustomSnackBar('schedule_time_in_past'.tr);
+                        return;
+                      }
+                    }
                     rideController.getEstimatedFare(false).then((value) {
                       if(value.statusCode == 200) {
                         Get.to(() => const MapScreen(

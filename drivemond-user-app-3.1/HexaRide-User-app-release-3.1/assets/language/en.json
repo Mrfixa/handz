@@ -978,7 +978,7 @@
     "order_cancelled": "Order cancelled",
     "order_cancelled_title": "Order Cancelled",
     "order_failed": "Order failed",
-    "promo_applied": "Promo applied",
+    "promo_applied": "Promo code applied successfully.",
     "promo_validation_failed": "Promo validation failed",
     "show_appreciation": "Show appreciation to your driver",
     "subtotal": "Subtotal",
@@ -1123,5 +1123,15 @@
     "notification_channel_name": "Vito",
     "notification_channel_description": "Ride and delivery notifications",
     "about": "About",
-    "tap_to_expand": "Tap to expand"
+    "tap_to_expand": "Tap to expand",
+    "tracking_update_failed": "Unable to get location updates. Check your connection.",
+    "promo_expired": "This promo code has expired.",
+    "promo_usage_limit": "Promo code usage limit reached.",
+    "promo_min_spend": "Minimum order amount not met for this promo.",
+    "promo_invalid": "Invalid promo code.",
+    "select_pickup_destination": "Please select both pickup and destination.",
+    "schedule_time_in_past": "Scheduled time must be at least 5 minutes in the future.",
+    "too_many_otp_attempts": "Too many attempts. Please wait before trying again.",
+    "media_picker_error": "Could not open media picker. Please check permissions.",
+    "file_too_large": "File is too large. Maximum size is 50 MB."
 }

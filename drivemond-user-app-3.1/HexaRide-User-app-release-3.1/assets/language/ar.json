@@ -978,7 +978,7 @@
     "order_cancelled": "تم إلغاء الطلب",
     "order_cancelled_title": "تم إلغاء الطلب",
     "order_failed": "فشل الطلب",
-    "promo_applied": "تم تطبيق العرض الترويجي",
+    "promo_applied": "تم تطبيق رمز الترويج بنجاح.",
     "promo_validation_failed": "فشل التحقق من الرمز الترويجي",
     "show_appreciation": "أظهر تقديرك لسائقك",
     "subtotal": "المجموع الفرعي",
@@ -1123,5 +1123,15 @@
     "notification_channel_name": "Vito",
     "notification_channel_description": "إشعارات الرحلات والتوصيل",
     "about": "حول",
-    "tap_to_expand": "اضغط للتوسيع"
+    "tap_to_expand": "اضغط للتوسيع",
+    "tracking_update_failed": "تعذر الحصول على تحديثات الموقع. تحقق من اتصالك.",
+    "promo_expired": "انتهت صلاحية رمز الترويج هذا.",
+    "promo_usage_limit": "تم الوصول إلى حد استخدام رمز الترويج.",
+    "promo_min_spend": "لم يتم استيفاء الحد الأدنى لمبلغ الطلب لهذا العرض.",
+    "promo_invalid": "رمز ترويج غير صالح.",
+    "select_pickup_destination": "يرجى تحديد نقطة الالتقاط والوجهة.",
+    "schedule_time_in_past": "يجب أن يكون الوقت المجدول بعد 5 دقائق على الأقل من الآن.",
+    "too_many_otp_attempts": "محاولات كثيرة جدًا. يرجى الانتظار قبل المحاولة مرة أخرى.",
+    "media_picker_error": "تعذر فتح منتقي الوسائط. يرجى التحقق من الأذونات.",
+    "file_too_large": "الملف كبير جدًا. الحد الأقصى للحجم هو 50 ميغابايت."
 }

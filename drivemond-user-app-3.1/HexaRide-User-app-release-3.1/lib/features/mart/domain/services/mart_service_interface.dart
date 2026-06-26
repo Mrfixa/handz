@@ -7,4 +7,5 @@ abstract class MartServiceInterface {
   Future<dynamic> cancelOrder(String id);
   Future<dynamic> reviewOrder(String id, int rating, String? comment);
   Future<dynamic> createOrder(Map<String, dynamic> orderData, {String? idempotencyKey});
+  Future<dynamic> applyPromoCode(String code, double orderTotal);
 }

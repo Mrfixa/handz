@@ -978,7 +978,7 @@
     "order_cancelled": "Pedido cancelado",
     "order_cancelled_title": "Pedido Cancelado",
     "order_failed": "Pedido fallido",
-    "promo_applied": "Promo aplicada",
+    "promo_applied": "Código de promoción aplicado exitosamente.",
     "promo_validation_failed": "Validación de promo fallida",
     "show_appreciation": "Muestra tu agradecimiento al conductor",
     "subtotal": "Subtotal",
@@ -1123,5 +1123,15 @@
     "notification_channel_name": "Vito",
     "notification_channel_description": "Notificaciones de viajes y entregas",
     "about": "Acerca de",
-    "tap_to_expand": "Toca para expandir"
+    "tap_to_expand": "Toca para expandir",
+    "tracking_update_failed": "No se pueden obtener actualizaciones de ubicación. Verifique su conexión.",
+    "promo_expired": "Este código de promoción ha expirado.",
+    "promo_usage_limit": "Límite de uso del código de promoción alcanzado.",
+    "promo_min_spend": "No se cumplió el monto mínimo del pedido para esta promoción.",
+    "promo_invalid": "Código de promoción no válido.",
+    "select_pickup_destination": "Seleccione tanto el punto de recogida como el destino.",
+    "schedule_time_in_past": "La hora programada debe ser al menos 5 minutos en el futuro.",
+    "too_many_otp_attempts": "Demasiados intentos. Espere antes de intentarlo de nuevo.",
+    "media_picker_error": "No se pudo abrir el selector de medios. Verifique los permisos.",
+    "file_too_large": "El archivo es demasiado grande. El tamaño máximo es 50 MB."
 }
