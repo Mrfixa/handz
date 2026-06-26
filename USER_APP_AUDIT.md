@@ -9,11 +9,11 @@
 
 | Severity | Count |
 |----------|-------|
-| 🔴 CRITICAL — crash, data integrity, or CI-blocking | 9 |
-| 🟠 HIGH — feature broken or security gap | 18 |
-| 🟡 MEDIUM — degraded UX or error-prone edge case | 28 |
+| 🔴 CRITICAL — crash, data integrity, or CI-blocking | 13 |
+| 🟠 HIGH — feature broken or security gap | 23 |
+| 🟡 MEDIUM — degraded UX or error-prone edge case | 35 |
 | 🔵 LOW — polish, dead code, minor inconsistency | 6 |
-| **Total** | **61** |
+| **Total** | **77** |
 
 ---
 
@@ -737,3 +737,277 @@ ScaffoldMessenger.of(Get.context!).showSnackBar(...)
 
 ### Backlog
 - C6, H2, H4, H6, H7, all Medium items (M15–M28), Low items
+
+---
+
+## Wave 3 — Deep Screen Reads (U1–U16)
+
+Screens audited: `my_level_screen.dart`, `live_location_screen.dart`, `refund_request_screen.dart`,
+`set_destination_screen.dart`, `loyality_point_screen.dart`, `safety_setup_screen.dart`,
+`otp_log_in_screen.dart`.
+
+---
+
+## 🔴 CRITICAL (Wave 3)
+
+### U1 — Null-chain force-unwrap on profile image URL in MyLevelScreen
+**File:** `lib/features/my_level/screens/my_level_screen.dart`
+
+```dart
+'${Get.find<ConfigController>().config!.imageBaseUrl!.profileImage!}${controller.myLevelModel!.data!.image!}'
+```
+
+All four `!` operators can trigger `Null check operator used on a null value` if config hasn't loaded,
+the network failed, or the level model's image field is null. Crashes the entire screen render.
+
+**Fix:** Use null-aware navigation: `config?.imageBaseUrl?.profileImage ?? ''`, guard `myLevelModel?.data?.image` with a fallback placeholder asset.
+
+---
+
+### U2 — `Image.network` without error handler in MyLevelScreen
+**File:** `lib/features/my_level/screens/my_level_screen.dart`
+
+Multiple `Image.network(url)` calls have no `errorBuilder`. A 404 or unreachable URL causes a red
+error widget in production; on low-memory devices the decode can throw an unhandled exception.
+
+**Fix:** Add `errorBuilder: (_, __, ___) => Image.asset('assets/image/placeholder.png')` on every
+network image.
+
+---
+
+### U3 — `myLevelModel!.data!` force-unwraps before API response check
+**File:** `lib/features/my_level/screens/my_level_screen.dart`
+
+Screen accesses `.data!.targetTrip`, `.data!.currentTrip`, etc. before checking whether
+`controller.myLevelModel` is non-null. If the API returns an error or the controller's `getMyLevel()`
+hasn't completed, the screen crashes on build.
+
+**Fix:** Wrap access in `if (controller.myLevelModel?.data != null)` guard block or return a loading
+widget from `GetBuilder` while data is null.
+
+---
+
+### U13 — Null description interpolated as "null" string in SafetySetupScreen
+**File:** `lib/features/safety_setup/screens/safety_setup_screen.dart`
+
+```dart
+Text('${controller.safetyAlertTypes[index].description}')
+```
+
+`description` is nullable. When null, this renders the literal string `"null"` in the UI instead of
+an empty string or placeholder.
+
+**Fix:** Use `controller.safetyAlertTypes[index].description ?? ''`.
+
+---
+
+## 🟠 HIGH (Wave 3)
+
+### U4 — LiveLocationScreen starts timer without null-checking trackingId
+**File:** `lib/features/realtime_location_trac/screens/live_location_screen.dart`
+
+`_startLiveLocationUpdates()` launches a `Timer.periodic` and immediately accesses
+`widget.trackingId` inside the callback. If `trackingId` is null or empty (navigated to without a
+valid trip), every tick calls the API with a bad ID, logging errors indefinitely.
+
+**Fix:** Guard: `if (widget.trackingId?.isEmpty ?? true) return;` at the top of `_startLiveLocationUpdates()`.
+
+---
+
+### U5 — Indefinite spinner on API failure in LiveLocationScreen
+**File:** `lib/features/realtime_location_trac/screens/live_location_screen.dart`
+
+On API error the screen shows a loading indicator and never transitions to an error state. The timer
+keeps firing but the UI is permanently blocked. No retry button, no timeout fallback.
+
+**Fix:** Add a failure state: after N consecutive failures (or a timeout), cancel the timer and show
+an error message with a retry action.
+
+---
+
+### U6 — Nullable `data.length` called without null check in RefundRequestScreen
+**File:** `lib/features/refund_request/screens/refund_request_screen.dart`
+
+```dart
+controller.parcelRefundReasonList!.data!.length
+```
+
+Both force-unwraps crash if `parcelRefundReasonList` is null (reasons not loaded yet) or if `data`
+is null (API returned empty body). Called in `itemCount` of a `ListView.builder`, which fires during
+every build.
+
+**Fix:** Use `controller.parcelRefundReasonList?.data?.length ?? 0`.
+
+---
+
+### U7 — Force-unwrap on list element in RefundRequestScreen
+**File:** `lib/features/refund_request/screens/refund_request_screen.dart`
+
+```dart
+controller.parcelRefundReasonList!.data![index]
+```
+
+Same null-chain without null guard. Crashes if data is null or index is out of range.
+
+**Fix:** Guard with `?.elementAtOrNull(index)` or equivalent bounds check.
+
+---
+
+### U11 — LoyalityPointScreen missing initState API call
+**File:** `lib/features/wallet/screens/loyality_point_screen.dart`
+
+`initState()` does not call any controller method to fetch loyalty point history. The `ListView`
+renders whatever stale data was previously cached in the controller (possibly another user's data or
+empty). Screen is functionally broken on first open.
+
+**Fix:** Call `Get.find<WalletController>().getLoyalityPointList()` in `initState()`.
+
+---
+
+### U16 — OtpLoginScreen: OTP field not cleared on re-send; timer restart missing
+**File:** `lib/features/auth/screens/otp_log_in_screen.dart`
+
+When "Resend OTP" is tapped, the 6-digit input field retains the previous (now invalid) code, and
+the countdown timer is not restarted. User can accidentally submit the stale code, which is rejected
+by the backend, with no indication of what went wrong.
+
+**Fix:** Call `_otpController.clear()` and restart the countdown timer in the resend callback.
+
+---
+
+### U14 — SafetySetupScreen: `_isLoading` never reset on API error
+**File:** `lib/features/safety_setup/screens/safety_setup_screen.dart`
+
+After calling `submitSafetyAlert()`, `_isLoading = true` is set but if the API call fails the flag
+is never reset to `false`. The submit button stays permanently disabled for the rest of the session.
+
+**Fix:** Set `_isLoading = false` in both the success and error branches, wrapped in `setState()`.
+
+---
+
+### U15 — SetDestinationScreen: fare estimate not re-fetched after pickup pin drag
+**File:** `lib/features/set_destination/screens/set_destination_screen.dart`
+
+After the user drags the pickup pin on the map, `getEstimatedFare()` is not re-called. The displayed
+fare remains stale for the old pickup location. The user can proceed to booking with incorrect fare
+information.
+
+**Fix:** Call `controller.getEstimatedFare()` in the `onCameraIdle` callback whenever the pickup
+location changes.
+
+---
+
+## 🟡 MEDIUM (Wave 3)
+
+### U8 — MyLevelScreen: level data not refreshed on re-entry
+**File:** `lib/features/my_level/screens/my_level_screen.dart`
+
+`initState()` does not call `controller.getMyLevel()`. If the user completes trips and navigates
+back to MyLevel, the progress bars and counts show stale values.
+
+**Fix:** Call `Get.find<MyLevelController>().getMyLevel()` in `initState()`.
+
+---
+
+### U9 — LiveLocationScreen: map camera not updated on location change
+**File:** `lib/features/realtime_location_trac/screens/live_location_screen.dart`
+
+The driver marker moves on each location tick but `mapController.animateCamera()` is not called.
+On longer trips the driver moves off-screen without the camera following.
+
+**Fix:** Call `mapController?.animateCamera(CameraUpdate.newLatLng(newPosition))` after updating
+the marker.
+
+---
+
+### U10 — RefundRequestScreen: media picker errors not surfaced to user
+**File:** `lib/features/refund_request/screens/refund_request_screen.dart`
+
+`ImagePicker.pickImage()` and `pickVideo()` can throw `PlatformException` (permission denied,
+no camera). The calls are not wrapped in try/catch, so exceptions propagate to Flutter's error
+handler with no user-visible feedback.
+
+**Fix:** Wrap picker calls in try/catch; show a `showCustomSnackBar('media_picker_error'.tr)` on failure.
+
+---
+
+### U12 — LoyalityPointScreen: pagination loads duplicate items
+**File:** `lib/features/wallet/screens/loyality_point_screen.dart`
+
+`ScrollController` fires the next-page load, but the controller's `getLoyalityPointList()` calls
+`addAll()` without deduplication. Rapid scroll near the boundary triggers multiple simultaneous
+loads, appending the same page twice.
+
+**Fix:** Add an `_isLoading` guard in the scroll listener: skip the call if a load is already in
+progress (same pattern as `TripController`).
+
+---
+
+### U17 — SetDestinationScreen: no input validation before fare request
+**File:** `lib/features/set_destination/screens/set_destination_screen.dart`
+
+The "Get Estimate" button is enabled even when pickup or destination is empty/default. Calling
+`getEstimatedFare()` with null lat/lng sends `"null"` string coordinates to the backend, producing
+a misleading server-side error instead of a helpful inline validation message.
+
+**Fix:** Disable the button (or show inline error) until both pickup and destination are non-null
+with valid coordinates.
+
+---
+
+### U18 — RefundRequestScreen: upload size not validated
+**File:** `lib/features/refund_request/screens/refund_request_screen.dart`
+
+Video files selected via `ImagePicker` can be arbitrarily large. There is no size check before
+`postMultipartData()`. On slow connections this causes a silent timeout; on the server it may exceed
+the `upload_max_filesize` PHP limit, returning a 413 with no user-friendly error.
+
+**Fix:** Check `File(pickedFile.path).lengthSync()` before upload; show an error if > 50 MB
+(configurable constant).
+
+---
+
+### U19 — SafetySetupScreen: alert type list not fetched on re-entry
+**File:** `lib/features/safety_setup/screens/safety_setup_screen.dart`
+
+`initState()` fetches alert types only on first build. If the user navigates away and returns after
+a session where the controller was disposed and recreated, `safetyAlertTypes` is empty and the list
+shows nothing.
+
+**Fix:** Always call `controller.getSafetyAlertTypeList()` in `initState()`, guarded by
+`if (controller.safetyAlertTypes.isEmpty)`.
+
+---
+
+### U20 — OtpLoginScreen: no maximum attempt limit enforced on client
+**File:** `lib/features/auth/screens/otp_log_in_screen.dart`
+
+The backend enforces a 5-attempt lock, but the client does not track attempts locally. After the
+lock kicks in, the user sees a generic API error with no explanation, no countdown, and no guidance
+to wait before retrying.
+
+**Fix:** Parse the 429/locked response body and display a localised message: `'too_many_otp_attempts'.tr`
+with remaining wait time if provided by the API.
+
+---
+
+### U21 — SetDestinationScreen: `time_picker_spinner` locale not applied
+**File:** `lib/features/set_destination/screens/time_picker_spinner.dart`
+
+The custom 444-line spinner uses hardcoded English month/day abbreviations (`'Jan'`, `'Mon'`, etc.)
+rather than the app's active locale. Switching the app language leaves the picker in English.
+
+**Fix:** Source month/day names from the Flutter `intl` package using the current locale, or add
+translation keys for each abbreviation.
+
+---
+
+### U22 — SetDestinationScreen: scheduled trip time allows past timestamps
+**File:** `lib/features/set_destination/screens/set_destination_screen.dart`
+
+The time picker does not enforce a minimum of "now + some buffer". Users can select a departure
+time in the past, which the backend will reject, but the client shows no validation before
+submitting.
+
+**Fix:** After picker selection, validate `selectedTime.isAfter(DateTime.now().add(Duration(minutes: 5)))`;
+show inline error otherwise.
