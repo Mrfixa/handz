@@ -100,30 +100,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Future<void> loadData() async{
-    final RideController rideController = Get.find<RideController>();
+    // D12: wrap all async home data fetches in try/catch so a single
+    // network failure doesn't leave the home screen blank.
+    try {
+      final RideController rideController = Get.find<RideController>();
 
-    Get.find<ProfileController>().getCategoryList(1);
-    Get.find<ProfileController>().getProfileInfo();
-    Get.find<ProfileController>().getDailyLog();
-    rideController.getLastRideDetail();
-    HomeScreenHelper().checkAndShowBottomSheets();
-    await loadOngoingList();
+      Get.find<ProfileController>().getCategoryList(1);
+      Get.find<ProfileController>().getProfileInfo();
+      Get.find<ProfileController>().getDailyLog();
+      rideController.getLastRideDetail();
+      HomeScreenHelper().checkAndShowBottomSheets();
+      await loadOngoingList();
 
-    Get.find<ProfileController>().getProfileLevelInfo();
-    if(rideController.ongoingRideList != null){
-      HomeScreenHelper().ongoingLastRidePusherImplementation();
+      Get.find<ProfileController>().getProfileLevelInfo();
+      if(rideController.ongoingRideList != null){
+        HomeScreenHelper().ongoingLastRidePusherImplementation();
+      }
+
+      if(rideController.parcelListModel?.data != null){
+        HomeScreenHelper().ongoingParcelListPusherImplementation();
+      }
+
+      await rideController.getPendingRideRequestList(1,limit: 100);
+      if(rideController.getPendingRideRequestModel != null){
+        HomeScreenHelper().pendingListPusherImplementation();
+      }
+
+      HomeScreenHelper().checkMaintanenceMode();
+    } catch (_) {
+      // Silently absorb — individual controller methods report their own errors.
     }
-
-    if(rideController.parcelListModel?.data != null){
-      HomeScreenHelper().ongoingParcelListPusherImplementation();
-    }
-
-    await rideController.getPendingRideRequestList(1,limit: 100);
-    if(rideController.getPendingRideRequestModel != null){
-      HomeScreenHelper().pendingListPusherImplementation();
-    }
-
-    HomeScreenHelper().checkMaintanenceMode();
   }
 
   Future loadOngoingList() async {

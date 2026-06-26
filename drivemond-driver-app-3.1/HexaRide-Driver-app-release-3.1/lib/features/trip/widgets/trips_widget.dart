@@ -24,7 +24,9 @@ class _TripsWidgetState extends State<TripsWidget> with SingleTickerProviderStat
   late TabController tabController;
   @override
   void initState() {
-    tabController = TabController(length: 7, vsync: this);
+    final tripController = Get.find<TripController>();
+    final savedIndex = tripController.selectedStatus.indexOf(tripController.selectedStatusName).clamp(0, 6);
+    tabController = TabController(length: 7, vsync: this, initialIndex: savedIndex);
     tabController.addListener((){
       if (!tabController.indexIsChanging){
         Get.find<TripController>().setStatusIndex(tabController.index);

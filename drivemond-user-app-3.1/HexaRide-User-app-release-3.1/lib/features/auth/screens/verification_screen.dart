@@ -30,6 +30,7 @@ class VerificationScreenState extends State<VerificationScreen> {
   Timer? _timer;
   int? _seconds = 0;
   final StreamController<ErrorAnimationType> _errorController = StreamController<ErrorAnimationType>();
+  final TextEditingController _pinController = TextEditingController();
   String errorText = '';
 
   @override
@@ -53,9 +54,10 @@ class VerificationScreenState extends State<VerificationScreen> {
 
   @override
   void dispose() {
-    super.dispose();
     _errorController.close();
+    _pinController.dispose();
     _timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -115,6 +117,7 @@ class VerificationScreenState extends State<VerificationScreen> {
                     width: Get.width - 60,
                     child: PinCodeTextField(
                       length: 6,
+                      controller: _pinController,
                       cursorColor: Theme.of(context).textTheme.bodyMedium?.color,
                       cursorHeight: 20,
                       autoFocus: true,
@@ -168,6 +171,8 @@ class VerificationScreenState extends State<VerificationScreen> {
                           if(value.statusCode == 403){
                             errorText = 'incorrect_otp'.tr;
                             _errorController.add(ErrorAnimationType.shake);
+                          } else if(value.statusCode == 429) {
+                            setState(() { errorText = 'too_many_otp_attempts'.tr; });
                           }
                         });
                       } : null,
@@ -185,6 +190,9 @@ class VerificationScreenState extends State<VerificationScreen> {
                       _seconds! <= 0 ?
                       TextButton(
                         onPressed: () async {
+                          _pinController.clear();
+                          authController.updateVerificationCode('', isUpdate: false);
+                          setState(() { errorText = ''; });
                           if(Get.find<ConfigController>().config?.isFirebaseOtpVerification ?? false){
 
                             await authController.firebaseOtpSend(widget.number, canRoute: false, from: widget.form);

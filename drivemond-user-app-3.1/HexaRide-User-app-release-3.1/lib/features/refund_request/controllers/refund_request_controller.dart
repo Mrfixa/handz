@@ -28,26 +28,30 @@ class RefundRequestController extends GetxController implements GetxService {
   void pickProofImage(ImageSource source,bool isVideo)async {
     Get.back();
     XFile?  selectedImage;
-    if(isVideo){
-      selectedImage = await ImagePicker().pickVideo(source: source);
-      if(selectedImage != null){
-        if((File(selectedImage.path).lengthSync()) > (Get.find<ConfigController>().config?.maxFileUploadSize ?? 52428800)){
-          showCustomSnackBar('${'video_length_maximum'.tr} ${(Get.find<ConfigController>().config?.maxFileUploadSize ?? 52428800)/(1024*1024)}');
-        }else{
+    try {
+      if(isVideo){
+        selectedImage = await ImagePicker().pickVideo(source: source);
+        if(selectedImage != null){
+          if((File(selectedImage.path).lengthSync()) > (Get.find<ConfigController>().config?.maxFileUploadSize ?? 52428800)){
+            showCustomSnackBar('${'video_length_maximum'.tr} ${(Get.find<ConfigController>().config?.maxFileUploadSize ?? 52428800)/(1024*1024)}');
+          }else{
+            proofImages.add(selectedImage);
+            multipartList.add(MultipartBody('attachments[]', selectedImage));
+            String? path = await generateThumbnail(selectedImage.path);
+            thumbnailPaths.add(path ?? '');
+          }
+        }
+      }else{
+        selectedImage = await FileValidationHelper.validateAndPickImage(source: source);
+        if(selectedImage != null){
+          thumbnailPaths.add('');
           proofImages.add(selectedImage);
           multipartList.add(MultipartBody('attachments[]', selectedImage));
-          String? path = await generateThumbnail(selectedImage.path);
-          thumbnailPaths.add(path ?? '');
+
         }
       }
-    }else{
-      selectedImage = await FileValidationHelper.validateAndPickImage(source: source);
-      if(selectedImage != null){
-        thumbnailPaths.add('');
-        proofImages.add(selectedImage);
-        multipartList.add(MultipartBody('attachments[]', selectedImage));
-
-      }
+    } catch (_) {
+      showCustomSnackBar('media_picker_error'.tr);
     }
     update();
   }

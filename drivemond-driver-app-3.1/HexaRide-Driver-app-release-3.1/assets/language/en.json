@@ -1114,5 +1114,7 @@
     "wallet_balance_unavailable": "Wallet balance could not be loaded.",
     "username_checking": "Checking username…",
     "username_available": "Username is available",
-    "username_taken": "Username already taken"
+    "username_taken": "Username already taken",
+    "confirm_withdrawal": "Confirm Withdrawal",
+    "confirm_withdrawal_message": "Are you sure you want to withdraw"
 }

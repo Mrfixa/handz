@@ -28,6 +28,7 @@ import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.
 import 'package:ride_sharing_user_app/features/ride/screens/ride_request_list_screen.dart';
 
 import '../widgets/share_location_bottom_sheet.dart';
+import 'package:ride_sharing_user_app/helper/pusher_helper.dart';
 
 
 class MapScreen extends StatefulWidget {
@@ -59,8 +60,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if(state == AppLifecycleState.resumed && Get.find<RiderMapController>().currentRideState != RideState.initial){
-      _setMapCurrentRoutes();
+    if (state == AppLifecycleState.resumed) {
+      if (Get.find<RiderMapController>().currentRideState != RideState.initial) {
+        _setMapCurrentRoutes();
+      }
+      final pusherStatus = Get.find<SplashController>().pusherConnectionStatus;
+      if (pusherStatus == null || pusherStatus == 'Disconnected') {
+        PusherHelper.initializePusher();
+      }
     }
   }
 

@@ -1114,5 +1114,7 @@
     "wallet_balance_unavailable": "No se pudo cargar el saldo de la billetera.",
     "username_checking": "Verificando nombre de usuario…",
     "username_available": "El nombre de usuario está disponible",
-    "username_taken": "El nombre de usuario ya está en uso"
+    "username_taken": "El nombre de usuario ya está en uso",
+    "confirm_withdrawal": "Confirmar Retiro",
+    "confirm_withdrawal_message": "¿Está seguro de que desea retirar"
 }

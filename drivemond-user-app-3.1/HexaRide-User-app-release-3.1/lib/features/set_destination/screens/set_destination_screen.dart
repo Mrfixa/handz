@@ -139,11 +139,16 @@ class _SetDestinationScreenState extends State<SetDestinationScreen> {
                               textEditingController: locationController.pickupLocationController,
                               isShowCrossButton: false,
                               textFieldHint: 'pick_location'.tr,
-                              locationIconTap: (){
-                                RouteHelper.goPageAndHideTextField(context, PickMapScreen(
+                              locationIconTap: () async {
+                                await RouteHelper.goPageAndHideTextFieldAsync(context, () => PickMapScreen(
                                     type: LocationType.from,
                                     address: locationController.fromAddress
                                 ));
+                                final lc = Get.find<LocationController>();
+                                if ((lc.fromAddress?.latitude ?? 0) != 0 &&
+                                    (lc.toAddress?.latitude ?? 0) != 0) {
+                                  Get.find<RideController>().getEstimatedFare(false);
+                                }
                               },
                               textFieldTap: (){
                                 setScrollAndDialogPosition(LocationType.from, locationController);

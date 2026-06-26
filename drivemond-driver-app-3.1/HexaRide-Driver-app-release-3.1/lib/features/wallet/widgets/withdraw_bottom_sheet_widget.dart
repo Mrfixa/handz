@@ -347,8 +347,26 @@ class WithdrawRequestWidgetState extends State<WithdrawRequestWidget> {
       showCustomSnackBar("${'minimum_amount'.tr} ${Get.find<SplashController>().config?.currencySymbol?? '\$'} 1");
     }
     else {
-      Get.find<WalletController>().updateBalance(balance, note);
-
+      showDialog(
+        context: Get.context!,
+        builder: (_) => AlertDialog(
+          title: Text('confirm_withdrawal'.tr),
+          content: Text('${'confirm_withdrawal_message'.tr} ${Get.find<SplashController>().config?.currencySymbol ?? '\$'}$balance?'),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.back();
+                Get.find<WalletController>().updateBalance(balance, note);
+              },
+              child: Text('confirm'.tr),
+            ),
+          ],
+        ),
+      );
     }
   }
 }

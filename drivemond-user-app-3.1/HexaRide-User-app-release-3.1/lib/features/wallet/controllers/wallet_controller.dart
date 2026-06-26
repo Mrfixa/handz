@@ -80,6 +80,7 @@ class WalletController extends GetxController implements GetxService{
   AddFundPromotionalModel? addFundPromotionalModel;
   LoyaltyPointModel? loyaltyPointModel;
   Future<Response> getLoyaltyPointList(int offset) async {
+    if (isLoading && offset > 1) return Response(statusCode: 429);
     isLoading = true;
     update();
     Response? response = await walletService.getLoyaltyPointList(offset);

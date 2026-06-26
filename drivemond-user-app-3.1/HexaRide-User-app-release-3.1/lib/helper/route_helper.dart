@@ -36,4 +36,13 @@ class RouteHelper {
 
   }
 
+  static Future<void> goPageAndHideTextFieldAsync(BuildContext context, Widget Function() pageBuilder) async {
+    FocusScopeNode currentFocus = FocusScope.of(context);
+    if (!currentFocus.hasPrimaryFocus) currentFocus.unfocus();
+    currentFocus.requestFocus(FocusNode());
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
+    await Future.delayed(const Duration(milliseconds: 300));
+    await Get.to(pageBuilder);
+  }
+
 }
