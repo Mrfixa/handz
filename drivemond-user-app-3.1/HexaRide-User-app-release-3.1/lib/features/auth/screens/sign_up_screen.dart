@@ -24,6 +24,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final FocusNode _usernameNode = FocusNode();
   final FocusNode _fNameNode = FocusNode();
   final FocusNode _lNameNode = FocusNode();
   final FocusNode _phoneNode = FocusNode();
@@ -35,6 +36,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void initState() {
     super.initState();
     final authController = Get.find<AuthController>();
+    authController.usernameController.clear();
     authController.fNameController.clear();
     authController.lNameController.clear();
     authController.phoneController.clear();
@@ -54,6 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
+    _usernameNode.dispose();
     _fNameNode.dispose();
     _lNameNode.dispose();
     _phoneNode.dispose();
@@ -65,13 +68,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _submit(AuthController authController) {
     HapticFeedback.mediumImpact();
+    final username = authController.usernameController.text.trim();
     final fName = authController.fNameController.text.trim();
     final lName = authController.lNameController.text.trim();
     final phone = authController.phoneController.text.trim();
     final password = authController.passwordController.text;
     final confirmPassword = authController.confirmPasswordController.text;
 
-    if (fName.isEmpty) {
+    if (username.isEmpty) {
+      showCustomSnackBar('username_is_required'.tr);
+      FocusScope.of(context).requestFocus(_usernameNode);
+    } else if (username.length < 3 || username.length > 50) {
+      showCustomSnackBar('username_min_3_characters'.tr);
+      FocusScope.of(context).requestFocus(_usernameNode);
+    } else if (fName.isEmpty) {
       showCustomSnackBar('first_name_is_required'.tr);
       FocusScope.of(context).requestFocus(_fNameNode);
     } else if (lName.isEmpty) {
@@ -154,6 +164,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     maxLines: 2,
                   ),
                   const SizedBox(height: Dimensions.paddingSizeSignUp),
+
+                  CustomTextField(
+                    hintText: 'username'.tr,
+                    inputType: TextInputType.text,
+                    prefixIcon: Images.person,
+                    controller: authController.usernameController,
+                    focusNode: _usernameNode,
+                    nextFocus: _fNameNode,
+                    inputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: Dimensions.paddingSizeSmall),
 
                   CustomTextField(
                     hintText: 'enter_your_first_name'.tr,

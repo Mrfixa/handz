@@ -356,17 +356,15 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.only(bottom: Get.height * 0.08),
             child: InkWell(
               onTap: (){
-                if(!rideController.isLoading){
-                  rideController.getBiddingList(
-                      rideController.rideDetails!.id!, 1
-                  ).then((value) {
+                final rideId = rideController.rideDetails?.id ?? '';
+                if(!rideController.isLoading && rideId.isNotEmpty){
+                  rideController.getBiddingList(rideId, 1).then((value) {
                     if(rideController.biddingList.isNotEmpty){
-
                       Get.dialog(
                           barrierDismissible: true,
                           barrierColor: Colors.black.withValues(alpha:0.5),
                           transitionDuration: const Duration(milliseconds: 500),
-                          DriverRideRequestDialog(tripId: Get.find<RideController>().rideDetails!.id!)
+                          DriverRideRequestDialog(tripId: rideId)
                       );
                     }
                   });

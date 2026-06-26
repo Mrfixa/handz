@@ -89,6 +89,11 @@ class RideController extends GetxController implements GetxService {
     scheduleTripTime = null;
     _pickupNote = '';
     pickupNoteController.clear();
+    estimatedFare = 0;
+    actualFare = 0;
+    fareList = [];
+    selectedType = null;
+    rideCategoryIndex = 0;
   }
 
   void updateRideCurrentState(RideState newState) {
@@ -258,15 +263,36 @@ class RideController extends GetxController implements GetxService {
       if (confirmed != true) return Response(statusCode: 0, statusText: 'cancelled');
     }
 
+    LocationController locController = Get.find<LocationController>();
+
+    // Validate required addresses before proceeding — an empty Address() would
+    // send null coordinates to the backend and silently create a malformed trip.
+    if (parcel) {
+      if (locController.parcelSenderAddress == null) {
+        showCustomSnackBar('please_set_sender_address'.tr, isError: true);
+        return Response(statusCode: 0, statusText: 'missing_sender_address');
+      }
+      if (locController.parcelReceiverAddress == null) {
+        showCustomSnackBar('please_set_receiver_address'.tr, isError: true);
+        return Response(statusCode: 0, statusText: 'missing_receiver_address');
+      }
+    } else if (tripDetails == null) {
+      if (locController.fromAddress == null) {
+        showCustomSnackBar('please_set_pickup_location'.tr, isError: true);
+        return Response(statusCode: 0, statusText: 'missing_pickup_address');
+      }
+      if (locController.toAddress == null) {
+        showCustomSnackBar('please_set_destination_location'.tr, isError: true);
+        return Response(statusCode: 0, statusText: 'missing_destination_address');
+      }
+    }
+
     initCountingTimeStates();
     isSubmit = true;
     update();
 
-    LocationController locController = Get.find<LocationController>();
-    // Never force-unwrap a possibly-null address — fall back to an empty Address
-    // so submission fails gracefully on the backend instead of crashing the app.
-    Address pickUpPosition = parcel ? (locController.parcelSenderAddress ?? Address()) : tripDetails == null ? (locController.fromAddress ?? Address()) : Address();
-    Address destinationPosition = parcel ? (locController.parcelReceiverAddress ?? Address()) : tripDetails == null ? (locController.toAddress ?? Address()) : Address();
+    Address pickUpPosition = parcel ? locController.parcelSenderAddress! : tripDetails == null ? locController.fromAddress! : Address();
+    Address destinationPosition = parcel ? locController.parcelReceiverAddress! : tripDetails == null ? locController.toAddress! : Address();
 
     DateTime scheduleDate = RideControllerHelper.dateFormatToShow(scheduleTripDate);
     DateTime scheduleTime = RideControllerHelper.timeFormatToShow(scheduleTripTime);
@@ -295,8 +321,8 @@ class RideController extends GetxController implements GetxService {
       destinationAddress: parcel ? Get.find<ParcelController>().receiverAddressController.text
           : (locController.toAddress?.address ?? tripDetails?.destinationAddress ?? '') ,
       vehicleCategoryId: parcel ? categoryId : selectedCategoryId,
-      estimatedDistance: parcel ? parcelEstimatedFare!.data!.estimatedDistance!.toString() : estimatedDistance,
-      estimatedTime: parcel ? parcelEstimatedFare!.data!.estimatedDuration!.replaceFirst('min', '') : estimatedDuration,
+      estimatedDistance: parcel ? parcelEstimatedFare?.data?.estimatedDistance?.toString() ?? '0' : estimatedDistance,
+      estimatedTime: parcel ? parcelEstimatedFare?.data?.estimatedDuration?.replaceFirst('min', '') ?? '0' : estimatedDuration,
       estimatedFare: parcel ? parcelFare : estimatedFare.toString(),
       actualFare: parcel ? parcelFare : estimatedFare != actualFare ? actualFare.toString() : estimatedFare.toString(),
       bid:parcel ? false : estimatedFare != actualFare,
