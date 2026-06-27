@@ -12,11 +12,22 @@
             <directory suffix="Test.php">./tests/Feature</directory>
         </testsuite>
     </testsuites>
-    <coverage processUncoveredFiles="true">
+    <!-- PHPUnit 11 (Laravel 12) reads coverage source from <source>, not <coverage><include>.
+         Scoped to the Vito API surface the suite exercises (matches the Vito-only PHPStan set)
+         so the reported percentage is meaningful and CI stays fast. -->
+    <source>
         <include>
-            <directory suffix=".php">./app</directory>
+            <file>./Modules/AuthManagement/Http/Controllers/Api/VitoAuthController.php</file>
+            <file>./Modules/AuthManagement/Http/Controllers/Api/QrTokenController.php</file>
+            <file>./Modules/TripManagement/Http/Controllers/Api/Customer/VitoMartController.php</file>
+            <file>./Modules/TripManagement/Http/Controllers/Api/Driver/VitoTripController.php</file>
+            <file>./Modules/TripManagement/Http/Controllers/Api/Driver/VitoParcelController.php</file>
+            <file>./Modules/TripManagement/Http/Controllers/Api/Driver/VitoMartDriverController.php</file>
+            <file>./Modules/TripManagement/Http/Controllers/Api/Admin/VitoMartAdminApiController.php</file>
+            <file>./Modules/Gateways/Http/Controllers/Api/VitoStripeController.php</file>
+            <file>./app/Http/Middleware/IdempotencyKey.php</file>
         </include>
-    </coverage>
+    </source>
     <php>
         <server name="APP_ENV" value="testing"/>
         <server name="BCRYPT_ROUNDS" value="4"/>

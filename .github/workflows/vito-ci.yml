@@ -80,9 +80,15 @@ jobs:
 
       - name: Check PHP coverage floor
         run: |
-          COVERED=$(grep -oP 'Lines:\s+\K[\d.]+(?=%)' coverage-report.txt | head -1 || echo "0")
+          COVERED=$(grep -oP 'Lines:\s+\K[\d.]+(?=%)' coverage-report.txt | head -1 || echo "")
+          # Empty means coverage was never collected (e.g. misconfigured source/driver) —
+          # treat that as a hard failure so the gate can't silently regress to a no-op.
+          if [ -z "$COVERED" ]; then
+            echo "No PHP coverage collected — check phpunit.xml <source> and the coverage driver."
+            exit 1
+          fi
           echo "PHP line coverage: ${COVERED}%"
-          # Fail only if below the ratcheted floor
+          # Fail if below the ratcheted floor
           if (( $(echo "$COVERED < ${{ env.PHP_COVERAGE_FLOOR }}" | bc -l) )); then
             echo "Coverage ${COVERED}% is below floor ${{ env.PHP_COVERAGE_FLOOR }}%"
             exit 1
