@@ -9,9 +9,12 @@ on:
 env:
   FLUTTER_VERSION: "3.44.0"
   PHP_VERSION: "8.2"
-  # Ratcheted coverage floor — raise this as coverage grows toward 80%.
-  PHP_COVERAGE_FLOOR: 0
-  FLUTTER_COVERAGE_FLOOR: 0
+  # Ratcheted coverage floors — raise these as coverage grows toward 80%.
+  # Measured 2026-06-27: PHP (Vito API surface) 58.04%; Flutter user 0.5% / driver 0.7%.
+  # Floors sit a few points below current so the suite can't silently regress.
+  # Next PHP raises: VitoStripeController (2.2%) and VitoMartAdminApiController (0%).
+  PHP_COVERAGE_FLOOR: 55
+  FLUTTER_COVERAGE_FLOOR: 0.4
 
 jobs:
   laravel:
@@ -80,7 +83,9 @@ jobs:
 
       - name: Check PHP coverage floor
         run: |
-          COVERED=$(grep -oP 'Lines:\s+\K[\d.]+(?=%)' coverage-report.txt | head -1 || echo "")
+          # Compute line coverage from the clover report (artisan test's --coverage-text
+          # summary isn't reliably parseable, but --coverage-clover always emits real data).
+          COVERED=$(python3 -c "import xml.etree.ElementTree as ET; m=ET.parse('coverage.xml').getroot().findall('./project/metrics')[-1]; s=int(m.get('statements','0')); c=int(m.get('coveredstatements','0')); print(format(c/s*100,'.2f') if s else '')" 2>/dev/null || echo "")
           # Empty means coverage was never collected (e.g. misconfigured source/driver) —
           # treat that as a hard failure so the gate can't silently regress to a no-op.
           if [ -z "$COVERED" ]; then
