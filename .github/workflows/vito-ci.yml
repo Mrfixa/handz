@@ -9,12 +9,12 @@ on:
 env:
   FLUTTER_VERSION: "3.44.0"
   PHP_VERSION: "8.2"
-  # Ratcheted coverage floors — raise these as coverage grows toward 80%.
-  # Measured 2026-06-28: PHP (Vito API surface) 78.21%; Flutter user 0.5% / driver 0.7%.
+  # Ratcheted coverage floors — current Vito API coverage is ~80%.
+  # Measured 2026-06-28: PHP (Vito API surface) 80.36%; Flutter user 0.5% / driver 0.7%.
   # Floors sit a few points below current so the suite can't silently regress.
-  # Remaining PHP headroom: VitoStripeController (62%, success paths need live Stripe),
-  # VitoMartController (78%); QrTokenController redeemToken is route-less (uncoverable).
-  PHP_COVERAGE_FLOOR: 75
+  # Remaining PHP headroom needs a live Stripe API / SDK mock (create-intent success
+  # paths) or wiring the route-less QrToken redeemToken — both out of scope for offline CI.
+  PHP_COVERAGE_FLOOR: 77
   FLUTTER_COVERAGE_FLOOR: 0.4
 
 jobs:
