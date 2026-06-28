@@ -1,0 +1,139 @@
+name: Build iOS
+
+# Scaffolds the iOS platform for both Flutter apps on a macOS runner, applies the
+# bundle id / deployment target / permission strings / Podfile (use_frameworks! is
+# required by flutter_stripe + Firebase), and builds an UNSIGNED iOS .app to verify
+# the apps compile for iOS. Signed App Store / TestFlight builds need an Apple
+# Developer account + certificates/profiles (see IOS_BUILD.md) — out of scope here.
+#
+# The apps have no committed ios/ directory; it is generated fresh each run with
+# `flutter create --platforms=ios`, then patched, so this never touches lib/.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/build-ios.yml'
+
+jobs:
+  build-ios:
+    name: Build iOS (${{ matrix.app }})
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: user
+            dir: drivemond-user-app-3.1/HexaRide-User-app-release-3.1
+            bundle_id: com.sixamtech.hexarideuser
+          - app: driver
+            dir: drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
+            bundle_id: com.sixamtech.hexariderider
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+
+      - name: Generate iOS platform scaffolding
+        run: flutter create --platforms=ios --org com.sixamtech .
+
+      - name: Set bundle identifier
+        run: |
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${{ matrix.bundle_id }};/g" \
+            ios/Runner.xcodeproj/project.pbxproj
+
+      - name: Write Podfile (iOS 15, use_frameworks for stripe/firebase)
+        run: |
+          cat > ios/Podfile <<'PODFILE'
+          platform :ios, '15.0'
+          ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+          project 'Runner', {
+            'Debug' => :debug,
+            'Profile' => :release,
+            'Release' => :release,
+          }
+
+          def flutter_root
+            generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+            unless File.exist?(generated_xcode_build_settings_path)
+              raise "#{generated_xcode_build_settings_path} must exist. Run flutter pub get first."
+            end
+            File.foreach(generated_xcode_build_settings_path) do |line|
+              matches = line.match(/FLUTTER_ROOT\=(.*)/)
+              return matches[1].strip if matches
+            end
+            raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}."
+          end
+
+          require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+          flutter_ios_podfile_setup
+
+          target 'Runner' do
+            use_frameworks!
+            use_modular_headers!
+            flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+          end
+
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              flutter_additional_ios_build_settings(target)
+              target.build_configurations.each do |config|
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+              end
+            end
+          end
+          PODFILE
+
+      - name: Add Info.plist permission usage descriptions
+        run: |
+          PLIST=ios/Runner/Info.plist
+          add() { /usr/libexec/PlistBuddy -c "Add :$1 string '$2'" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :$1 '$2'" "$PLIST"; }
+          add NSLocationWhenInUseUsageDescription "Shows your location, nearby drivers, and live trip/delivery tracking."
+          add NSLocationAlwaysAndWhenInUseUsageDescription "Enables live trip and delivery tracking while the app is in the background."
+          add NSCameraUsageDescription "Capture delivery proof and profile/verification photos."
+          add NSPhotoLibraryUsageDescription "Upload photos for delivery proof, refunds, and your profile."
+          add NSMicrophoneUsageDescription "Record in-app voice messages."
+
+      - name: Configure Mapbox downloads token (CocoaPods needs ~/.netrc)
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          if [ -n "$MAPBOX_DOWNLOADS_TOKEN" ]; then
+            printf 'machine api.mapbox.com\n  login mapbox\n  password %s\n' "$MAPBOX_DOWNLOADS_TOKEN" > ~/.netrc
+            chmod 600 ~/.netrc
+          else
+            echo "::warning::MAPBOX_DOWNLOADS_TOKEN not set — Mapbox pods may fail to download."
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (release, no codesign)
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
+            --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
+            --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+
+      - name: Package .app
+        run: |
+          cd build/ios/iphoneos
+          zip -r "$GITHUB_WORKSPACE/vito-${{ matrix.app }}-ios.zip" Runner.app
+
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: vito-${{ matrix.app }}-ios
+          path: vito-${{ matrix.app }}-ios.zip
+          if-no-files-found: error
+          retention-days: 14
