@@ -4067,4 +4067,57 @@ class VitoFlowTest extends TestCase
         $this->postJson('/api/qr-token/revoke', ['token' => $own])->assertOk();
         $this->assertEquals(1, (int) DB::table('qr_tokens')->where('token', $own)->value('is_revoked'));
     }
+
+    // ========================================================================
+    // Wave 11 — VitoMartController (customer) list/details + refund branch
+    // ========================================================================
+
+    public function test_mart_customer_order_list_and_details(): void
+    {
+        $customer = $this->createUser('customer');
+        $order = MartOrder::create([
+            'id' => Str::uuid()->toString(), 'ref_id' => 'VM-LIST-' . Str::random(4),
+            'customer_id' => $customer->id, 'status' => 'pending', 'total_amount' => 10.00,
+            'tip_amount' => 0, 'discount_amount' => 0, 'payment_status' => 'unpaid',
+            'delivery_address' => 'List St',
+        ]);
+        Passport::actingAs($customer, ['AccessToCustomer']);
+
+        $this->getJson('/api/customer/mart/orders')->assertOk();
+        $this->getJson("/api/customer/mart/orders/{$order->id}")
+            ->assertOk()->assertJsonPath('data.id', $order->id);
+        // nonexistent / not-owned → 404
+        $this->getJson('/api/customer/mart/orders/' . Str::uuid()->toString())->assertStatus(404);
+    }
+
+    public function test_mart_cancel_paid_order_runs_refund_lookup(): void
+    {
+        // settings table present with a usable stripe config so refundOrderPayment
+        // executes past the config checks (it returns refund_pending because no
+        // succeeded StripeEvent exists for the order — no live Stripe call is made).
+        $this->ensureSettingsTable();
+        DB::table('settings')->insert([
+            'key_name' => 'stripe', 'settings_type' => 'payment_config', 'mode' => 'test',
+            'test_values' => json_encode(['api_key' => 'sk_test_dummy']),
+            'live_values' => json_encode([]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $customer = $this->createUser('customer');
+        $driver = $this->createUser('driver', ['username' => 'cancelnotify']);
+        $order = MartOrder::create([
+            'id' => Str::uuid()->toString(), 'ref_id' => 'VM-RF-' . Str::random(4),
+            'customer_id' => $customer->id, 'driver_id' => $driver->id,
+            'status' => 'accepted', 'total_amount' => 12.00, 'tip_amount' => 0,
+            'discount_amount' => 0, 'payment_status' => 'paid', 'payment_method' => 'stripe',
+            'delivery_address' => 'Refund St',
+        ]);
+
+        Passport::actingAs($customer, ['AccessToCustomer']);
+        $this->putJson("/api/customer/mart/orders/{$order->id}/cancel")->assertOk();
+
+        $fresh = MartOrder::find($order->id);
+        $this->assertEquals('cancelled', $fresh->status);
+        $this->assertEquals('refund_pending', $fresh->payment_status);
+    }
 }
