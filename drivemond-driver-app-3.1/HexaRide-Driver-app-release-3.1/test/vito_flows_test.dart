@@ -10,6 +10,9 @@ import 'package:ride_sharing_user_app/features/mart/domain/services/mart_service
 // Imported so CI compiles the concrete repository/service (multipart + header code) — D1.
 import 'package:ride_sharing_user_app/features/mart/domain/repositories/mart_repository.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/services/mart_service.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_product_model.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_item_model.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 
 /// Unit tests for VITO-specific flows in the driver app.
 /// These validate localization, token logic, atomic acceptance,
@@ -325,6 +328,59 @@ void main() {
     test('concrete MartRepository and MartService are wired (compile guard)', () {
       expect(MartRepository, isNotNull);
       expect(MartService, isNotNull);
+    });
+  });
+
+  group('Mart model parsing', () {
+    test('MartProductModel.fromJson coerces id/price', () {
+      final p = MartProductModel.fromJson(<String, dynamic>{'id': 9, 'name': 'Soap', 'price': '3.50'});
+      expect(p.id, '9');
+      expect(p.name, 'Soap');
+      expect(p.price, 3.50);
+      expect(p.toJson()['name'], 'Soap');
+    });
+
+    test('MartProductModel tolerates a garbage price', () {
+      expect(MartProductModel.fromJson(<String, dynamic>{'price': 'x'}).price, 0);
+    });
+
+    test('MartOrderItemModel parses nested product and displayName', () {
+      final it = MartOrderItemModel.fromJson(<String, dynamic>{
+        'quantity': '2', 'unit_price': '5', 'total_price': '10',
+        'product': <String, dynamic>{'name': 'Milk'},
+      });
+      expect(it.quantity, 2);
+      expect(it.totalPrice, 10);
+      expect(it.displayName, 'Milk');
+    });
+
+    test('MartOrderItemModel displayName falls back without a product', () {
+      expect(MartOrderItemModel.fromJson(<String, dynamic>{'quantity': 1}).displayName, 'Item');
+    });
+
+    test('MartOrderModel parses customer name/phone, items, and itemCount', () {
+      final o = MartOrderModel.fromJson(<String, dynamic>{
+        'id': 'o1', 'ref_id': 'R1', 'status': 'accepted', 'total_amount': '15.00',
+        'customer': <String, dynamic>{'first_name': 'Jane', 'last_name': 'Doe', 'phone': '+100'},
+        'items': <Map<String, dynamic>>[
+          <String, dynamic>{'quantity': 2},
+          <String, dynamic>{'quantity': 1},
+        ],
+      });
+      expect(o.id, 'o1');
+      expect(o.totalAmount, 15.00);
+      expect(o.customerName, 'Jane Doe');
+      expect(o.customerPhone, '+100');
+      expect(o.items.length, 2);
+      expect(o.itemCount, 3);
+      expect(o.toJson()['ref_id'], 'R1');
+    });
+
+    test('MartOrderModel tolerates missing items and customer', () {
+      final o = MartOrderModel.fromJson(<String, dynamic>{'id': 'o2'});
+      expect(o.items, isEmpty);
+      expect(o.itemCount, 0);
+      expect(o.customerName, isNull);
     });
   });
 }

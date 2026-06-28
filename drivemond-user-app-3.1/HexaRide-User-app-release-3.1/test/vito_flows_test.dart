@@ -3,6 +3,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ride_sharing_user_app/data/api_checker.dart';
 import 'package:ride_sharing_user_app/features/ride/domain/models/remaining_distance_model.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_product_model.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_category_model.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_item_model.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 
 /// Unit tests for VITO-specific flows in the user app.
 /// These validate localization, token logic, and widget structure
@@ -265,6 +269,81 @@ void main() {
     test('RemainingDistanceModel.fromJson parses valid numeric distances', () {
       expect(RemainingDistanceModel.fromJson({'distance': 12.5}).distance, 12.5);
       expect(RemainingDistanceModel.fromJson({'distance': 5}).distance, 5.0);
+    });
+  });
+
+  group('Mart model parsing', () {
+    test('MartProductModel.fromJson coerces types and computes inStock', () {
+      final p = MartProductModel.fromJson(<String, dynamic>{
+        'id': 1, 'name': 'Widget', 'price': '9.99', 'is_active': 1, 'stock': '3',
+      });
+      expect(p.id, '1');
+      expect(p.name, 'Widget');
+      expect(p.price, 9.99);
+      expect(p.isActive, true);
+      expect(p.stock, 3);
+      expect(p.inStock, true);
+      expect(p.toJson()['name'], 'Widget');
+    });
+
+    test('MartProductModel inStock is false when inactive or out of stock', () {
+      expect(MartProductModel.fromJson(<String, dynamic>{'is_active': false, 'stock': 5}).inStock, false);
+      expect(MartProductModel.fromJson(<String, dynamic>{'is_active': true, 'stock': 0}).inStock, false);
+    });
+
+    test('MartProductModel tolerates missing/garbage fields', () {
+      final p = MartProductModel.fromJson(<String, dynamic>{'price': 'NaN', 'stock': 'x'});
+      expect(p.price, 0);
+      expect(p.stock, 0);
+      expect(p.name, isNull);
+    });
+
+    test('MartCategoryModel.fromJson and toJson round-trip', () {
+      final c = MartCategoryModel.fromJson(<String, dynamic>{'id': 7, 'name': 'Tools', 'slug': 'tools'});
+      expect(c.id, '7');
+      expect(c.name, 'Tools');
+      expect(c.toJson()['slug'], 'tools');
+    });
+
+    test('MartOrderItemModel parses nested product and displayName', () {
+      final it = MartOrderItemModel.fromJson(<String, dynamic>{
+        'id': 'i1', 'product_id': 'p1', 'quantity': '2', 'unit_price': '5', 'total_price': '10',
+        'product': <String, dynamic>{'name': 'Soap'},
+      });
+      expect(it.quantity, 2);
+      expect(it.unitPrice, 5);
+      expect(it.totalPrice, 10);
+      expect(it.product?.name, 'Soap');
+      expect(it.displayName, 'Soap');
+      expect(it.toJson()['product'], isNotNull);
+    });
+
+    test('MartOrderItemModel displayName falls back when product is absent', () {
+      expect(MartOrderItemModel.fromJson(<String, dynamic>{'quantity': 1}).displayName, 'Item');
+    });
+
+    test('MartOrderModel parses items, driver name, and itemCount', () {
+      final o = MartOrderModel.fromJson(<String, dynamic>{
+        'id': 'o1', 'ref_id': 'R1', 'status': 'pending', 'total_amount': '20.50',
+        'driver': <String, dynamic>{'first_name': 'Jane', 'last_name': 'Doe'},
+        'items': <Map<String, dynamic>>[
+          <String, dynamic>{'quantity': 2, 'product': <String, dynamic>{'name': 'A'}},
+          <String, dynamic>{'quantity': 3, 'product': <String, dynamic>{'name': 'B'}},
+        ],
+      });
+      expect(o.id, 'o1');
+      expect(o.totalAmount, 20.50);
+      expect(o.driverName, 'Jane Doe');
+      expect(o.items.length, 2);
+      expect(o.itemCount, 5);
+      expect(o.toJson()['ref_id'], 'R1');
+    });
+
+    test('MartOrderModel tolerates missing items and driver', () {
+      final o = MartOrderModel.fromJson(<String, dynamic>{'id': 'o2'});
+      expect(o.items, isEmpty);
+      expect(o.itemCount, 0);
+      expect(o.driverName, isNull);
     });
   });
 
