@@ -3978,4 +3978,93 @@ class VitoFlowTest extends TestCase
         $this->deleteJson("/api/admin/mart/products/{$id}")->assertOk();
         $this->assertNull(MartProduct::find($id));
     }
+
+    // ========================================================================
+    // Wave 11 — QrTokenController coverage (validation + validate/public/revoke)
+    // ========================================================================
+
+    private function insertQrToken(array $overrides = []): string
+    {
+        $token = $overrides['token'] ?? Str::random(20);
+        DB::table('qr_tokens')->insert(array_merge([
+            'id'          => Str::uuid()->toString(),
+            'token'       => $token,
+            'role'        => 'customer',
+            'created_by'  => null,
+            'redeemed_by' => null,
+            'redeemed_at' => null,
+            'expires_at'  => now()->addHour(),
+            'is_revoked'  => false,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ], $overrides));
+        return $token;
+    }
+
+    public function test_qr_generate_validation_and_length_param(): void
+    {
+        $admin = $this->createUser('admin', ['username' => 'qrgen']);
+        Passport::actingAs($admin, ['AccessToSuperAdmin']);
+
+        // invalid role → 422
+        $this->postJson('/api/qr-token/generate', ['role' => 'banana'])->assertStatus(422);
+
+        // explicit length honoured
+        $resp = $this->postJson('/api/qr-token/generate', ['role' => 'driver', 'length' => 40]);
+        $resp->assertOk();
+        $this->assertEquals(40, $resp->json('data.length'));
+        $this->assertEquals('driver', $resp->json('data.role'));
+    }
+
+    public function test_qr_validate_error_branches(): void
+    {
+        // validation: too short → 422
+        $this->postJson('/api/qr-token/validate', ['token' => 'abc'])->assertStatus(422);
+        // nonexistent → 404
+        $this->postJson('/api/qr-token/validate', ['token' => Str::random(20)])->assertStatus(404);
+        // expired → 404
+        $expired = $this->insertQrToken(['expires_at' => now()->subHour()]);
+        $this->postJson('/api/qr-token/validate', ['token' => $expired])->assertStatus(404);
+        // revoked → 404
+        $revoked = $this->insertQrToken(['is_revoked' => true]);
+        $this->postJson('/api/qr-token/validate', ['token' => $revoked])->assertStatus(404);
+        // redeemed → 404
+        $redeemed = $this->insertQrToken(['redeemed_at' => now()]);
+        $this->postJson('/api/qr-token/validate', ['token' => $redeemed])->assertStatus(404);
+    }
+
+    public function test_qr_validate_public_get_route(): void
+    {
+        // too short (<6) → 404
+        $this->getJson('/api/qr/validate/abc')->assertStatus(404);
+        // nonexistent but valid length → 404
+        $this->getJson('/api/qr/validate/' . Str::random(20))->assertStatus(404);
+        // valid → 200 with role
+        $token = $this->insertQrToken(['role' => 'driver']);
+        $ok = $this->getJson('/api/qr/validate/' . $token);
+        $ok->assertOk();
+        $this->assertTrue($ok->json('data.valid'));
+        $this->assertEquals('driver', $ok->json('data.role'));
+        // expired → 404
+        $expired = $this->insertQrToken(['expires_at' => now()->subMinute()]);
+        $this->getJson('/api/qr/validate/' . $expired)->assertStatus(404);
+    }
+
+    public function test_qr_revoke_token(): void
+    {
+        $admin = $this->createUser('admin', ['username' => 'qrrevoke']);
+        Passport::actingAs($admin, ['AccessToSuperAdmin']);
+
+        // validation: missing token → 422
+        $this->postJson('/api/qr-token/revoke', [])->assertStatus(422);
+
+        // revoking a token created by someone else → 404
+        $foreign = $this->insertQrToken(['created_by' => $this->createUser('admin', ['username' => 'otheradmin'])->id]);
+        $this->postJson('/api/qr-token/revoke', ['token' => $foreign])->assertStatus(404);
+
+        // revoking own token → 200, flag set
+        $own = $this->insertQrToken(['created_by' => $admin->id]);
+        $this->postJson('/api/qr-token/revoke', ['token' => $own])->assertOk();
+        $this->assertEquals(1, (int) DB::table('qr_tokens')->where('token', $own)->value('is_revoked'));
+    }
 }
