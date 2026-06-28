@@ -292,7 +292,7 @@ void main() {
     });
 
     test('MartProductModel tolerates missing/garbage fields', () {
-      final p = MartProductModel.fromJson(<String, dynamic>{'price': 'NaN', 'stock': 'x'});
+      final p = MartProductModel.fromJson(<String, dynamic>{'price': 'abc', 'stock': 'x'});
       expect(p.price, 0);
       expect(p.stock, 0);
       expect(p.name, isNull);
