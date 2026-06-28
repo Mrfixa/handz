@@ -184,9 +184,9 @@ class _ConversationBubbleState extends State<ConversationBubble> {
                                   Center(child: SizedBox(width: 50, child: Image.asset(Images.folder))),
 
                                   Center(child: Text(
-                                    '${widget.message.conversationFiles![index].fileName}'.substring(
-                                      widget.message.conversationFiles![index].fileName!.length-7,
-                                    ),
+                                    (widget.message.conversationFiles![index].fileName?.length ?? 0) > 7
+                                        ? widget.message.conversationFiles![index].fileName!.substring(widget.message.conversationFiles![index].fileName!.length - 7)
+                                        : '${widget.message.conversationFiles![index].fileName ?? ''}',
                                     maxLines: 5, overflow: TextOverflow.clip,
                                   )),
                                 ]),

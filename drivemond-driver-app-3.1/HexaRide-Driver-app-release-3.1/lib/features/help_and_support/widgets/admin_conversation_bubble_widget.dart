@@ -228,7 +228,9 @@ class _AdminConversationBubbleWidgetState extends State<AdminConversationBubbleW
 
                                   Column(children: [
                                     Text(
-                                      '${widget.message.conversationFiles![index].fileName}'.substring(widget.message.conversationFiles![index].fileName!.length-7),
+                                      (widget.message.conversationFiles![index].fileName?.length ?? 0) > 7
+                                          ? widget.message.conversationFiles![index].fileName!.substring(widget.message.conversationFiles![index].fileName!.length - 7)
+                                          : '${widget.message.conversationFiles![index].fileName ?? ''}',
                                       maxLines: 5, overflow: TextOverflow.clip,style: textRegular.copyWith(fontSize: 12),
                                     ),
 

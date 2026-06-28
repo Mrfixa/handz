@@ -372,3 +372,14 @@ fixed in source** (the earlier sections of this doc had drifted out of date).
 | D1 | Fixed (Wave 8) | `MartDeliveryScreen` network layer moved onto `MartController` — all 4 direct `ApiClient` calls (order fetch, status×2, proof upload) now go through the DI chain (`fetchOrderDetailMap`, `updateStatus(idempotencyKey:)`, `uploadDeliveryProof`); multipart/base64 assembly lives in the repository. Driver `vito_flows_test.dart` exercises the new controller methods and force-compiles the concrete repo/service. UI state (signature/photo/persistence) stays local; full `MartOrderModel` rendering adoption is a later step. |
 
 **Open findings remaining: none.** All 34 audited driver-app findings are resolved.
+
+## ✅ Fixed in Wave 13 (full end-to-end sweep)
+
+| ID | Status | Evidence |
+|----|--------|----------|
+| D31 | Fixed | `verification_screen.dart` masked the phone with `substring(0,5)…substring(length-3)` and **no length guard** → RangeError for phone numbers < 8 chars (the user app already guarded this; driver was missed). Now `number.length >= 8 ? … : number`. |
+| D32 | Fixed | `help_and_support/.../admin_conversation_bubble_widget.dart` truncated a chat file name with `substring(fileName.length-7)` → negative index/RangeError for names < 7 chars (and `"null"` for a null name). Now length-guarded. |
+
+**Sweep notes (verified, no change):** localization EN/ES parity intact; `int.parse(offset)` /
+model `*.parse(json[...])` is a pervasive pre-existing pattern on server-supplied numeric fields
+(reliably present) — left as-is rather than blind-editing dozens of model files.

@@ -1058,6 +1058,16 @@ The following findings were resolved and shipped in release `v2.1.0`:
 | U20 | 429 "too many attempts" shown as localised error on OTP verify |
 | U22 | Scheduled trip time validated against current time |
 
+## ✅ Fixed in Wave 13 (full end-to-end sweep)
+
+| ID | Description |
+|----|-------------|
+| U23 | `message_bubble.dart` chat file-name truncation used `substring(fileName.length-7)` → negative index/RangeError for names < 7 chars (and `"null"` for a null name). Now length-guarded. |
+
+**Sweep notes (verified, no change):** EN/ES/AR localization parity intact; `verification_screen`
+phone mask already guarded (`length >= 8`); `int.parse(offset)` / model `*.parse(json[...])` is a
+pervasive pre-existing pattern on server-supplied numeric fields, left as-is.
+
 ## ✅ Fixed / verified in v2.2.0 (2026-06-26)
 
 Wave 5 + Wave 6 reconciliation. Several findings still listed as "open critical/high" above were
