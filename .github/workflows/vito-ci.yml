@@ -10,10 +10,10 @@ env:
   FLUTTER_VERSION: "3.44.0"
   PHP_VERSION: "8.2"
   # Ratcheted coverage floors — raise these as coverage grows toward 80%.
-  # Measured 2026-06-27: PHP (Vito API surface) 58.04%; Flutter user 0.5% / driver 0.7%.
+  # Measured 2026-06-28: PHP (Vito API surface) 75.98%; Flutter user 0.5% / driver 0.7%.
   # Floors sit a few points below current so the suite can't silently regress.
-  # Next PHP raises: VitoStripeController (2.2%) and VitoMartAdminApiController (0%).
-  PHP_COVERAGE_FLOOR: 55
+  # Next PHP raise target: QrTokenController (46%) and VitoStripeController (62%).
+  PHP_COVERAGE_FLOOR: 72
   FLUTTER_COVERAGE_FLOOR: 0.4
 
 jobs:
