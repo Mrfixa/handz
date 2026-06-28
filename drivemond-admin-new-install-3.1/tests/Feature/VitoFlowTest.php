@@ -40,6 +40,7 @@ class VitoFlowTest extends TestCase
         Schema::dropIfExists('reviews');
         Schema::dropIfExists('transactions');
         Schema::dropIfExists('stripe_events');
+        Schema::dropIfExists('settings');
         Schema::dropIfExists('mart_reviews');
         Schema::dropIfExists('mart_order_items');
         Schema::dropIfExists('mart_orders');
@@ -3734,5 +3735,247 @@ class VitoFlowTest extends TestCase
         $this->assertDatabaseHas('trip_requests', [
             'id' => $parcelId, 'current_status' => 'out_for_pickup',
         ]);
+    }
+
+    // ========================================================================
+    // Wave 10 — VitoStripeController coverage (create-intent branches + webhook)
+    // ========================================================================
+
+    private function ensureSettingsTable(): void
+    {
+        if (!Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->id();
+                $table->string('key_name')->nullable();
+                $table->string('settings_type')->nullable();
+                $table->string('mode')->default('test');
+                $table->text('live_values')->nullable();
+                $table->text('test_values')->nullable();
+                $table->timestamps();
+            });
+        }
+    }
+
+    /** Build a valid Stripe-Signature header and POST the raw payload to the webhook. */
+    private function postSignedWebhook(array $event, string $secret = 'whsec_test_123')
+    {
+        putenv("STRIPE_WEBHOOK_SECRET={$secret}");
+        $_ENV['STRIPE_WEBHOOK_SECRET'] = $secret;
+        $_SERVER['STRIPE_WEBHOOK_SECRET'] = $secret;
+        $payload = json_encode($event);
+        $t = time();
+        $sig = hash_hmac('sha256', "{$t}.{$payload}", $secret);
+        return $this->call('POST', '/api/stripe/webhook', [], [], [], [
+            'HTTP_STRIPE_SIGNATURE' => "t={$t},v1={$sig}",
+            'CONTENT_TYPE' => 'application/json',
+        ], $payload);
+    }
+
+    public function test_stripe_create_payment_intent_validation_error(): void
+    {
+        $user = $this->createUser('customer');
+        Passport::actingAs($user, ['AccessToCustomer']);
+        $this->postJson('/api/customer/stripe/payment-intent', [])->assertStatus(400);
+        $this->postJson('/api/customer/stripe/payment-intent', ['amount' => 999999])->assertStatus(400);
+    }
+
+    public function test_stripe_create_payment_intent_missing_config_returns_500(): void
+    {
+        $this->ensureSettingsTable(); // table exists but no stripe row
+        $user = $this->createUser('customer');
+        Passport::actingAs($user, ['AccessToCustomer']);
+        $this->postJson('/api/customer/stripe/payment-intent', ['amount' => 50])->assertStatus(500);
+    }
+
+    public function test_stripe_create_payment_intent_missing_api_key_returns_500(): void
+    {
+        $this->ensureSettingsTable();
+        DB::table('settings')->insert([
+            'key_name'      => 'stripe',
+            'settings_type' => 'payment_config',
+            'mode'          => 'test',
+            'test_values'   => json_encode(['published_key' => 'pk_test']), // no api_key
+            'live_values'   => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
+        $user = $this->createUser('customer');
+        Passport::actingAs($user, ['AccessToCustomer']);
+        $this->postJson('/api/customer/stripe/payment-intent', ['amount' => 50])->assertStatus(500);
+    }
+
+    public function test_stripe_order_payment_intent_validation_and_not_found(): void
+    {
+        $user = $this->createUser('customer');
+        Passport::actingAs($user, ['AccessToCustomer']);
+        $this->postJson('/api/customer/stripe/order-payment-intent', ['order_id' => 'not-a-uuid'])->assertStatus(400);
+        $this->postJson('/api/customer/stripe/order-payment-intent', ['order_id' => Str::uuid()->toString()])->assertStatus(404);
+    }
+
+    public function test_stripe_order_payment_intent_already_paid_returns_400(): void
+    {
+        $user = $this->createUser('customer');
+        $order = MartOrder::create([
+            'id' => Str::uuid()->toString(), 'ref_id' => 'REF-PAID-' . Str::random(5),
+            'customer_id' => $user->id, 'status' => 'pending', 'total_amount' => 30.00,
+            'tip_amount' => 0, 'discount_amount' => 0, 'payment_status' => 'paid',
+        ]);
+        Passport::actingAs($user, ['AccessToCustomer']);
+        $this->postJson('/api/customer/stripe/order-payment-intent', ['order_id' => $order->id])->assertStatus(400);
+    }
+
+    public function test_stripe_webhook_secret_not_configured_returns_500(): void
+    {
+        putenv('STRIPE_WEBHOOK_SECRET');
+        unset($_ENV['STRIPE_WEBHOOK_SECRET'], $_SERVER['STRIPE_WEBHOOK_SECRET']);
+        $resp = $this->call('POST', '/api/stripe/webhook', [], [], [], [
+            'HTTP_STRIPE_SIGNATURE' => 't=1,v1=deadbeef',
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(['id' => 'evt_x', 'type' => 'payment_intent.succeeded']));
+        $this->assertEquals(500, $resp->getStatusCode());
+    }
+
+    public function test_stripe_webhook_invalid_signature_returns_400(): void
+    {
+        putenv('STRIPE_WEBHOOK_SECRET=whsec_test_123');
+        $_ENV['STRIPE_WEBHOOK_SECRET'] = 'whsec_test_123';
+        $_SERVER['STRIPE_WEBHOOK_SECRET'] = 'whsec_test_123';
+        $resp = $this->call('POST', '/api/stripe/webhook', [], [], [], [
+            'HTTP_STRIPE_SIGNATURE' => 't=1,v1=badsignature',
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(['id' => 'evt_x', 'type' => 'payment_intent.succeeded']));
+        $this->assertEquals(400, $resp->getStatusCode());
+    }
+
+    public function test_stripe_webhook_credits_wallet_and_is_idempotent(): void
+    {
+        $user = $this->createUser('customer');
+        $this->createUserAccount($user);
+        $paymentIntentId = 'pi_' . Str::random(20);
+        $event = [
+            'id'   => 'evt_' . Str::random(16),
+            'type' => 'payment_intent.succeeded',
+            'data' => ['object' => [
+                'id'       => $paymentIntentId,
+                'amount'   => 5000, // cents → 50.00
+                'currency' => 'usd',
+                'metadata' => ['user_id' => $user->id, 'type' => 'wallet_topup'],
+            ]],
+        ];
+        $this->postSignedWebhook($event)->assertOk();
+        $this->assertEquals(50.00, (float) DB::table('user_accounts')->where('user_id', $user->id)->value('wallet_balance'));
+
+        // Replaying the same event must not double-credit.
+        $this->postSignedWebhook($event)->assertOk();
+        $this->assertEquals(50.00, (float) DB::table('user_accounts')->where('user_id', $user->id)->value('wallet_balance'));
+    }
+
+    public function test_stripe_webhook_marks_order_paid(): void
+    {
+        $user = $this->createUser('customer');
+        $order = MartOrder::create([
+            'id' => Str::uuid()->toString(), 'ref_id' => 'REF-WH-' . Str::random(5),
+            'customer_id' => $user->id, 'status' => 'accepted', 'total_amount' => 25.00,
+            'tip_amount' => 0, 'discount_amount' => 0, 'payment_status' => 'unpaid',
+        ]);
+        $paymentIntentId = 'pi_' . Str::random(20);
+        StripeEvent::create([
+            'id' => Str::uuid()->toString(), 'stripe_event_id' => $paymentIntentId,
+            'type' => 'payment_intent.created', 'user_id' => $user->id, 'amount' => 25.00,
+            'currency' => 'usd', 'status' => 'pending', 'payment_intent_id' => $paymentIntentId,
+            'metadata' => ['type' => 'order_payment', 'order_id' => $order->id],
+        ]);
+        $this->postSignedWebhook([
+            'id'   => 'evt_' . Str::random(16),
+            'type' => 'payment_intent.succeeded',
+            'data' => ['object' => [
+                'id' => $paymentIntentId, 'amount' => 2500, 'currency' => 'usd',
+                'metadata' => ['user_id' => $user->id, 'type' => 'order_payment', 'order_id' => $order->id],
+            ]],
+        ])->assertOk();
+        $this->assertEquals('paid', MartOrder::find($order->id)->payment_status);
+    }
+
+    public function test_stripe_webhook_payment_failed_marks_failed(): void
+    {
+        $user = $this->createUser('customer');
+        $order = MartOrder::create([
+            'id' => Str::uuid()->toString(), 'ref_id' => 'REF-WF-' . Str::random(5),
+            'customer_id' => $user->id, 'status' => 'accepted', 'total_amount' => 25.00,
+            'tip_amount' => 0, 'discount_amount' => 0, 'payment_status' => 'unpaid',
+        ]);
+        $paymentIntentId = 'pi_' . Str::random(20);
+        StripeEvent::create([
+            'id' => Str::uuid()->toString(), 'stripe_event_id' => $paymentIntentId,
+            'type' => 'payment_intent.created', 'user_id' => $user->id, 'amount' => 25.00,
+            'currency' => 'usd', 'status' => 'pending', 'payment_intent_id' => $paymentIntentId,
+            'metadata' => ['type' => 'order_payment', 'order_id' => $order->id],
+        ]);
+        $this->postSignedWebhook([
+            'id'   => 'evt_' . Str::random(16),
+            'type' => 'payment_intent.payment_failed',
+            'data' => ['object' => [
+                'id' => $paymentIntentId, 'metadata' => ['user_id' => $user->id],
+            ]],
+        ])->assertOk();
+        $this->assertEquals('failed', MartOrder::find($order->id)->payment_status);
+    }
+
+    public function test_stripe_webhook_charge_refunded_marks_refunded(): void
+    {
+        $user = $this->createUser('customer');
+        $order = MartOrder::create([
+            'id' => Str::uuid()->toString(), 'ref_id' => 'REF-WR-' . Str::random(5),
+            'customer_id' => $user->id, 'status' => 'accepted', 'total_amount' => 25.00,
+            'tip_amount' => 0, 'discount_amount' => 0, 'payment_status' => 'paid',
+        ]);
+        $paymentIntentId = 'pi_' . Str::random(20);
+        StripeEvent::create([
+            'id' => Str::uuid()->toString(), 'stripe_event_id' => $paymentIntentId,
+            'type' => 'payment_intent.succeeded', 'user_id' => $user->id, 'amount' => 25.00,
+            'currency' => 'usd', 'status' => 'succeeded', 'payment_intent_id' => $paymentIntentId,
+            'metadata' => ['type' => 'order_payment', 'order_id' => $order->id],
+        ]);
+        $this->postSignedWebhook([
+            'id'   => 'evt_' . Str::random(16),
+            'type' => 'charge.refunded',
+            'data' => ['object' => ['payment_intent' => $paymentIntentId]],
+        ])->assertOk();
+        $this->assertEquals('refunded', MartOrder::find($order->id)->payment_status);
+    }
+
+    // ========================================================================
+    // Wave 10 — VitoMartAdminApiController CRUD (super-admin API)
+    // ========================================================================
+
+    public function test_mart_admin_api_product_crud(): void
+    {
+        $admin = $this->createUser('admin', ['username' => 'martadminapi']);
+        Passport::actingAs($admin, ['AccessToSuperAdmin']);
+
+        // index (empty)
+        $this->getJson('/api/admin/mart/products')->assertOk();
+
+        // store
+        $create = $this->postJson('/api/admin/mart/products', [
+            'name' => 'API Widget', 'category' => 'tools', 'price' => 9.99,
+            'description' => 'desc', 'stock' => 5, 'is_active' => true,
+        ]);
+        $create->assertStatus(201);
+        $id = $create->json('data.id');
+        $this->assertNotNull($id);
+        $this->assertDatabaseHas('mart_products', ['id' => $id, 'name' => 'API Widget']);
+        $this->assertDatabaseHas('vito_audit_log', ['action' => 'create', 'entity_id' => $id]);
+
+        // index with search filter now returns it
+        $this->getJson('/api/admin/mart/products?search=Widget')->assertOk();
+
+        // update
+        $this->putJson("/api/admin/mart/products/{$id}", ['price' => 12.50, 'stock' => 8])->assertOk();
+        $this->assertEquals(12.50, (float) MartProduct::find($id)->price);
+
+        // destroy
+        $this->deleteJson("/api/admin/mart/products/{$id}")->assertOk();
+        $this->assertNull(MartProduct::find($id));
     }
 }
