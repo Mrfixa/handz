@@ -17,6 +17,7 @@ import 'package:ride_sharing_user_app/features/profile/domain/models/vehicle_bra
 import 'package:ride_sharing_user_app/features/profile/domain/models/vehicle_body.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
+import 'package:ride_sharing_user_app/common_widgets/searchable_dropdown_field.dart';
 import 'package:ride_sharing_user_app/common_widgets/date_picker_widget.dart';
 
 class VehicleAddScreen extends StatefulWidget {
@@ -33,6 +34,9 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
   TextEditingController vinNumberController = TextEditingController();
   TextEditingController transmissionController = TextEditingController();
   TextEditingController parcelWeightCapacity = TextEditingController();
+  TextEditingController brandSearchController = TextEditingController();
+  TextEditingController modelSearchController = TextEditingController();
+  TextEditingController categorySearchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   FocusNode licencePlateFocus = FocusNode();
@@ -47,11 +51,27 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
 
 
 
+  // Mirror a selected entry into its search field, but leave the field empty for the
+  // 'abc' placeholder rows so the hint shows instead of a placeholder label.
+  void _syncSearchText(TextEditingController controller, String? id, String? name) {
+    controller.text = (id != null && id != 'abc') ? (name ?? '') : '';
+  }
+
   @override
   void initState() {
-    Get.find<ProfileController>().getVehicleBrandList(1);
-    Get.find<ProfileController>().getCategoryList(1);
-    Get.find<ProfileController>().clearVehicleData();
+    final profileController = Get.find<ProfileController>();
+    profileController.getVehicleBrandList(1).then((_) {
+      if (!mounted) return;
+      _syncSearchText(brandSearchController, profileController.selectedBrand?.id, profileController.selectedBrand?.name);
+      _syncSearchText(modelSearchController, profileController.selectedModel.id, profileController.selectedModel.name);
+      setState(() {});
+    });
+    profileController.getCategoryList(1).then((_) {
+      if (!mounted) return;
+      _syncSearchText(categorySearchController, profileController.selectedCategory.id, profileController.selectedCategory.name);
+      setState(() {});
+    });
+    profileController.clearVehicleData();
     if(widget.vehicleInfo != null){
       licencePlateNumberController.text = widget.vehicleInfo!.licencePlateNumber ?? '';
       final expireDate = widget.vehicleInfo!.licenceExpireDate;
@@ -74,6 +94,9 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
     vinNumberController.dispose();
     transmissionController.dispose();
     parcelWeightCapacity.dispose();
+    brandSearchController.dispose();
+    modelSearchController.dispose();
+    categorySearchController.dispose();
     _scrollController.dispose();
     licencePlateFocus.dispose();
     licenceExpiryFocus.dispose();
@@ -147,31 +170,17 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                       TextFieldTitleWidget(title: 'vehicle_brand'.tr, isRequired: true),
 
                       if(profileController.brandList.isNotEmpty)
-                        Container(
-                          width: Get.width,
-                          padding: const EdgeInsets.symmetric(horizontal:Dimensions.paddingSizeDefault),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            border: Border.all(width: .5, color: Theme.of(context).hintColor.withValues(alpha: .7)),
-                            borderRadius: BorderRadius.circular(Dimensions.paddingSizeOverLarge),
-                          ),
-                          child: DropdownButton(
-                            items: profileController.brandList.map((item) {
-                              return  DropdownMenuItem<Brand>(
-                                value: item,
-                                child: Text(item.name!.tr,style: textRegular.copyWith(
-                                  color: Theme.of(context).textTheme.bodyMedium!.color,
-                                )),
-                              );
-                            }).toList(),
-                            onChanged: (newVal) {
-                              profileController.setBrandIndex(newVal!, true);
-                            },
-                            isExpanded: true,
-                            underline: const SizedBox(),
-                            icon: Icon(Icons.keyboard_arrow_down),
-                            value: profileController.selectedBrand ?? Brand(id: 'abc', name: 'Select Brand Model'),
-                          ),
+                        SearchableDropdownField<Brand>(
+                          controller: brandSearchController,
+                          hintText: 'search_vehicle_brand'.tr,
+                          items: profileController.brandList.where((brand) => brand.id != 'abc').toList(),
+                          itemLabel: (brand) => brand.name ?? '',
+                          onSelected: (brand) {
+                            profileController.setBrandIndex(brand, true);
+                            // Selecting a brand reloads its models; reset the model field so the
+                            // user picks afresh from only this brand's models.
+                            _syncSearchText(modelSearchController, profileController.selectedModel.id, profileController.selectedModel.name);
+                          },
                         )
                       else
                         Align(
@@ -187,59 +196,26 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
                         TextFieldTitleWidget(title: 'vehicle_model'.tr, isRequired: true),
 
                       if(profileController.modelList.isNotEmpty)
-                        Container(
-                          width: Get.width,
-                          padding: const EdgeInsets.symmetric(horizontal:Dimensions.paddingSizeDefault),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            border: Border.all(width: .5, color: Theme.of(context).hintColor.withValues(alpha: .7)),
-                            borderRadius: BorderRadius.circular(Dimensions.paddingSizeOverLarge),
-                          ),
-                          child: DropdownButton(items: profileController.modelList.map((item) {
-                            return  DropdownMenuItem<VehicleModels>(
-                              value: item,
-                              child:  Text(item.name!.tr,style: textRegular.copyWith(
-                                color: Theme.of(context).textTheme.bodyMedium!.color,
-                              )),
-                            );
-                          }).toList(),
-                            onChanged: (newVal) {
-                              profileController.setModelIndex(newVal!, true);
-                            },
-                            isExpanded: true,
-                            icon: Icon(Icons.keyboard_arrow_down),
-                            underline: const SizedBox(),
-                            value: profileController.selectedModel,
-                          ),
+                        SearchableDropdownField<VehicleModels>(
+                          controller: modelSearchController,
+                          hintText: 'search_vehicle_model'.tr,
+                          items: profileController.modelList.where((model) => model.id != 'abc').toList(),
+                          itemLabel: (model) => model.name ?? '',
+                          onSelected: (model) {
+                            profileController.setModelIndex(model, true);
+                          },
                         ),
 
                       TextFieldTitleWidget(title: 'vehicle_category'.tr, isRequired: true),
                       if(profileController.categoryList.isNotEmpty)
-                        Container(
-                          width: Get.width,
-                          padding: const EdgeInsets.symmetric(horizontal:Dimensions.paddingSizeDefault),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            border: Border.all(width: .5, color: Theme.of(context).hintColor.withValues(alpha: .7)),
-                            borderRadius: BorderRadius.circular(Dimensions.paddingSizeOverLarge),
-                          ),
-                          child: DropdownButton(
-                            items: profileController.categoryList.map((item) {
-                              return  DropdownMenuItem<Category>(
-                                value: item,
-                                child:  Text(item.name!.tr,style: textRegular.copyWith(
-                                  color: Theme.of(context).textTheme.bodyMedium!.color,
-                                )),
-                              );
-                            }).toList(),
-                            onChanged: (newVal) {
-                              profileController.setCategoryIndex(newVal!, true);
-                            },
-                            isExpanded: true,
-                            icon: Icon(Icons.keyboard_arrow_down),
-                            underline: const SizedBox(),
-                            value: profileController.selectedCategory,
-                          ),
+                        SearchableDropdownField<Category>(
+                          controller: categorySearchController,
+                          hintText: 'search_vehicle_category'.tr,
+                          items: profileController.categoryList.where((category) => category.id != 'abc').toList(),
+                          itemLabel: (category) => category.name ?? '',
+                          onSelected: (category) {
+                            profileController.setCategoryIndex(category, true);
+                          },
                         )
                       else
                         Align(

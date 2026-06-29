@@ -1119,5 +1119,9 @@
     "username_available": "Username is available",
     "username_taken": "Username already taken",
     "confirm_withdrawal": "Confirm Withdrawal",
-    "confirm_withdrawal_message": "Are you sure you want to withdraw"
+    "confirm_withdrawal_message": "Are you sure you want to withdraw",
+    "search_vehicle_brand": "Search vehicle brand",
+    "search_vehicle_model": "Search vehicle model",
+    "search_vehicle_category": "Search vehicle category",
+    "no_match_found": "No match found"
 }

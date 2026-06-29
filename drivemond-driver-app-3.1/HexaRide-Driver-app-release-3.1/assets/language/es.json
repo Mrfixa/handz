@@ -1119,5 +1119,9 @@
     "username_available": "El nombre de usuario está disponible",
     "username_taken": "El nombre de usuario ya está en uso",
     "confirm_withdrawal": "Confirmar Retiro",
-    "confirm_withdrawal_message": "¿Está seguro de que desea retirar"
+    "confirm_withdrawal_message": "¿Está seguro de que desea retirar",
+    "search_vehicle_brand": "Buscar marca de vehículo",
+    "search_vehicle_model": "Buscar modelo de vehículo",
+    "search_vehicle_category": "Buscar categoría de vehículo",
+    "no_match_found": "No se encontraron coincidencias"
 }
