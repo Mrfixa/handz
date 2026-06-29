@@ -216,7 +216,14 @@ class VitoMartController extends Controller
                     }
                 }
 
-                $totalAmount = max(0, $subtotal - $discountAmount + $tipAmount);
+                // M3: optional, config-driven delivery fee + tax. Both default to 0 when
+                // unset, so the total is unchanged until the business configures rates.
+                // Tax applies to the discounted subtotal (not tip / not the flat fee).
+                $deliveryFee = max(0.0, (float) get_cache('mart_delivery_fee'));
+                $taxPercent  = max(0.0, (float) get_cache('mart_tax_percent'));
+                $taxAmount   = round(max(0.0, $subtotal - $discountAmount) * $taxPercent / 100, 2);
+
+                $totalAmount = max(0, $subtotal - $discountAmount + $tipAmount + $deliveryFee + $taxAmount);
 
                 // M1: settle wallet payments atomically at order time. Without this a
                 // payment_method='wallet' order was created 'unpaid' and never charged —
@@ -241,6 +248,8 @@ class VitoMartController extends Controller
                     'total_amount' => $totalAmount,
                     'tip_amount' => $tipAmount,
                     'discount_amount' => $discountAmount,
+                    'delivery_fee' => $deliveryFee,
+                    'tax_amount' => $taxAmount,
                     'promo_code' => $appliedPromoCode,
                     'payment_status' => $paymentStatus,
                     'payment_method' => $paymentMethod,

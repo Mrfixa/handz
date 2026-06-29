@@ -364,6 +364,8 @@ class VitoFlowTest extends TestCase
                 $table->decimal('total_amount', 10, 2);
                 $table->decimal('tip_amount', 10, 2)->default(0);
                 $table->decimal('discount_amount', 10, 2)->default(0);
+                $table->decimal('delivery_fee', 10, 2)->default(0);
+                $table->decimal('tax_amount', 10, 2)->default(0);
                 $table->string('promo_code')->nullable();
                 $table->string('payment_status')->default('unpaid');
                 $table->string('payment_method')->nullable();
@@ -1355,6 +1357,33 @@ class VitoFlowTest extends TestCase
         $this->assertEquals(1, MartOrder::where('customer_id', $customer->id)->count());
         $this->assertEquals(1.00, (float) DB::table('user_accounts')->where('user_id', $customer->id)->value('wallet_balance'));
         $this->assertEquals(5, $product->fresh()->stock);
+    }
+
+    // M3: config-driven delivery fee + tax are added to the server-computed total.
+    public function test_mart_order_applies_config_delivery_fee_and_tax(): void
+    {
+        \Illuminate\Support\Facades\Cache::put('mart_delivery_fee', 5);
+        \Illuminate\Support\Facades\Cache::put('mart_tax_percent', 10);
+
+        $customer = $this->createUser('customer');
+        Passport::actingAs($customer, ['AccessToCustomer']);
+        $product = MartProduct::create([
+            'name' => 'Soda', 'price' => 10.00, 'stock' => 50, 'category' => 'grocery', 'is_active' => true,
+        ]);
+
+        $this->postJson('/api/customer/mart/order', [
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
+            'delivery_address' => '1 St',
+        ])->assertOk();
+
+        $order = MartOrder::where('customer_id', $customer->id)->first();
+        // subtotal=20, no promo/tip, fee=5, tax=10% of 20=2 → total=27
+        $this->assertEquals('5.00', $order->delivery_fee);
+        $this->assertEquals('2.00', $order->tax_amount);
+        $this->assertEquals('27.00', $order->total_amount);
+
+        \Illuminate\Support\Facades\Cache::forget('mart_delivery_fee');
+        \Illuminate\Support\Facades\Cache::forget('mart_tax_percent');
     }
 
     // M7: order details surfaces a delivery ETA only while out for delivery.
