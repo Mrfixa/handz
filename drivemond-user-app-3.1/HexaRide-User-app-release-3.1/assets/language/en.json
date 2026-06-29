@@ -1134,5 +1134,8 @@
     "schedule_time_in_past": "Scheduled time must be at least 5 minutes in the future.",
     "too_many_otp_attempts": "Too many attempts. Please wait before trying again.",
     "media_picker_error": "Could not open media picker. Please check permissions.",
-    "file_too_large": "File is too large. Maximum size is 50 MB."
+    "file_too_large": "File is too large. Maximum size is 50 MB.",
+    "reorder": "Reorder",
+    "items_added_to_cart": "Items added to your cart",
+    "some_items_unavailable": "Some items are no longer available and were skipped"
 }

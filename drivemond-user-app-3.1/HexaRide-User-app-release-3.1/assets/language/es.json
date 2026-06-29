@@ -1134,5 +1134,8 @@
     "schedule_time_in_past": "La hora programada debe ser al menos 5 minutos en el futuro.",
     "too_many_otp_attempts": "Demasiados intentos. Espere antes de intentarlo de nuevo.",
     "media_picker_error": "No se pudo abrir el selector de medios. Verifique los permisos.",
-    "file_too_large": "El archivo es demasiado grande. El tamaño máximo es 50 MB."
+    "file_too_large": "El archivo es demasiado grande. El tamaño máximo es 50 MB.",
+    "reorder": "Volver a pedir",
+    "items_added_to_cart": "Artículos añadidos a tu carrito",
+    "some_items_unavailable": "Algunos artículos ya no están disponibles y se omitieron"
 }

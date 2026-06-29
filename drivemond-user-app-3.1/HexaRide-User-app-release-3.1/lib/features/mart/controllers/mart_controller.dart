@@ -125,6 +125,36 @@ class MartController extends GetxController implements GetxService {
     return true;
   }
 
+  /// M5: re-add a past order's items to the cart using the *current* catalog
+  /// price/stock (each item is re-fetched live, so prices/stock are honoured and
+  /// discontinued items are skipped). Returns the number of items that could not
+  /// be re-added (no longer sold or out of stock) so the UI can inform the user.
+  Future<int> reorder(MartOrderModel order) async {
+    int unavailable = 0;
+    for (final item in order.items) {
+      final id = item.productId;
+      if (id == null || id.isEmpty) {
+        unavailable++;
+        continue;
+      }
+      final product = await getProductDetails(id);
+      if (product == null || product.stock <= 0) {
+        unavailable++;
+        continue;
+      }
+      final added = addToCart({
+        'id': product.id,
+        'name': product.name,
+        'price': product.price,
+        'image': product.image,
+        'stock': product.stock,
+      }, quantity: item.quantity > 0 ? item.quantity : 1);
+      if (!added) unavailable++;
+    }
+    update();
+    return unavailable;
+  }
+
   void updateCartItemQuantity(String productId, int quantity) {
     if (quantity <= 0) {
       removeFromCart(productId);

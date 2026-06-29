@@ -4,6 +4,7 @@ import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_order_tracking_screen.dart';
+import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/helper/price_converter.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -116,6 +117,20 @@ class _MartOrderHistoryScreenState extends State<MartOrderHistoryScreen> {
               Text(order.createdAt!.split('T').first,
                   style: textRegular.copyWith(color: Theme.of(context).disabledColor, fontSize: Dimensions.fontSizeSmall)),
             ],
+            // M5: re-add this order's items to the cart (honours current stock/price).
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () async {
+                  final unavailable = await Get.find<MartController>().reorder(order);
+                  showCustomSnackBar(
+                    unavailable == 0 ? 'items_added_to_cart'.tr : 'some_items_unavailable'.tr,
+                  );
+                },
+                icon: Icon(Icons.refresh, size: 18, color: Theme.of(context).primaryColor),
+                label: Text('reorder'.tr, style: textRegular.copyWith(color: Theme.of(context).primaryColor)),
+              ),
+            ),
           ],
         ),
       ),
