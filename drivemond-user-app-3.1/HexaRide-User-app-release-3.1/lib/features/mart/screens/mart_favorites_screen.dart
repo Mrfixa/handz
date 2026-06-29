@@ -26,7 +26,7 @@ class _MartFavoritesScreenState extends State<MartFavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWidget(title: 'favorites'.tr, regularAppbar: true),
+      appBar: AppBarWidget(title: 'favorites'.tr),
       body: GetBuilder<MartController>(builder: (martController) {
         final items = martController.favorites;
         if (items.isEmpty) {
