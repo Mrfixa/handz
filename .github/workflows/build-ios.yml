@@ -19,7 +19,10 @@ on:
 jobs:
   build-ios:
     name: Build iOS (${{ matrix.app }})
-    runs-on: macos-14
+    # macos-15 ships Xcode 16 (iOS 18 SDK). Required because connectivity_plus 7.2.0
+    # references NWPath.isUltraConstrained, which only exists in the iOS 18 SDK — the
+    # older macos-14 Xcode failed to compile it ("NWPath has no member isUltraConstrained").
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
