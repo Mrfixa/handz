@@ -67,6 +67,16 @@ class MartRepository implements MartRepositoryInterface {
   }
 
   @override
+  Future<Response> toggleFavorite(String productId) async {
+    return await apiClient.postData(AppConstants.martFavoritesToggle, {'product_id': productId});
+  }
+
+  @override
+  Future<Response> getFavorites() async {
+    return await apiClient.getData(AppConstants.martFavorites);
+  }
+
+  @override
   Future add(value) => throw UnimplementedError();
   @override
   Future delete(String id) => throw UnimplementedError();

@@ -1137,5 +1137,7 @@
     "file_too_large": "El archivo es demasiado grande. El tamaño máximo es 50 MB.",
     "reorder": "Volver a pedir",
     "items_added_to_cart": "Artículos añadidos a tu carrito",
-    "some_items_unavailable": "Algunos artículos ya no están disponibles y se omitieron"
+    "some_items_unavailable": "Algunos artículos ya no están disponibles y se omitieron",
+    "favorites": "Favoritos",
+    "no_favorites_yet": "Aún no tienes favoritos"
 }

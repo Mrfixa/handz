@@ -251,6 +251,35 @@ class MartController extends GetxController implements GetxService {
     return productDetails;
   }
 
+  // GoMart favorites / wishlist.
+  final Set<String> favoriteIds = {};
+  List<MartProductModel> favorites = [];
+
+  bool isFavorite(String? id) => id != null && favoriteIds.contains(id);
+
+  Future<void> getFavorites({bool notify = true}) async {
+    final response = await martServiceInterface.getFavorites();
+    if (response.statusCode == 200 && response.body['data'] != null) {
+      favorites = (response.body['data'] as List).map((e) => MartProductModel.fromJson(e)).toList();
+      favoriteIds
+        ..clear()
+        ..addAll(favorites.map((p) => p.id ?? ''));
+    }
+    if (notify) update();
+  }
+
+  /// Optimistic toggle; reverts on API failure.
+  Future<void> toggleFavorite(String productId) async {
+    final wasFav = favoriteIds.contains(productId);
+    wasFav ? favoriteIds.remove(productId) : favoriteIds.add(productId);
+    update();
+    final response = await martServiceInterface.toggleFavorite(productId);
+    if (response.statusCode != 200) {
+      wasFav ? favoriteIds.add(productId) : favoriteIds.remove(productId);
+      update();
+    }
+  }
+
   Future<void> getOrders({bool notify = true}) async {
     isLoading = true;
     if (notify) update();

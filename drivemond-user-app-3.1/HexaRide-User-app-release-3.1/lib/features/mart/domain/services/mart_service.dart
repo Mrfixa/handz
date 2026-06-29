@@ -35,4 +35,10 @@ class MartService implements MartServiceInterface {
   @override
   Future applyPromoCode(String code, double orderTotal) async =>
       await martRepositoryInterface.applyPromoCode(code, orderTotal);
+
+  @override
+  Future toggleFavorite(String productId) async => await martRepositoryInterface.toggleFavorite(productId);
+
+  @override
+  Future getFavorites() async => await martRepositoryInterface.getFavorites();
 }
