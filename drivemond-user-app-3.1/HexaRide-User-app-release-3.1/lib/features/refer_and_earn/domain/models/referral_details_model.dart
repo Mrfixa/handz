@@ -1,3 +1,5 @@
+import 'package:ride_sharing_user_app/util/parse_utils.dart';
+
 class ReferralDetailsModel {
   String? responseCode;
   String? message;
@@ -61,9 +63,9 @@ class Data {
 
   Data.fromJson(Map<String, dynamic> json) {
     referralCode = json['referral_code'];
-    shareCodeEarning = double.parse(json['share_code_earning'].toString());
+    shareCodeEarning = toDoubleOr(json['share_code_earning']);
     firstRideDiscountStatus = json['first_ride_discount_status'];
-    discountAmount = double.parse(json['discount_amount'].toString());
+    discountAmount = toDoubleOr(json['discount_amount']);
     discountAmountType = json['discount_amount_type'];
     discountValidity = json['discount_validity'];
     discountValidityType = json['discount_validity_type'];

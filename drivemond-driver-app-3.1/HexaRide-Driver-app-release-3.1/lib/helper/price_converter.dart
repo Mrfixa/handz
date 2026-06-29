@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/splash/controllers/splash_controller.dart';
+import 'package:ride_sharing_user_app/util/parse_utils.dart';
 
 class PriceConverter {
 
   static String convertPrice(BuildContext context, double price, {double? discount, String? discountType}) {
     bool inRight = Get.find<SplashController>().config!.currencySymbolPosition == 'right';
     String decimal = Get.find<SplashController>().config!.currencyDecimalPoint?? '1';
+    // Server-supplied; toStringAsFixed needs 0..20, and a non-numeric value would
+    // otherwise throw on every price render. Coerce safely and clamp.
+    final int decimalDigits = toIntOr(decimal, 1).clamp(0, 20);
     String symbol = Get.find<SplashController>().config!.currencySymbol?? '\$';
     String finalResult;
     if(discount != null && discountType != null){
@@ -17,9 +21,9 @@ class PriceConverter {
       }
     }
     if(inRight){
-      finalResult = '${(price).toStringAsFixed(int.parse(decimal)).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} $symbol';
+      finalResult = '${(price).toStringAsFixed(decimalDigits).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} $symbol';
     }else{
-      finalResult = '$symbol ''${(price).toStringAsFixed(int.parse(decimal)).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
+      finalResult = '$symbol ''${(price).toStringAsFixed(decimalDigits).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
     }
     return finalResult;
   }

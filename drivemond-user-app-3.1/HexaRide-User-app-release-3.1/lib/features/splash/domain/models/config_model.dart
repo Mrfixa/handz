@@ -1,3 +1,5 @@
+import 'package:ride_sharing_user_app/util/parse_utils.dart';
+
 class ConfigModel {
   String? businessName;
   String? logo;
@@ -238,14 +240,14 @@ class ConfigModel {
       try{
         completionRadius = json['driver_completion_radius'].toDouble();
       }catch(e){
-        completionRadius = double.parse(json['driver_completion_radius'].toString());
+        completionRadius = toDoubleOr(json['driver_completion_radius']);
       }
     }
     if(json['search_radius'] != null){
       try{
         searchRadius = json['search_radius'].toDouble();
       }catch(e){
-        searchRadius = double.parse(json['search_radius'].toString());
+        searchRadius = toDoubleOr(json['search_radius']);
       }
     }
     externalSystem = json['external_system'];

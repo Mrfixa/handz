@@ -34,6 +34,8 @@ with a stable ID, a severity, the area, the finding, a status, and the fix commi
 
 | U2 | Med (i18n) | User app / localization | Removed **Arabic** entirely (product decision): dropped the `ar` `LanguageModel` and `assets/language/ar.json`, trimmed the parity test to en/es, and added a `localization_controller` fallback so a previously-stored `ar` locale resets to `en` (otherwise the app would render RTL with English fallback text after upgrade). | fixed | `c099038` |
 
+| U3/D5 | Med | Both apps / crash surface | `PriceConverter` ran `int.parse(currencyDecimalPoint)` on **every price render** — a non-numeric server config crashed the app app-wide. Added `lib/util/parse_utils.dart` (`toDoubleOr`/`toIntOr`/`toIntOrNull`, accepting null/String/num) and applied it on the genuine crash-path fields: `PriceConverter` (both apps, clamped 0–20), user `config_model` startup radii, and `referral_details_model`. Helpers unit-tested in both apps. Scope = critical paths only (A2 policy unchanged elsewhere). | fixed | _WS3_ |
+
 ## Accepted (reviewed, intentionally not changed)
 
 | ID | Severity | Area | Finding & rationale | Status |

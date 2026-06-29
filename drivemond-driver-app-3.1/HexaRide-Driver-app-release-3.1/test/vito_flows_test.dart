@@ -15,6 +15,7 @@ import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_ite
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 import 'package:ride_sharing_user_app/common_widgets/searchable_dropdown_field.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/qr_scanner_screen.dart';
+import 'package:ride_sharing_user_app/util/parse_utils.dart';
 
 /// Unit tests for VITO-specific flows in the driver app.
 /// These validate localization, token logic, atomic acceptance,
@@ -431,6 +432,31 @@ void main() {
 
     test('returns input unchanged when /invite/ has no trailing token', () {
       expect(extractToken('https://vito.app/invite/'), 'https://vito.app/invite/');
+    });
+  });
+
+  // WS3 — safe numeric coercion for server-supplied fields.
+  group('parse_utils', () {
+    test('toDoubleOr handles num, numeric string, null, and garbage', () {
+      expect(toDoubleOr(5), 5.0);
+      expect(toDoubleOr('5.5'), 5.5);
+      expect(toDoubleOr(null), 0);
+      expect(toDoubleOr('abc', 1.0), 1.0);
+      expect(toDoubleOr('null'), 0); // server null-as-string must not throw
+    });
+
+    test('toIntOr handles num, int/double strings, null, and garbage', () {
+      expect(toIntOr(5), 5);
+      expect(toIntOr('5'), 5);
+      expect(toIntOr('5.9'), 5);
+      expect(toIntOr(null, 1), 1);
+      expect(toIntOr('abc', 2), 2);
+    });
+
+    test('toIntOrNull returns null for null/garbage', () {
+      expect(toIntOrNull(null), isNull);
+      expect(toIntOrNull('7'), 7);
+      expect(toIntOrNull('x'), isNull);
     });
   });
 }
