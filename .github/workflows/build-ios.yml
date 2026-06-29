@@ -10,6 +10,7 @@ name: Build iOS
 # `flutter create --platforms=ios`, then patched, so this never touches lib/.
 
 on:
+  # Re-verify iOS after the mart store/favorites compile fix (d714fa8).
   workflow_dispatch:
   push:
     branches: [master]
