@@ -29,11 +29,28 @@ unsigned CI build:
 | iOS Google Maps API key | `GMSServices.provideAPIKey(...)` in `ios/Runner/AppDelegate.swift` |
 | APNs key/cert for push (firebase_messaging) | Apple Developer → Keys |
 
-To extend the workflow for signed distribution: import the `.p12` + profile (e.g.
-`apple-actions/import-codesign-certs`), drop in `GoogleService-Info.plist`, then
-`flutter build ipa --export-options-plist=ExportOptions.plist` and upload to TestFlight with
-`xcrun altool`/`fastlane`. Add the secrets (`IOS_DIST_CERT_P12`, `IOS_CERT_PASSWORD`,
-`IOS_PROVISION_PROFILE`, `APP_STORE_CONNECT_*`) to the repo first.
+### Signed-release workflow (scaffolded)
+
+`.github/workflows/release-ios.yml` implements the signed lane end to end: pick the app +
+Team ID, it imports the cert/profile, drops in `GoogleService-Info.plist`, injects the iOS Maps
+key into `AppDelegate.swift`, writes `ExportOptions.plist`, runs
+`flutter build ipa --export-options-plist=…`, and uploads to TestFlight. It is **manual-dispatch
+only** (Actions → *Release iOS (signed)* → *Run workflow*) and will not run — and cannot fail — until
+the secrets below exist. It is therefore **not CI-verified here**; the app owner runs it once the
+Apple credentials are in place.
+
+| Secret | What it is |
+|--------|------------|
+| `IOS_DIST_CERT_P12` | base64 of the Apple **Distribution** `.p12` |
+| `IOS_CERT_PASSWORD` | password for that `.p12` |
+| `IOS_PROVISION_PROFILE` | base64 of the App Store `.mobileprovision` for the app's bundle id |
+| `GOOGLE_SERVICE_INFO_PLIST` | base64 of the app's `GoogleService-Info.plist` (Firebase on iOS) |
+| `IOS_MAPS_API_KEY` | iOS Google Maps key (injected into `AppDelegate.swift`) |
+| `APP_STORE_CONNECT_KEY_ID` / `APP_STORE_CONNECT_ISSUER_ID` / `APP_STORE_CONNECT_KEY` | App Store Connect API key (id, issuer, base64 `.p8`) for the TestFlight upload |
+
+> The Podfile + Info.plist usage-description steps are intentionally not duplicated in
+> `release-ios.yml` — copy them from `build-ios.yml` (kept as the single source of truth) if they
+> change. APNs (push) still needs an APNs key registered in the Apple Developer portal.
 
 ## Resolved — driver app ML Kit pod conflict (iOS)
 

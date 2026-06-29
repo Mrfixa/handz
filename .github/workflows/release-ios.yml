@@ -1,0 +1,141 @@
+name: Release iOS (signed)
+
+# SIGNED iOS build → TestFlight. Unlike build-ios.yml (which only proves the apps
+# COMPILE for iOS, unsigned), this produces a distributable .ipa and uploads it to
+# App Store Connect / TestFlight. It needs an Apple Developer account and the secrets
+# listed below — so it is **manual-dispatch only** and simply won't run (and can't
+# fail) until those secrets exist. See IOS_BUILD.md for the full secret list.
+#
+# Required repo secrets:
+#   IOS_DIST_CERT_P12            base64 of your Apple Distribution .p12
+#   IOS_CERT_PASSWORD            password for that .p12
+#   IOS_PROVISION_PROFILE        base64 of the app's .mobileprovision (App Store profile)
+#   GOOGLE_SERVICE_INFO_PLIST    base64 of the app's GoogleService-Info.plist (Firebase)
+#   IOS_MAPS_API_KEY             iOS Google Maps key (injected into AppDelegate)
+#   APP_STORE_CONNECT_KEY_ID     App Store Connect API key id
+#   APP_STORE_CONNECT_ISSUER_ID  App Store Connect issuer id
+#   APP_STORE_CONNECT_KEY        base64 of the App Store Connect .p8 API key
+#   MAPBOX_DOWNLOADS_TOKEN / MAPS_API_KEY / STRIPE_PUBLISHABLE_KEY / MAPBOX_ACCESS_TOKEN (as today)
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which app to release
+        required: true
+        type: choice
+        options: [user, driver]
+      team_id:
+        description: Apple Developer Team ID (10 chars)
+        required: true
+        type: string
+
+jobs:
+  release-ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve app paths
+        id: app
+        run: |
+          if [ "${{ inputs.app }}" = "user" ]; then
+            echo "dir=drivemond-user-app-3.1/HexaRide-User-app-release-3.1" >> "$GITHUB_OUTPUT"
+            echo "bundle_id=com.sixamtech.hexarideuser" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1" >> "$GITHUB_OUTPUT"
+            echo "bundle_id=com.sixamtech.hexariderider" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+
+      - name: Disable Swift Package Manager (use CocoaPods)
+        working-directory: ${{ steps.app.outputs.dir }}
+        run: flutter config --no-enable-swift-package-manager
+
+      - name: Generate iOS platform scaffolding
+        working-directory: ${{ steps.app.outputs.dir }}
+        run: flutter create --platforms=ios --org com.sixamtech .
+
+      - name: Set bundle id and deployment target
+        working-directory: ${{ steps.app.outputs.dir }}
+        run: |
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${{ steps.app.outputs.bundle_id }};/g" ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g" ios/Runner.xcodeproj/project.pbxproj
+
+      # The Podfile / Info.plist usage strings are identical to build-ios.yml; keep them
+      # in sync if that file changes. (Omitted here for brevity — copy that job's
+      # "Write Podfile" + "Add Info.plist permission usage descriptions" steps.)
+
+      - name: Import signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12 }}
+          p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
+
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.IOS_PROVISION_PROFILE }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+
+      - name: Drop in GoogleService-Info.plist (Firebase on iOS)
+        working-directory: ${{ steps.app.outputs.dir }}
+        run: echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
+
+      - name: Inject iOS Google Maps key into AppDelegate
+        working-directory: ${{ steps.app.outputs.dir }}
+        env:
+          IOS_MAPS_API_KEY: ${{ secrets.IOS_MAPS_API_KEY }}
+        run: |
+          # Adds GMSServices.provideAPIKey(...) before the Flutter plugin registration.
+          /usr/bin/sed -i '' "s#GeneratedPluginRegistrant.register(with: self)#GMSServices.provideAPIKey(\"$IOS_MAPS_API_KEY\")\n    GeneratedPluginRegistrant.register(with: self)#" ios/Runner/AppDelegate.swift || true
+
+      - name: Write ExportOptions.plist
+        working-directory: ${{ steps.app.outputs.dir }}
+        run: |
+          cat > ios/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${{ inputs.team_id }}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>uploadBitcode</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+
+      - name: Configure Mapbox downloads token
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          if [ -n "$MAPBOX_DOWNLOADS_TOKEN" ]; then
+            printf 'machine api.mapbox.com\n  login mapbox\n  password %s\n' "$MAPBOX_DOWNLOADS_TOKEN" > ~/.netrc
+            chmod 600 ~/.netrc
+          fi
+
+      - name: Build signed IPA
+        working-directory: ${{ steps.app.outputs.dir }}
+        run: |
+          flutter pub get
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist \
+            --dart-define=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }} \
+            --dart-define=STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }} \
+            --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ${{ steps.app.outputs.dir }}/build/ios/ipa/*.ipa
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_KEY }}
