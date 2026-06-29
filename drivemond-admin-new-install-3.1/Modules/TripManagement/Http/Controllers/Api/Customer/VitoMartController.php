@@ -288,7 +288,40 @@ class VitoMartController extends Controller
             return response()->json(responseFormatter(DEFAULT_404), 404);
         }
 
+        // M7: surface a rough delivery ETA once the order is out for delivery. The app
+        // already renders `estimated_arrival`; the server just hadn't computed it.
+        $order->estimated_arrival = $this->computeEstimatedArrival($order);
+
         return response()->json(responseFormatter(DEFAULT_200, $order));
+    }
+
+    /**
+     * Straight-line (haversine) ETA from the driver's last reported position to the
+     * delivery point, at an assumed ~25 km/h urban average. Returns "~N min" while
+     * the order is out for delivery and both coordinates are known, else null.
+     */
+    private function computeEstimatedArrival(MartOrder $order): ?string
+    {
+        if ($order->status !== 'picked_up'
+            || $order->driver_lat === null || $order->driver_lng === null
+            || $order->delivery_lat === null || $order->delivery_lng === null) {
+            return null;
+        }
+
+        $dLat = (float) $order->driver_lat;
+        $dLng = (float) $order->driver_lng;
+        $tLat = (float) $order->delivery_lat;
+        $tLng = (float) $order->delivery_lng;
+
+        $earthKm = 6371.0;
+        $dLatR = deg2rad($tLat - $dLat);
+        $dLngR = deg2rad($tLng - $dLng);
+        $a = sin($dLatR / 2) ** 2
+            + cos(deg2rad($dLat)) * cos(deg2rad($tLat)) * sin($dLngR / 2) ** 2;
+        $km = $earthKm * 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        $minutes = (int) ceil(($km / 25.0) * 60);
+        return '~' . max(1, $minutes) . ' min';
     }
 
     public function cancelOrder(Request $request, string $id): JsonResponse

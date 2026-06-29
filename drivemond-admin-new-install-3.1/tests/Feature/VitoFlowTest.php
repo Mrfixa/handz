@@ -1357,6 +1357,28 @@ class VitoFlowTest extends TestCase
         $this->assertEquals(5, $product->fresh()->stock);
     }
 
+    // M7: order details surfaces a delivery ETA only while out for delivery.
+    public function test_mart_order_details_eta_when_out_for_delivery(): void
+    {
+        $customer = $this->createUser('customer');
+        Passport::actingAs($customer, ['AccessToCustomer']);
+
+        $order = MartOrder::create([
+            'ref_id' => 'VM-ETA1', 'customer_id' => $customer->id, 'status' => 'picked_up',
+            'total_amount' => 10, 'payment_status' => 'unpaid', 'payment_method' => 'cash',
+            'delivery_address' => 'X', 'delivery_lat' => 23.80, 'delivery_lng' => 90.40,
+            'driver_lat' => 23.81, 'driver_lng' => 90.41,
+        ]);
+
+        $eta = $this->getJson("/api/customer/mart/orders/{$order->id}")->assertOk()->json('data.estimated_arrival');
+        $this->assertNotNull($eta);
+        $this->assertStringContainsString('min', $eta);
+
+        // No ETA before pickup.
+        $order->update(['status' => 'pending']);
+        $this->assertNull($this->getJson("/api/customer/mart/orders/{$order->id}")->json('data.estimated_arrival'));
+    }
+
     // ========================================================================
     // 10. Driver Order Details Endpoint
     // ========================================================================
