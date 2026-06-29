@@ -13,6 +13,8 @@ import 'package:ride_sharing_user_app/features/mart/domain/services/mart_service
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_product_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_item_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
+import 'package:ride_sharing_user_app/common_widgets/searchable_dropdown_field.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/qr_scanner_screen.dart';
 
 /// Unit tests for VITO-specific flows in the driver app.
 /// These validate localization, token logic, atomic acceptance,
@@ -381,6 +383,54 @@ void main() {
       expect(o.items, isEmpty);
       expect(o.itemCount, 0);
       expect(o.customerName, isNull);
+    });
+  });
+
+  // WS2 — behavior coverage for the searchable vehicle selectors (brand/model/category).
+  group('SearchableDropdownField.filterSuggestions', () {
+    final items = ['Toyota', 'Tesla', 'Honda', 'Hyundai', 'BMW'];
+    String label(String s) => s;
+
+    test('empty query returns all items (full list like a dropdown)', () {
+      expect(SearchableDropdownField.filterSuggestions(items, '', label), items);
+      expect(SearchableDropdownField.filterSuggestions(items, '   ', label), items);
+    });
+
+    test('filters to labels containing the query, case-insensitively', () {
+      expect(SearchableDropdownField.filterSuggestions(items, 'ho', label), ['Honda']);
+      expect(SearchableDropdownField.filterSuggestions(items, 'T', label), ['Toyota', 'Tesla']);
+      expect(SearchableDropdownField.filterSuggestions(items, 'hy', label), ['Hyundai']);
+    });
+
+    test('no match returns an empty list', () {
+      expect(SearchableDropdownField.filterSuggestions(items, 'zzz', label), isEmpty);
+    });
+
+    test('matches anywhere in the label, not just the prefix', () {
+      expect(SearchableDropdownField.filterSuggestions(items, 'm', label), contains('BMW'));
+    });
+  });
+
+  // WS2 — QR token extraction for the (mobile_scanner 7.x) invite scanner.
+  group('extractToken', () {
+    test('pulls token from a ?token= URL', () {
+      expect(extractToken('https://vito.app/join?token=ABC123XYZ'), 'ABC123XYZ');
+    });
+
+    test('pulls token from an /invite/<token> path', () {
+      expect(extractToken('https://vito.app/invite/TOK-987'), 'TOK-987');
+    });
+
+    test('returns a bare token unchanged', () {
+      expect(extractToken('PLAINTOKEN1234'), 'PLAINTOKEN1234');
+    });
+
+    test('returns input unchanged when token= is present but empty', () {
+      expect(extractToken('https://vito.app/join?token='), 'https://vito.app/join?token=');
+    });
+
+    test('returns input unchanged when /invite/ has no trailing token', () {
+      expect(extractToken('https://vito.app/invite/'), 'https://vito.app/invite/');
     });
   });
 }

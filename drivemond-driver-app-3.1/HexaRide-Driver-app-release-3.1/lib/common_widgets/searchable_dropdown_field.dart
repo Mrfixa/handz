@@ -25,15 +25,20 @@ class SearchableDropdownField<T> extends StatelessWidget {
     required this.onSelected,
   });
 
+  /// Pure, testable filter used by [suggestionsCallback]: returns the items whose
+  /// label contains [pattern] (case-insensitive, trimmed); an empty pattern returns
+  /// all items so tapping the field shows the full list like a dropdown.
+  static List<T> filterSuggestions<T>(List<T> items, String pattern, String Function(T) itemLabel) {
+    final query = pattern.trim().toLowerCase();
+    if (query.isEmpty) return items;
+    return items.where((item) => itemLabel(item).toLowerCase().contains(query)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return TypeAheadField<T>(
       controller: controller,
-      suggestionsCallback: (pattern) {
-        final query = pattern.trim().toLowerCase();
-        if (query.isEmpty) return items;
-        return items.where((item) => itemLabel(item).toLowerCase().contains(query)).toList();
-      },
+      suggestionsCallback: (pattern) => filterSuggestions(items, pattern, itemLabel),
       builder: (context, fieldController, focusNode) {
         return Container(
           width: Get.width,

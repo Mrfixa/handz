@@ -178,21 +178,27 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     setState(() => _hasScanned = true);
     HapticFeedback.heavyImpact();
 
-    String token = scannedValue;
-    if (scannedValue.contains('token=')) {
-      final uri = Uri.tryParse(scannedValue);
-      if (uri != null && uri.queryParameters.containsKey('token')) {
-        final extracted = uri.queryParameters['token']!;
-        if (extracted.isNotEmpty) token = extracted;
-      }
-    } else if (scannedValue.contains('/invite/')) {
-      final parts = scannedValue.split('/invite/');
-      if (parts.length > 1 && parts.last.isNotEmpty) {
-        token = parts.last;
-      }
-    }
-
     Get.back();
-    widget.onTokenScanned(token);
+    widget.onTokenScanned(extractToken(scannedValue));
   }
+}
+
+/// Pulls the invite token out of a scanned QR payload. Supports a `?token=…` URL,
+/// an `…/invite/<token>` path, or a bare token string. Pure + side-effect free so
+/// it can be unit-tested without a camera. Returns the input unchanged if no known
+/// pattern matches.
+String extractToken(String scannedValue) {
+  if (scannedValue.contains('token=')) {
+    final uri = Uri.tryParse(scannedValue);
+    if (uri != null && uri.queryParameters.containsKey('token')) {
+      final extracted = uri.queryParameters['token']!;
+      if (extracted.isNotEmpty) return extracted;
+    }
+  } else if (scannedValue.contains('/invite/')) {
+    final parts = scannedValue.split('/invite/');
+    if (parts.length > 1 && parts.last.isNotEmpty) {
+      return parts.last;
+    }
+  }
+  return scannedValue;
 }
