@@ -7,7 +7,10 @@ ThemeData lightTheme = ThemeData(
   primaryColor: const Color(0xFFF5B800),
   primaryColorDark: const Color(0xFFD4A000),
   disabledColor: const Color(0xFFBABFC4),
-  scaffoldBackgroundColor: const Color(0xFFF5B800),
+  // Neutral page background (was the primary gold, which tinted every screen).
+  // Light-grey page + white cards gives clean separation.
+  scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+  canvasColor: const Color(0xFFFFFFFF),
   shadowColor: Colors.black.withValues(alpha:0.03),
   textTheme:  const TextTheme(
     bodyMedium: TextStyle(color: Color(0xff1D2D2B)),

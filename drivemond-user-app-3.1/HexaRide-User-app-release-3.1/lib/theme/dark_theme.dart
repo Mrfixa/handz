@@ -7,7 +7,7 @@ ThemeData darkTheme = ThemeData(
   primaryColor: const Color(0xFFD4A000),
   primaryColorDark: const Color(0xFFB38600),
   disabledColor: const Color(0xFFBABFC4),
-  scaffoldBackgroundColor: const Color(0xFF1B2838),
+  scaffoldBackgroundColor: const Color(0xFF121212),
   canvasColor: const Color(0xFF1C1F1F),
   shadowColor: Colors.white.withValues(alpha:0.03),
   brightness: Brightness.dark,
@@ -17,7 +17,8 @@ ThemeData darkTheme = ThemeData(
     bodyMedium: TextStyle(color: Colors.white),
     bodySmall: TextStyle(color: Color(0xffd5e1e0)),
     bodyLarge: TextStyle(color: Color(0xffffffff)),
-    titleMedium: TextStyle(color: Color(0xff1D2D2B)),
+    // Was near-black (invisible on the dark background).
+    titleMedium: TextStyle(color: Color(0xffF1F1F1)),
   ),
   colorScheme: const ColorScheme.dark(
     primary: Color(0xFFF5B800),
@@ -35,7 +36,7 @@ ThemeData darkTheme = ThemeData(
     onPrimaryContainer: Color(0xFFDEFFFB),
     errorContainer: Color(0xFFF6F6F6),
     primaryContainer: Color(0xFFFFA800),
-    onSurface: Color(0xFFFFE6AD),
+    onSurface: Color(0xFF1D2D2B),
     onPrimary: Color(0xFFFFFFFF),
     inverseSurface: Color(0xFF0148AF),
     surfaceContainer: Color(0xFF0094FF),

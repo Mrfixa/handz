@@ -303,6 +303,8 @@ class AuthController extends GetxController implements GetxService {
     if (response?.statusCode == 200) {
 
       setUserToken(response!.body['data']['token']);
+      // Returning (logged-out) users should land on sign-in, not the signup flow.
+      LoginHelper.markRegistered();
       PusherHelper.initializePusher();
       updateToken();
 

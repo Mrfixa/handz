@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/enums/verification_from_enum.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/otp_log_in_screen.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/forgot_password_screen.dart';
-import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
 import 'package:ride_sharing_user_app/features/settings/domain/html_enum_types.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
@@ -207,7 +206,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                   TextButton(
                     onPressed: () {
-                      Get.to(() => const TokenGateScreen());
+                      Get.to(() => const OtpLoginScreen(from: VerificationForm.signUp));
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
