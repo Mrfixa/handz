@@ -51,6 +51,16 @@ with a stable ID, a severity, the area, the finding, a status, and the fix commi
 | M6 | Medium | Backend+user / mart | **Backend production-ready (verified):** `products` already does server-side `LIKE`-escaped search **and** `->paginate()`. The app's client-side search over the first page is acceptable at current catalog size; full server-search + infinite-scroll UI is a low-priority app enhancement (not retrofitted blind into the heavy store screen). | accepted | — |
 | M7 | Low | Backend / mart tracking | Live tracking renders `estimated_arrival` but the server never set it. Fixed: haversine ETA (driver → delivery, ~25 km/h) returned from customer `orderDetails` as "~N min" while out for delivery; test added. | fixed | `a1a7465` |
 
+## GoMart parity (G-series)
+
+| ID | Area | Finding / change | Status | Fix |
+|----|------|------------------|--------|-----|
+| G1 | Backend / mart pricing | **No tax** (per request): order total = subtotal − promo + tip + delivery_fee; `tax_amount` stays 0. Test updated. | fixed | `4f12995` |
+| G2 | Backend + app / discovery | Product `discount_price`/`unit`/`is_featured`/`is_popular`/`sold_count` (migration, casts, `effective_price`); `products` endpoint `sort` (price_asc/desc/popular) + featured/popular filters; orders charge the **sale price** and bump `sold_count`. App `MartProductModel` gains the fields + `effectivePrice`/`onSale`. Backend tested. | fixed | `4f12995`,`0a55491` |
+| G3 | Backend + app / favorites | `mart_favorites` table + `MartFavorite` + owner-scoped toggle/list endpoints (tested). App: favorites through all 4 layers + `MartController` (optimistic toggle, `isFavorite`, list) + `MartFavoritesScreen`. | fixed | `4f12995`,`0a55491` |
+| G4 | App / store UI | **Remaining (not built):** heart on product cards, sale-price/unit on cards, sort control, Popular/Featured shelves, sticky bottom cart bar, Favorites entry point. Large edits to the ~1000-line store screen, compile-only verifiable — left for a budget/device session. Backend + data layer are ready. | open | — |
+| G5 | App / checkout | **Remaining:** map-based delivery address picker (reuse ride location/map widgets) replacing the manual text+GPS field. Runtime/maps — needs a device pass. | open | — |
+
 ## Accepted (reviewed, intentionally not changed)
 
 | ID | Severity | Area | Finding & rationale | Status |
