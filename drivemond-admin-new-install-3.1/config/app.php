@@ -15,6 +15,10 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Captured at config:cache time so APP_MODE survives a cached config (where the
+    // .env is no longer loaded). AppServiceProvider re-hydrates env() from this.
+    'app_mode' => env('APP_MODE', 'live'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
