@@ -13,6 +13,7 @@ import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_product_model.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_order_tracking_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_order_history_screen.dart';
+import 'package:ride_sharing_user_app/features/mart/screens/mart_favorites_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_product_details_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/screens/mart_payment_screen.dart';
 import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
@@ -153,6 +154,11 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
           ),
           const SizedBox(width: Dimensions.paddingSizeSmall),
           // Entry point to the customer's mart order history.
+          IconButton(
+            tooltip: 'favorites'.tr,
+            onPressed: () => Get.to(() => const MartFavoritesScreen()),
+            icon: Icon(Icons.favorite_border, color: Theme.of(context).primaryColor),
+          ),
           IconButton(
             tooltip: 'mart_order_history'.tr,
             onPressed: () => Get.to(() => const MartOrderHistoryScreen()),
