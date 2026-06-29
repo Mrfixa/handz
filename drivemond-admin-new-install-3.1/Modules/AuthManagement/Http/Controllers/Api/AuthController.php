@@ -139,7 +139,10 @@ class AuthController extends Controller
             return response()->json(responseFormatter(constant: DEFAULT_400, content: 'Invalid or expired invitation token'), 400);
         }
 
-        $user = $route ? $this->customerService->create($request->all()) : $this->driverService->create($request->all());
+        // Strip privileged/internal columns so self-registration can't mass-assign
+        // them (loyalty_points, role_id, etc. are fillable but must never come from the request).
+        $safeInput = $request->except(['loyalty_points', 'role_id', 'user_type', 'user_level_id', 'is_active', 'phone_verified_at', 'email_verified_at', 'pin_hash', 'pin_attempts', 'pin_blocked_at', 'failed_attempt', 'is_temp_blocked', 'blocked_at']);
+        $user = $route ? $this->customerService->create($safeInput) : $this->driverService->create($safeInput);
         $redeemedQrToken->update(['redeemed_by' => $user->id]);
         $isMailEnabled = businessConfig(key: EMAIL_CONFIG, settingsType: EMAIL_CONFIG);
         if ($user->email && $isMailEnabled && $user->type == DRIVER) {
@@ -954,7 +957,7 @@ class AuthController extends Controller
             return response()->json(data: $data);
         }
         try {
-            $customer = $this->customerService->create($request->all());
+            $customer = $this->customerService->create($request->except(['loyalty_points', 'role_id', 'user_type', 'user_level_id', 'is_active', 'phone_verified_at', 'email_verified_at', 'pin_hash', 'pin_attempts', 'pin_blocked_at', 'failed_attempt', 'is_temp_blocked', 'blocked_at']));
             $data = [
                 'status' => true,
                 'data' => $customer
