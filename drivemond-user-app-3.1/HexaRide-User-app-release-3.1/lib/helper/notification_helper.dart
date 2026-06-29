@@ -421,6 +421,14 @@ class NotificationHelper {
       Get.find<MessageController>().getConversation(data['type'], 1);
       _toRoute(formSplash, MessageScreen(channelId: data['type'], tripId: data['ride_request_id'], userName: userName ?? data['user_name']));
 
+    }else if(data['type'] == 'mart'){
+      // M4: route mart order pushes (status / payment / cancellation) to the order
+      // tracking screen. The order id is sent in ride_request_id (or order_id).
+      final orderId = (data['ride_request_id'] ?? data['order_id'] ?? '').toString();
+      if (orderId.isNotEmpty) {
+        _toRoute(formSplash, MartOrderTrackingScreen(orderId: orderId));
+      }
+
     }else if(data['action'] == 'driver_on_the_way'){
       notificationToRouteNavigate(data['ride_request_id'], formSplash);
 
