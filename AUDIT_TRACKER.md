@@ -58,3 +58,24 @@ with a stable ID, a severity, the area, the finding, a status, and the fix commi
 - **Flutter:** no local Flutter/macOS runner — changes are verified by the CI debug-APK build
   (`vito-ci.yml`), which compiles the edited widgets/screens, plus `flutter analyze` and unit tests.
 - **iOS:** the `build-ios.yml` macOS workflow builds an unsigned release `.app` for both apps.
+
+### End-to-end run — last verified at HEAD `f4a7fc8`
+
+| Layer | How it's "simulated/emulated" here | Result |
+|-------|-------------------------------------|--------|
+| Backend API flows (QR/auth/ride/parcel/mart/Stripe/wallet) | `php artisan test --filter=VitoFlowTest` (SQLite in-memory) | ✅ 124 passed / 379 assertions |
+| User + Driver apps (analyze, unit/behavior tests, Android APK) | `vito-ci.yml` run #75 | ✅ success |
+| User + Driver apps (iOS build, incl. mobile_scanner 7.x) | `build-ios.yml` run #7 | ✅ success (both jobs) |
+
+### Standing caveats — NOT verifiable in this environment (owner action)
+
+These cannot be proven by local tests or CI (no device/emulator, no Apple secrets). They are *not*
+defects — they are the boundary of what's checkable here, recorded so nothing is lost:
+
+| ID | Item | Why it needs owner verification |
+|----|------|--------------------------------|
+| V1 | On-device/emulator UI run of either app | No Flutter SDK or emulator in this container; CI proves compile+test+APK/IPA only, not live UI. |
+| V2 | QR scanner camera scan behavior (driver, `mobile_scanner` 7.x → Apple Vision on iOS) | Camera/scan is runtime-only; `extractToken` logic is unit-tested but the capture path needs a device. |
+| V3 | Push notifications on iOS | Firebase no-ops on iOS until `GoogleService-Info.plist` + APNs key are added. |
+| V4 | Signed iOS → TestFlight (`release-ios.yml`) | Manual-dispatch; runs only once the Apple secrets (see IOS_BUILD.md) are set. |
+| W4 | Mart-screen → `MartController` migration | Deferred: large refactor of a polling-heavy live flow; needs device verification (tracked above). |
