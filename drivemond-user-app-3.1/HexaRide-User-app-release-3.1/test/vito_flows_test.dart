@@ -8,6 +8,7 @@ import 'package:ride_sharing_user_app/features/mart/domain/models/mart_category_
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_item_model.dart';
 import 'package:ride_sharing_user_app/features/mart/domain/models/mart_order_model.dart';
 import 'package:ride_sharing_user_app/util/parse_utils.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/mart_order_status.dart';
 
 /// Unit tests for VITO-specific flows in the user app.
 /// These validate localization, token logic, and widget structure
@@ -370,6 +371,34 @@ void main() {
       expect(toIntOrNull(null), isNull);
       expect(toIntOrNull('7'), 7);
       expect(toIntOrNull('x'), isNull);
+    });
+  });
+
+  // WS4 — pure mart order-status logic extracted from mart_order_tracking_screen.
+  group('mart_order_status', () {
+    test('martOrderStepIndex follows pending→accepted→picked_up→delivered', () {
+      expect(martOrderStepIndex('pending'), 0);
+      expect(martOrderStepIndex('accepted'), 1);
+      expect(martOrderStepIndex('picked_up'), 2);
+      expect(martOrderStepIndex('delivered'), 3);
+      expect(martOrderStepIndex('cancelled'), -1);
+      expect(martOrderStepIndex('weird'), 0); // unknown defaults to the first step
+    });
+
+    test('isMartOrderTerminal only for delivered/cancelled', () {
+      expect(isMartOrderTerminal('delivered'), isTrue);
+      expect(isMartOrderTerminal('cancelled'), isTrue);
+      expect(isMartOrderTerminal('pending'), isFalse);
+      expect(isMartOrderTerminal('accepted'), isFalse);
+      expect(isMartOrderTerminal('picked_up'), isFalse);
+    });
+
+    test('canCancelMartOrder only before pickup', () {
+      expect(canCancelMartOrder('pending'), isTrue);
+      expect(canCancelMartOrder('accepted'), isTrue);
+      expect(canCancelMartOrder('picked_up'), isFalse);
+      expect(canCancelMartOrder('delivered'), isFalse);
+      expect(canCancelMartOrder('cancelled'), isFalse);
     });
   });
 }

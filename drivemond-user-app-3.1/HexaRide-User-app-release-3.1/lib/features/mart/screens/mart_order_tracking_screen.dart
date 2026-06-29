@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
+import 'package:ride_sharing_user_app/features/mart/domain/mart_order_status.dart';
 import 'package:ride_sharing_user_app/features/message/controllers/message_controller.dart';
 import 'package:ride_sharing_user_app/util/app_colors.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
@@ -53,23 +54,8 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
         {'key': 'delivered', 'label': 'delivered'.tr,       'icon': Icons.home_outlined},
       ];
 
-  // B29: map status → step index; cancelled returns -1
-  int get _currentStepIndex {
-    switch (_currentStatus) {
-      case 'pending':
-        return 0;
-      case 'accepted':
-        return 1;
-      case 'picked_up':
-        return 2;
-      case 'delivered':
-        return 3;
-      case 'cancelled':
-        return -1;
-      default:
-        return 0;
-    }
-  }
+  // B29 / WS4: status → step index now lives in the pure mart_order_status module.
+  int get _currentStepIndex => martOrderStepIndex(_currentStatus);
 
   @override
   void initState() {
@@ -131,7 +117,7 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
           _isLoading = false;
           _isOffline = false;
         });
-        if (_currentStatus == 'delivered' || _currentStatus == 'cancelled') {
+        if (isMartOrderTerminal(_currentStatus)) {
           _pollTimer?.cancel();
         }
         if (_currentStatus == 'delivered' && !_hasPromptedRating) {
@@ -720,7 +706,7 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
   }
 
   Widget _buildCancelButton(BuildContext context) {
-    final canCancel = _currentStatus == 'pending' || _currentStatus == 'accepted';
+    final canCancel = canCancelMartOrder(_currentStatus);
 
     if (!canCancel) {
       return Column(
