@@ -53,15 +53,20 @@ jobs:
       - name: Generate iOS platform scaffolding
         run: flutter create --platforms=ios --org com.sixamtech .
 
-      - name: Set bundle identifier
+      - name: Set bundle identifier and iOS deployment target
         run: |
           sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${{ matrix.bundle_id }};/g" \
             ios/Runner.xcodeproj/project.pbxproj
+          # google_mlkit_commons (driver) and mobile_scanner (user) require iOS >= 15.5;
+          # bump the Runner target to 16.0 (Flutter validates the app target's deployment
+          # version against each plugin's minimum, not just the Podfile platform).
+          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g" \
+            ios/Runner.xcodeproj/project.pbxproj
 
-      - name: Write Podfile (iOS 15, use_frameworks for stripe/firebase)
+      - name: Write Podfile (iOS 16, use_frameworks for stripe/firebase)
         run: |
           cat > ios/Podfile <<'PODFILE'
-          platform :ios, '15.0'
+          platform :ios, '16.0'
           ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
           project 'Runner', {
@@ -96,7 +101,7 @@ jobs:
             installer.pods_project.targets.each do |target|
               flutter_additional_ios_build_settings(target)
               target.build_configurations.each do |config|
-                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
               end
             end
           end

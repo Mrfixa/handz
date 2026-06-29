@@ -5,8 +5,9 @@ The apps were Android-only (no committed `ios/` directory). iOS is now supported
 
 1. Scaffolds the iOS platform with `flutter create --platforms=ios` (never touches `lib/`).
 2. Sets the bundle identifier (`com.sixamtech.hexarideuser` / `com.sixamtech.hexariderider`).
-3. Writes a `Podfile` pinned to **iOS 15.0** with `use_frameworks! / use_modular_headers!`
-   (required by `flutter_stripe` and the Firebase pods).
+3. Writes a `Podfile` pinned to **iOS 16.0** with `use_frameworks! / use_modular_headers!`
+   (required by `flutter_stripe` and the Firebase pods) and bumps the Runner target to 16.0
+   (`google_mlkit_commons` / `mobile_scanner` require iOS ≥ 15.5).
 4. Adds the required `Info.plist` usage descriptions (location, camera, photo library, microphone).
 5. Configures the Mapbox downloads token in `~/.netrc` (CocoaPods needs it to fetch MapboxMaps).
 6. Builds an **unsigned** release `.app` (`flutter build ios --release --no-codesign`) and uploads
@@ -35,8 +36,10 @@ To extend the workflow for signed distribution: import the `.p12` + profile (e.g
 `IOS_PROVISION_PROFILE`, `APP_STORE_CONNECT_*`) to the repo first.
 
 ## Notes / known iOS considerations for this plugin set
-- **Deployment target 15.0** — required by current `firebase_core` (Firebase iOS SDK) and safe for
-  `flutter_stripe`, `mapbox_maps_flutter`, `google_maps_flutter`.
+- **Deployment target 16.0** — `google_mlkit_commons` (driver) and `mobile_scanner` (user) require
+  iOS ≥ 15.5; 16.0 also satisfies `firebase_core`, `flutter_stripe`, `mapbox_maps_flutter`,
+  `google_maps_flutter`. Flutter validates each plugin's minimum against the **app target's**
+  deployment version, so the Runner `IPHONEOS_DEPLOYMENT_TARGET` is bumped too (not just the Podfile).
 - **`use_frameworks!`** — `flutter_stripe` will not build with static linkage.
 - **Mapbox** — needs a secret downloads token (`MAPBOX_DOWNLOADS_TOKEN`) in `~/.netrc`, same secret
   the Android build uses.
