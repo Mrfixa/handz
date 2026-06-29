@@ -16,6 +16,8 @@ use Modules\TripManagement\Http\Controllers\Concerns\ChecksDriverApproval;
 
 class VitoMartDriverController extends Controller
 {
+    use \Modules\TripManagement\Http\Controllers\Concerns\RefundsMartOrders;
+
     use ChecksDriverApproval;
 
     public function pendingOrders(Request $request): JsonResponse
@@ -164,8 +166,9 @@ class VitoMartDriverController extends Controller
                     }
                     $updateData['payment_status'] = 'refunded';
                 } elseif ($order->payment_status === 'paid') {
-                    // M2: card (Stripe) refunds for driver-cancels are processed out-of-band;
-                    // flag the order so it is never left silently 'paid' after cancellation.
+                    // M2: flag card (Stripe) orders 'refund_pending' inside the txn; the actual
+                    // Stripe refund is issued after commit (see below) so we never hold locks
+                    // during an external API call.
                     $updateData['payment_status'] = 'refund_pending';
                 }
                 // Release driver so they can accept another order.
@@ -184,6 +187,17 @@ class VitoMartDriverController extends Controller
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: [
                 ['message' => "Cannot transition to '{$request->status}': order not found or transition not allowed from its current status."],
             ]), 400);
+        }
+
+        // M2: issue the Stripe refund for card orders after the transaction commits
+        // (the cancel branch flagged them 'refund_pending'); never hold DB locks during
+        // the external Stripe call. Wallet orders were already refunded in-txn.
+        if ($order->status === 'cancelled' && $order->payment_status === 'refund_pending') {
+            try {
+                $order->update(['payment_status' => $this->refundOrderPayment($order)]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Mart driver-cancel refund failed: ' . $e->getMessage());
+            }
         }
 
         try {

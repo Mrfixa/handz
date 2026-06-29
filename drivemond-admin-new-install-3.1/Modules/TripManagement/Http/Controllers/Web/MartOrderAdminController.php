@@ -14,6 +14,8 @@ use Modules\TripManagement\Http\Controllers\Concerns\LogsVitoAudit;
 
 class MartOrderAdminController extends Controller
 {
+    use \Modules\TripManagement\Http\Controllers\Concerns\RefundsMartOrders;
+
     use AuthorizesRequests, LogsVitoAudit;
 
     /**
@@ -155,6 +157,18 @@ class MartOrderAdminController extends Controller
 
             $order->update($data);
         });
+
+        // M2: issue the Stripe refund for card orders after the transaction commits
+        // (the cancel branch flagged them 'refund_pending'). Wallet orders were already
+        // refunded in-txn. Never holds DB locks during the external Stripe call.
+        $order->refresh();
+        if ($order->status === 'cancelled' && $order->payment_status === 'refund_pending') {
+            try {
+                $order->update(['payment_status' => $this->refundOrderPayment($order)]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Mart admin-cancel refund failed: ' . $e->getMessage());
+            }
+        }
 
         $this->auditLog(auth()->id(), 'status_change', MartOrder::class, $order->id, [
             'from' => $previous,
