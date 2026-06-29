@@ -15,6 +15,10 @@ on:
     branches: [master]
     paths:
       - '.github/workflows/build-ios.yml'
+      # Re-verify the iOS build whenever either app's dependencies change, since
+      # plugin bumps can shift the iOS pod graph (e.g. the mobile_scanner 7.x / ML Kit fix).
+      - 'drivemond-user-app-3.1/HexaRide-User-app-release-3.1/pubspec.yaml'
+      - 'drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/pubspec.yaml'
 
 jobs:
   build-ios:
