@@ -39,6 +39,18 @@ with a stable ID, a severity, the area, the finding, a status, and the fix commi
 | C5 | Med | CI / iOS (signing) | iOS builds were unsigned (compile-proof only). Added `.github/workflows/release-ios.yml` — a manual-dispatch signed lane (import cert/profile, drop `GoogleService-Info.plist`, inject iOS Maps key, `flutter build ipa`, upload to TestFlight) + `ExportOptions.plist` + documented secrets in `IOS_BUILD.md`. Dispatch-only, so it never auto-runs/fails; the owner runs it once Apple secrets are added. Not CI-verifiable here. | scaffolded | `7a65d5d` |
 | W4 | — | User app / mart (tech debt) | **Partly done.** Step 1 (safe, CI-verifiable): extracted the screen's pure status logic into `mart_order_status.dart` (`martOrderStepIndex`/`isMartOrderTerminal`/`canCancelMartOrder`, single source of truth mirroring backend `STATUS_TRANSITIONS`), screen delegates, unit-tested (`db956d6`). **Remaining/deferred:** the `Timer.periodic` poll loop + connectivity `StreamSubscription` + order/driver `setState` machinery — a large refactor of a critical live flow that CI can only compile-check, so it needs a device/emulator-verified pass before moving it. | partial | `db956d6` |
 
+## VitoMart production-readiness deep audit (M-series)
+
+| ID | Severity | Area | Finding | Status | Fix |
+|----|----------|------|---------|--------|-----|
+| M1 | **High (money)** | Backend / mart payment | `payment_method='wallet'` orders were created `unpaid` and **never charged** (no wallet-pay route, no debit anywhere) → fulfilled for free. Fixed: debit the wallet atomically at order-create (`lockForUpdate` balance check → `decrement` → `paid`; insufficient → 400 + full rollback), and refund the wallet on cancellation across **all three** paths (customer/driver/admin), in-txn. Test: `test_mart_wallet_payment_settles_and_refunds`. | fixed | _M-batch_ |
+| M2 | Medium | Backend / mart refund | Driver/admin cancel of a **card-paid** order never refunded (only customer-cancel did) and `payment_status` overloads refund states. Partial fix: driver/admin cancel now flag card orders `refund_pending` (never left silently `paid`). **Remaining:** a shared refund service so driver/admin cancels auto-issue the Stripe refund, and splitting `payment_status`/`refund_status`. | partial | _M-batch_ |
+| M3 | Low (product) | Backend / mart pricing | Order total = subtotal − promo + tip only; no delivery fee / tax / service charge. Product decision — implement config-driven fields + formula only if the business needs them. | open | — |
+| M4 | Medium | Both apps / mart | Backend sends mart push notifications (new order, status) but the apps don't surface them in-UI. Wire mart push handling. | open | — |
+| M5 | Medium | User app / mart | No "reorder from history" — re-add a past order's items to the cart (honoring current stock/price). High-value quick win. | open | — |
+| M6 | Medium | Backend+user / mart | Product search is client-side over a single `limit=50` fetch; add server-side search + pagination/infinite scroll for scale. | open | — |
+| M7 | Low | User app / mart | Live tracking shows the driver on a map (on `picked_up`) but computes no ETA. | open | — |
+
 ## Accepted (reviewed, intentionally not changed)
 
 | ID | Severity | Area | Finding & rationale | Status |

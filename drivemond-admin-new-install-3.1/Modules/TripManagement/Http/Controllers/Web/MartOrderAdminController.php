@@ -135,6 +135,19 @@ class MartOrderAdminController extends Controller
                         $promo->decrement('used_count');
                     }
                 }
+                // M1: refund wallet-paid orders back to the customer's wallet (in-txn).
+                if ($order->payment_status === 'paid' && $order->payment_method === 'wallet') {
+                    $customer = \Modules\UserManagement\Entities\User::find($order->customer_id);
+                    $account = $customer?->userAccount()->lockForUpdate()->first();
+                    if ($account) {
+                        $account->increment('wallet_balance', (float) $order->total_amount);
+                    }
+                    $data['payment_status'] = 'refunded';
+                } elseif ($order->payment_status === 'paid') {
+                    // M2: card (Stripe) refunds for admin-cancels are processed out-of-band;
+                    // flag the order so it is never left silently 'paid' after cancellation.
+                    $data['payment_status'] = 'refund_pending';
+                }
                 $data['cancellation_reason'] = $request->input('reason');
                 $data['cancelled_by'] = 'admin';
                 $data['cancelled_at'] = now();

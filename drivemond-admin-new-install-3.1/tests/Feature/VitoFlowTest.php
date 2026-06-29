@@ -1310,6 +1310,53 @@ class VitoFlowTest extends TestCase
         $this->assertEquals(0, $promo->used_count);
     }
 
+    // M1: wallet-paid mart orders must be debited + marked paid at creation, and
+    // refunded back to the wallet on cancellation. Previously a wallet order was
+    // created 'unpaid' and never charged (fulfilled for free).
+    public function test_mart_wallet_payment_settles_and_refunds(): void
+    {
+        $customer = $this->createUser('customer');
+        $this->createUserAccount($customer);
+        DB::table('user_accounts')->where('user_id', $customer->id)->update(['wallet_balance' => 30.00]);
+        Passport::actingAs($customer, ['AccessToCustomer']);
+
+        $product = MartProduct::create([
+            'name' => 'Milk', 'price' => 10.00, 'stock' => 5, 'category' => 'grocery', 'is_active' => true,
+        ]);
+
+        // Sufficient balance: order is created paid, wallet debited, stock decremented.
+        $ok = $this->postJson('/api/customer/mart/order', [
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
+            'delivery_address' => '1 Test St',
+            'payment_method' => 'wallet',
+        ]);
+        $ok->assertOk();
+        $order = MartOrder::where('customer_id', $customer->id)->first();
+        $this->assertNotNull($order);
+        $this->assertEquals('paid', $order->payment_status);
+        $this->assertEquals('wallet', $order->payment_method);
+        $this->assertEquals(10.00, (float) DB::table('user_accounts')->where('user_id', $customer->id)->value('wallet_balance'));
+        $this->assertEquals(3, $product->fresh()->stock);
+
+        // Cancellation refunds the wallet and restores stock.
+        $this->putJson("/api/customer/mart/orders/{$order->id}/cancel")->assertOk();
+        $this->assertEquals('refunded', $order->fresh()->payment_status);
+        $this->assertEquals(30.00, (float) DB::table('user_accounts')->where('user_id', $customer->id)->value('wallet_balance'));
+        $this->assertEquals(5, $product->fresh()->stock);
+
+        // Insufficient balance: order rejected, nothing charged, stock untouched.
+        DB::table('user_accounts')->where('user_id', $customer->id)->update(['wallet_balance' => 1.00]);
+        $fail = $this->postJson('/api/customer/mart/order', [
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+            'delivery_address' => '1 Test St',
+            'payment_method' => 'wallet',
+        ]);
+        $fail->assertStatus(400);
+        $this->assertEquals(1, MartOrder::where('customer_id', $customer->id)->count());
+        $this->assertEquals(1.00, (float) DB::table('user_accounts')->where('user_id', $customer->id)->value('wallet_balance'));
+        $this->assertEquals(5, $product->fresh()->stock);
+    }
+
     // ========================================================================
     // 10. Driver Order Details Endpoint
     // ========================================================================

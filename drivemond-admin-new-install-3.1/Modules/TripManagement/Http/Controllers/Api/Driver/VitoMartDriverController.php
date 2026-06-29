@@ -152,6 +152,22 @@ class VitoMartDriverController extends Controller
                         $promo->decrement('used_count');
                     }
                 }
+                // M1: refund wallet-paid orders straight back to the customer's wallet
+                // (atomic with the cancellation). Card orders paid via Stripe are refunded
+                // through the customer-cancel path; a driver/admin cancel of a *card* order
+                // is flagged in AUDIT_TRACKER (M2) for the Stripe-refund follow-up.
+                if ($order->payment_status === 'paid' && $order->payment_method === 'wallet') {
+                    $customer = \Modules\UserManagement\Entities\User::find($order->customer_id);
+                    $account = $customer?->userAccount()->lockForUpdate()->first();
+                    if ($account) {
+                        $account->increment('wallet_balance', (float) $order->total_amount);
+                    }
+                    $updateData['payment_status'] = 'refunded';
+                } elseif ($order->payment_status === 'paid') {
+                    // M2: card (Stripe) refunds for driver-cancels are processed out-of-band;
+                    // flag the order so it is never left silently 'paid' after cancellation.
+                    $updateData['payment_status'] = 'refund_pending';
+                }
                 // Release driver so they can accept another order.
                 $updateData['driver_id'] = null;
                 $updateData['cancellation_reason'] = $request->input('reason');

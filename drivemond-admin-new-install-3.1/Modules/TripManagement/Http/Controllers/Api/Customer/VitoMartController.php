@@ -216,6 +216,22 @@ class VitoMartController extends Controller
 
                 $totalAmount = max(0, $subtotal - $discountAmount + $tipAmount);
 
+                // M1: settle wallet payments atomically at order time. Without this a
+                // payment_method='wallet' order was created 'unpaid' and never charged —
+                // i.e. fulfilled for free. Lock the wallet row, require sufficient balance,
+                // debit it, and mark the order paid; insufficient balance rolls the whole
+                // transaction back (stock + promo restored) via the RuntimeException handler.
+                $paymentMethod = $request->input('payment_method', 'cash');
+                $paymentStatus = 'unpaid';
+                if ($paymentMethod === 'wallet') {
+                    $account = $request->user()->userAccount()->lockForUpdate()->first();
+                    if (!$account || (float) $account->wallet_balance < $totalAmount) {
+                        throw new \RuntimeException('Insufficient wallet balance');
+                    }
+                    $account->decrement('wallet_balance', $totalAmount);
+                    $paymentStatus = 'paid';
+                }
+
                 $order = MartOrder::create([
                     'ref_id' => 'VM-' . strtoupper(Str::random(8)),
                     'customer_id' => $request->user()->id,
@@ -224,8 +240,8 @@ class VitoMartController extends Controller
                     'tip_amount' => $tipAmount,
                     'discount_amount' => $discountAmount,
                     'promo_code' => $appliedPromoCode,
-                    'payment_status' => 'unpaid',
-                    'payment_method' => $request->input('payment_method', 'cash'),
+                    'payment_status' => $paymentStatus,
+                    'payment_method' => $paymentMethod,
                     'delivery_address' => $request->delivery_address,
                     'delivery_lat' => $request->delivery_lat,
                     'delivery_lng' => $request->delivery_lng,
@@ -295,6 +311,7 @@ class VitoMartController extends Controller
 
             $previousDriverId = $order->driver_id;
             $wasPaid = $order->payment_status === 'paid';
+            $wasWalletPaid = $wasPaid && $order->payment_method === 'wallet';
 
             foreach ($order->items as $item) {
                 $lockedProduct = $item->product()->withTrashed()->lockForUpdate()->first();
@@ -312,14 +329,27 @@ class VitoMartController extends Controller
                 }
             }
 
-            $order->update([
+            // M1: wallet-paid orders are refunded straight back to the wallet here (a local
+            // DB write, atomic with the cancellation). Card orders are refunded via Stripe
+            // after the transaction commits (see below) so we never hold locks during an
+            // external API call.
+            $cancelUpdate = [
                 'status' => 'cancelled',
                 'driver_id' => null,
                 'cancellation_reason' => $request->input('reason'),
                 'cancelled_by' => 'customer',
                 'cancelled_at' => now(),
-            ]);
-            return ['order' => $order, 'driver_id' => $previousDriverId, 'was_paid' => $wasPaid];
+            ];
+            if ($wasWalletPaid) {
+                $account = $request->user()->userAccount()->lockForUpdate()->first();
+                if ($account) {
+                    $account->increment('wallet_balance', (float) $order->total_amount);
+                }
+                $cancelUpdate['payment_status'] = 'refunded';
+            }
+
+            $order->update($cancelUpdate);
+            return ['order' => $order, 'driver_id' => $previousDriverId, 'card_refund' => $wasPaid && !$wasWalletPaid];
         });
 
         if (!$result) {
@@ -330,7 +360,7 @@ class VitoMartController extends Controller
         // transaction commits so we never hold DB locks during an external request.
         // Failures never block cancellation — the order is flagged 'refund_pending'
         // for an operator/cron to retry.
-        if (!empty($result['was_paid'])) {
+        if (!empty($result['card_refund'])) {
             $newPaymentStatus = $this->refundOrderPayment($result['order']);
             try {
                 $result['order']->update(['payment_status' => $newPaymentStatus]);
