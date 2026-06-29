@@ -42,6 +42,14 @@ jobs:
           flutter-version: '3.44.0'
           channel: stable
 
+      # Flutter 3.29+ enables Swift Package Manager by default. With SPM on, the
+      # implicit `pub get` inside `flutter create` tries to rsync firebase_messaging
+      # into build/ios/SourcePackages/ before that dir exists and aborts
+      # ("Failed to copy plugin firebase_messaging ... No such file or directory").
+      # The plugins all ship CocoaPods podspecs, so disable SPM and stay on Pods.
+      - name: Disable Swift Package Manager (use CocoaPods)
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Generate iOS platform scaffolding
         run: flutter create --platforms=ios --org com.sixamtech .
 
