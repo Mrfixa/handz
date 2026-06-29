@@ -336,12 +336,9 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   }
 
   void _addToCart(Map<String, dynamic> product) {
-    // FIX 4: addToCart returns true only when the item was actually added/incremented.
-    // The controller handles its own error snackbars for out-of-stock / stock-cap cases.
-    final added = _martController.addToCart(product);
-    if (added) {
-      showCustomSnackBar('item_added_to_cart'.tr, isError: false);
-    }
+    // Items are always available — addToCart always succeeds.
+    _martController.addToCart(product);
+    showCustomSnackBar('item_added_to_cart'.tr, isError: false);
   }
 
   void _navigateToCart() {
@@ -368,23 +365,11 @@ class _ProductCard extends StatefulWidget {
 class _ProductCardState extends State<_ProductCard> {
   bool _isAdding = false;
 
-  // B15: out-of-stock check — both fields must agree; missing field defaults to safe (in-stock)
-  bool get _isOutOfStock {
-    final stock = widget.product['stock'] as int?;
-    final isActive = widget.product['is_active'] as bool?;
-    // If stock is unknown, treat as available; if explicitly 0 or less, it's out.
-    final stockEmpty = stock != null && stock <= 0;
-    // If is_active is explicitly false the item is unavailable regardless of stock.
-    final inactive = isActive != null && !isActive;
-    return stockEmpty || inactive;
-  }
-
   void _handleAdd() {
     if (widget.isOffline) {
       Get.snackbar('warning'.tr, 'you_are_offline'.tr);
       return;
     }
-    if (_isOutOfStock) return;
     setState(() => _isAdding = true);
     HapticFeedback.mediumImpact();
     widget.onAdd(widget.product);
@@ -406,8 +391,10 @@ class _ProductCardState extends State<_ProductCard> {
   @override
   Widget build(BuildContext context) {
     final imageUrl = widget.product['image'] as String?;
+    final product = MartProductModel.fromJson(
+        Map<String, dynamic>.from(widget.product));
+    final unit = product.unit;
 
-    // B15: wrap in Opacity when out of stock
     Widget card = Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -469,45 +456,75 @@ class _ProductCardState extends State<_ProductCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (unit != null && unit.isNotEmpty)
+                    Text(
+                      unit,
+                      style: textRegular.copyWith(
+                        fontSize: Dimensions.fontSizeExtraSmall,
+                        color: Theme.of(context).hintColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        '\$${widget.product['price'] ?? '0.00'}',
-                        style: textBold.copyWith(
-                          fontSize: Dimensions.fontSizeDefault,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                      ),
-                      // B15: show out-of-stock label or B14: AnimatedScale add button
-                      _isOutOfStock
-                          ? Text(
-                              'out_of_stock'.tr,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontSize: Dimensions.fontSizeSmall,
-                              ),
-                            )
-                          : AnimatedScale(
-                              scale: _isAdding ? 0.88 : 1.0,
-                              duration: const Duration(milliseconds: 100),
-                              child: InkWell(
-                                onTap: widget.isOffline ? _handleAdd : _handleAdd,
-                                child: Opacity(
-                                  opacity: widget.isOffline ? 0.5 : 1.0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor,
-                                      borderRadius:
-                                          BorderRadius.circular(Dimensions.radiusSmall),
-                                    ),
-                                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: Dimensions.iconSizeSmall),
-                                  ),
+                      // Effective (sale) price, with the original struck through when on sale.
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '\$${product.effectivePrice.toStringAsFixed(2)}',
+                                style: textBold.copyWith(
+                                  fontSize: Dimensions.fontSizeDefault,
+                                  color: Theme.of(context).primaryColor,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (product.onSale) ...[
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  '\$${product.price.toStringAsFixed(2)}',
+                                  style: textRegular.copyWith(
+                                    fontSize: Dimensions.fontSizeExtraSmall,
+                                    color: Theme.of(context).hintColor,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // B14: AnimatedScale add button (items are always available)
+                      AnimatedScale(
+                        scale: _isAdding ? 0.88 : 1.0,
+                        duration: const Duration(milliseconds: 100),
+                        child: InkWell(
+                          onTap: _handleAdd,
+                          child: Opacity(
+                            opacity: widget.isOffline ? 0.5 : 1.0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor,
+                                borderRadius:
+                                    BorderRadius.circular(Dimensions.radiusSmall),
+                              ),
+                              child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: Dimensions.iconSizeSmall),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -517,11 +534,6 @@ class _ProductCardState extends State<_ProductCard> {
         ],
       ),
     );
-
-    // B15: dim entire card when out of stock
-    if (_isOutOfStock) {
-      card = Opacity(opacity: 0.5, child: card);
-    }
 
     return card;
   }

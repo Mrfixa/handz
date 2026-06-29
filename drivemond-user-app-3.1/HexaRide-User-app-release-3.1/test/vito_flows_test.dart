@@ -269,9 +269,10 @@ void main() {
       expect(p.toJson()['name'], 'Widget');
     });
 
-    test('MartProductModel inStock is false when inactive or out of stock', () {
+    test('MartProductModel availability tracks is_active only (items always in stock)', () {
+      // Items are always available — only an inactive product is hidden.
       expect(MartProductModel.fromJson(<String, dynamic>{'is_active': false, 'stock': 5}).inStock, false);
-      expect(MartProductModel.fromJson(<String, dynamic>{'is_active': true, 'stock': 0}).inStock, false);
+      expect(MartProductModel.fromJson(<String, dynamic>{'is_active': true, 'stock': 0}).inStock, true);
     });
 
     test('MartProductModel tolerates missing/garbage fields', () {

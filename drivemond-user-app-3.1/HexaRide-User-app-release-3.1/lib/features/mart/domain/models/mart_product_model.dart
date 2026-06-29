@@ -75,5 +75,6 @@ class MartProductModel {
     };
   }
 
-  bool get inStock => isActive && stock > 0;
+  /// Items are always available; only an explicitly inactive product is hidden.
+  bool get inStock => isActive;
 }

@@ -200,7 +200,7 @@ class VitoMartController extends Controller
                 $subtotal = 0;
                 $orderItems = [];
 
-                // Merge duplicate product_id entries to prevent double stock-decrement
+                // Merge duplicate product_id entries into a single line item
                 $merged = [];
                 foreach ($request->items as $item) {
                     $pid = $item['product_id'];
@@ -222,11 +222,12 @@ class VitoMartController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    if (!$product || $product->stock < $item['quantity']) {
-                        throw new \RuntimeException('One or more products are unavailable or out of stock.');
+                    // Items are always available — no stock gating. Only verify the
+                    // product exists and is active.
+                    if (!$product) {
+                        throw new \RuntimeException('One or more products are unavailable.');
                     }
 
-                    $product->decrement('stock', $item['quantity']);
                     $product->increment('sold_count', $item['quantity']);
                     // Charge the effective price (sale price when set and lower than base).
                     $unitPrice = $product->effective_price;
@@ -283,7 +284,7 @@ class VitoMartController extends Controller
                 // payment_method='wallet' order was created 'unpaid' and never charged —
                 // i.e. fulfilled for free. Lock the wallet row, require sufficient balance,
                 // debit it, and mark the order paid; insufficient balance rolls the whole
-                // transaction back (stock + promo restored) via the RuntimeException handler.
+                // transaction back (promo restored) via the RuntimeException handler.
                 $paymentMethod = $request->input('payment_method', 'cash');
                 $paymentStatus = 'unpaid';
                 if ($paymentMethod === 'wallet') {
@@ -411,12 +412,7 @@ class VitoMartController extends Controller
             $wasPaid = $order->payment_status === 'paid';
             $wasWalletPaid = $wasPaid && $order->payment_method === 'wallet';
 
-            foreach ($order->items as $item) {
-                $lockedProduct = $item->product()->withTrashed()->lockForUpdate()->first();
-                if ($lockedProduct) {
-                    $lockedProduct->increment('stock', $item->quantity);
-                }
-            }
+            // Items are always available — no stock to restore on cancel.
 
             if ($order->promo_code) {
                 $promo = MartPromoCode::where('code', strtoupper($order->promo_code))

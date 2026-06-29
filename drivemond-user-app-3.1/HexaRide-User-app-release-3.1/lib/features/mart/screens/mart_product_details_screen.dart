@@ -64,17 +64,27 @@ class _MartProductDetailsScreenState extends State<MartProductDetailsScreen> {
               ),
               const SizedBox(height: Dimensions.paddingSizeDefault),
               Text(product.name ?? '', style: textBold.copyWith(fontSize: Dimensions.fontSizeLarge)),
+              if (product.unit != null && product.unit!.isNotEmpty) ...[
+                const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+                Text(product.unit!, style: textRegular.copyWith(color: Theme.of(context).hintColor)),
+              ],
               const SizedBox(height: Dimensions.paddingSizeExtraSmall),
-              Text(PriceConverter.convertPrice(product.price),
-                  style: textBold.copyWith(color: Theme.of(context).primaryColor, fontSize: Dimensions.fontSizeLarge)),
-              const SizedBox(height: Dimensions.paddingSizeSmall),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Icon(product.inStock ? Icons.check_circle : Icons.cancel,
-                      color: product.inStock ? Colors.green : Colors.red, size: 18),
-                  const SizedBox(width: 6),
-                  Text(product.inStock ? 'in_stock'.tr : 'out_of_stock'.tr,
-                      style: textRegular.copyWith(color: product.inStock ? Colors.green : Colors.red)),
+                  Text(PriceConverter.convertPrice(product.effectivePrice),
+                      style: textBold.copyWith(color: Theme.of(context).primaryColor, fontSize: Dimensions.fontSizeLarge)),
+                  if (product.onSale) ...[
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(PriceConverter.convertPrice(product.price),
+                          style: textRegular.copyWith(
+                            color: Theme.of(context).hintColor,
+                            decoration: TextDecoration.lineThrough,
+                          )),
+                    ),
+                  ],
                 ],
               ),
               if (product.description != null && product.description!.isNotEmpty) ...[
@@ -92,7 +102,7 @@ class _MartProductDetailsScreenState extends State<MartProductDetailsScreen> {
           : GetBuilder<MartController>(
               builder: (martController) {
                 final product = martController.productDetails ?? widget.initialProduct;
-                final enabled = product != null && product.inStock;
+                final enabled = product != null;
                 return Padding(
                   padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
                   child: ElevatedButton(

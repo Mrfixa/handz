@@ -122,13 +122,7 @@ class MartOrderAdminController extends Controller
             $data = ['status' => $target];
 
             if ($target === 'cancelled') {
-                // Restore product stock for each item.
-                foreach ($order->items as $item) {
-                    $product = $item->product()->withTrashed()->lockForUpdate()->first();
-                    if ($product) {
-                        $product->increment('stock', $item->quantity);
-                    }
-                }
+                // Items are always available — no stock to restore on cancel.
                 // Decrement promo usage if one was applied.
                 if ($order->promo_code) {
                     $promo = \Modules\TripManagement\Entities\MartPromoCode::where('code', $order->promo_code)

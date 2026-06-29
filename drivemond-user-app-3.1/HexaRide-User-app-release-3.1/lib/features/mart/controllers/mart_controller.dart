@@ -80,18 +80,9 @@ class MartController extends GetxController implements GetxService {
 
   int get cartItemCount => _cartItems.length;
 
-  /// Adds [product] to the cart. Returns true if the item was successfully added
-  /// (or quantity incremented), false if blocked by a stock constraint.
-  /// Shows the appropriate error snackbar internally when returning false.
+  /// Adds [product] to the cart. Items are always available, so this only
+  /// increments the quantity or appends a new line. Always returns true.
   bool addToCart(Map<String, dynamic> product, {int quantity = 1}) {
-    final stock = int.tryParse(product['stock']?.toString() ?? '') ?? 0;
-
-    // FIX 3: reject immediately if stock is 0
-    if (stock <= 0) {
-      showCustomSnackBar('out_of_stock'.tr);
-      return false;
-    }
-
     final existingIndex = _cartItems.indexWhere(
       (item) => item['id'] == product['id'],
     );
@@ -99,15 +90,6 @@ class MartController extends GetxController implements GetxService {
     if (existingIndex >= 0) {
       final existing = Map<String, dynamic>.from(_cartItems[existingIndex]);
       final newQty = (existing['quantity'] as int? ?? 1) + quantity;
-      // FIX 3: cap at available stock
-      if (newQty > stock) {
-        existing['quantity'] = stock;
-        _cartItems[existingIndex] = existing;
-        _saveCartToStorage();
-        update();
-        showCustomSnackBar('stock_limit_exceeded'.tr);
-        return false;
-      }
       existing['quantity'] = newQty;
       _cartItems[existingIndex] = existing;
     } else {
@@ -126,9 +108,9 @@ class MartController extends GetxController implements GetxService {
   }
 
   /// M5: re-add a past order's items to the cart using the *current* catalog
-  /// price/stock (each item is re-fetched live, so prices/stock are honoured and
-  /// discontinued items are skipped). Returns the number of items that could not
-  /// be re-added (no longer sold or out of stock) so the UI can inform the user.
+  /// price (each item is re-fetched live, so prices are honoured and items that
+  /// no longer exist / are inactive are skipped). Returns the number of items
+  /// that could not be re-added so the UI can inform the user.
   Future<int> reorder(MartOrderModel order) async {
     int unavailable = 0;
     for (final item in order.items) {
@@ -138,18 +120,16 @@ class MartController extends GetxController implements GetxService {
         continue;
       }
       final product = await getProductDetails(id);
-      if (product == null || product.stock <= 0) {
+      if (product == null || !product.isActive) {
         unavailable++;
         continue;
       }
-      final added = addToCart({
+      addToCart({
         'id': product.id,
         'name': product.name,
-        'price': product.price,
+        'price': product.effectivePrice,
         'image': product.image,
-        'stock': product.stock,
       }, quantity: item.quantity > 0 ? item.quantity : 1);
-      if (!added) unavailable++;
     }
     update();
     return unavailable;

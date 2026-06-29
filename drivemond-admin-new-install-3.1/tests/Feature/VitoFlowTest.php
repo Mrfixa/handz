@@ -1317,7 +1317,7 @@ class VitoFlowTest extends TestCase
         $promo = MartPromoCode::where('code', 'PROMO2')->first();
         $this->assertEquals(1, $promo->used_count);
 
-        // Cancel restores stock and decrements used_count
+        // Cancel decrements used_count; stock is untouched (items always available)
         $response2 = $this->putJson("/api/customer/mart/orders/{$order->id}/cancel");
         $response2->assertOk();
 
@@ -1342,7 +1342,7 @@ class VitoFlowTest extends TestCase
             'name' => 'Milk', 'price' => 10.00, 'stock' => 5, 'category' => 'grocery', 'is_active' => true,
         ]);
 
-        // Sufficient balance: order is created paid, wallet debited, stock decremented.
+        // Sufficient balance: order is created paid, wallet debited.
         $ok = $this->postJson('/api/customer/mart/order', [
             'items' => [['product_id' => $product->id, 'quantity' => 2]],
             'delivery_address' => '1 Test St',
@@ -1354,9 +1354,10 @@ class VitoFlowTest extends TestCase
         $this->assertEquals('paid', $order->payment_status);
         $this->assertEquals('wallet', $order->payment_method);
         $this->assertEquals(10.00, (float) DB::table('user_accounts')->where('user_id', $customer->id)->value('wallet_balance'));
-        $this->assertEquals(3, $product->fresh()->stock);
+        // Items are always available — stock is never decremented.
+        $this->assertEquals(5, $product->fresh()->stock);
 
-        // Cancellation refunds the wallet and restores stock.
+        // Cancellation refunds the wallet (stock untouched).
         $this->putJson("/api/customer/mart/orders/{$order->id}/cancel")->assertOk();
         $this->assertEquals('refunded', $order->fresh()->payment_status);
         $this->assertEquals(30.00, (float) DB::table('user_accounts')->where('user_id', $customer->id)->value('wallet_balance'));
@@ -1690,35 +1691,37 @@ class VitoFlowTest extends TestCase
     }
 
     // ========================================================================
-    // 15. Stock out-of-stock error
+    // 15. Items are always available — orders never blocked by stock
     // ========================================================================
 
-    public function test_out_of_stock(): void
+    public function test_items_always_available(): void
     {
         $customer = $this->createUser('customer');
         Passport::actingAs($customer, ['AccessToCustomer']);
 
+        // Even with stock set to 0, the product can be ordered repeatedly.
         $product = MartProduct::create([
             'name' => 'Scarce Item',
             'price' => 15.00,
-            'stock' => 2,
+            'stock' => 0,
             'is_active' => true,
         ]);
 
-        // Order exactly the available stock
         $r1 = $this->postJson('/api/customer/mart/order', [
             'items' => [['product_id' => $product->id, 'quantity' => 2]],
             'delivery_address' => 'Addr 1',
         ]);
         $r1->assertStatus(200);
+        // Stock is never decremented — items are always available.
         $this->assertEquals(0, MartProduct::find($product->id)->stock);
 
-        // Next order should fail — insufficient stock
+        // A second order succeeds too (no stock gating).
         $r2 = $this->postJson('/api/customer/mart/order', [
-            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+            'items' => [['product_id' => $product->id, 'quantity' => 5]],
             'delivery_address' => 'Addr 2',
         ]);
-        $r2->assertStatus(400);
+        $r2->assertStatus(200);
+        $this->assertEquals(0, MartProduct::find($product->id)->stock);
     }
 
     // ========================================================================
@@ -1918,8 +1921,8 @@ class VitoFlowTest extends TestCase
         $r->assertOk();
 
         $this->assertEquals('cancelled', MartOrder::find($order->id)->status);
-        // Stock should be restored
-        $this->assertEquals(10, MartProduct::find($product->id)->stock);
+        // Items are always available — cancel does not touch stock.
+        $this->assertEquals(9, MartProduct::find($product->id)->stock);
     }
 
     // ========================================================================
@@ -2518,8 +2521,13 @@ class VitoFlowTest extends TestCase
         ]);
         $resp->assertOk();
 
-        // Merged qty = 5, stock should be 5
-        $this->assertEquals(5, MartProduct::find($product->id)->stock);
+        // Merged into a single line item of quantity 5 (no double-charge).
+        $orderId = $resp->json('data.id');
+        $items = MartOrderItem::where('order_id', $orderId)->get();
+        $this->assertCount(1, $items);
+        $this->assertEquals(5, $items->first()->quantity);
+        // Items are always available — stock is untouched.
+        $this->assertEquals(10, MartProduct::find($product->id)->stock);
     }
 
     public function test_per_user_promo_limit_enforced(): void
@@ -2713,7 +2721,7 @@ class VitoFlowTest extends TestCase
         $resp->assertStatus(404);
     }
 
-    public function test_partial_stock_failure_rejects_order(): void
+    public function test_order_quantity_above_stock_still_succeeds(): void
     {
         $this->seedUserLevel('customer');
         $customer = $this->createUser('customer');
@@ -2724,12 +2732,13 @@ class VitoFlowTest extends TestCase
             'id' => Str::uuid(), 'name' => 'Low Stock', 'price' => 5.00, 'stock' => 2, 'is_active' => true,
         ]);
 
+        // Ordering more than the (non-binding) stock value still succeeds.
         $resp = $this->postJson('/api/customer/mart/order', [
             'items' => [['product_id' => $product->id, 'quantity' => 3]],
             'delivery_address' => 'Out St',
         ]);
-        $resp->assertStatus(400);
-        // Stock unchanged
+        $resp->assertOk();
+        // Stock is never decremented — items are always available.
         $this->assertEquals(2, MartProduct::find($product->id)->stock);
     }
 
@@ -2779,7 +2788,7 @@ class VitoFlowTest extends TestCase
         $this->assertEquals('unpaid', $fresh->payment_status);
     }
 
-    public function test_cancelled_order_restores_stock_and_promo(): void
+    public function test_cancelled_order_restores_promo(): void
     {
         $this->seedUserLevel('customer');
         $customer = $this->createUser('customer');
@@ -2807,11 +2816,11 @@ class VitoFlowTest extends TestCase
             'id' => Str::uuid(), 'order_id' => $order->id, 'product_id' => $product->id,
             'quantity' => 1, 'unit_price' => 10.00, 'total_price' => 10.00,
         ]);
-        MartProduct::where('id', $product->id)->decrement('stock', 1);
 
         $resp = $this->putJson("/api/customer/mart/orders/{$order->id}/cancel");
         $resp->assertOk();
 
+        // Promo usage is released; stock is untouched (items always available).
         $this->assertEquals(3, MartProduct::find($product->id)->stock);
         $this->assertEquals(0, MartPromoCode::where('code', 'CANC1')->value('used_count'));
     }
