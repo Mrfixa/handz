@@ -29,15 +29,24 @@ class VitoMartController extends Controller
         // Sanitize search: escape LIKE special characters to prevent injection
         $escapedSearch = str_replace(['%', '_'], ['\\%', '\\_'], $search);
 
-        $products = MartProduct::where('is_active', true)
+        $query = MartProduct::where('is_active', true)
             ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
             ->when($search, fn($q, $s) => $q->where('name', 'like', "%{$escapedSearch}%"))
+            ->when($request->boolean('is_featured'), fn($q) => $q->where('is_featured', true))
+            ->when($request->boolean('is_popular'), fn($q) => $q->where('is_popular', true))
             ->when($request->zone_id, fn($q, $zoneId) => $q->where(function ($q) use ($zoneId) {
                 $q->where('zone_id', $zoneId)->orWhereNull('zone_id');
-            }))
-            ->paginate($limit);
+            }));
 
-        return response()->json(responseFormatter(DEFAULT_200, $products));
+        // GoMart-style sorting; default keeps featured first then newest.
+        switch ($request->input('sort')) {
+            case 'price_asc':  $query->orderByRaw('COALESCE(NULLIF(discount_price,0), price) asc'); break;
+            case 'price_desc': $query->orderByRaw('COALESCE(NULLIF(discount_price,0), price) desc'); break;
+            case 'popular':    $query->orderByDesc('sold_count')->orderByDesc('is_popular'); break;
+            default:           $query->orderByDesc('is_featured')->orderByDesc('created_at');
+        }
+
+        return response()->json(responseFormatter(DEFAULT_200, $query->paginate($limit)));
     }
 
     public function categories(): JsonResponse
@@ -59,6 +68,50 @@ class VitoMartController extends Controller
         }
 
         return response()->json(responseFormatter(DEFAULT_200, $product));
+    }
+
+    /** Toggle a product in the customer's favourites; returns the new state. */
+    public function toggleFavorite(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), ['product_id' => 'required|string']);
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        if (!MartProduct::where('id', $request->product_id)->exists()) {
+            return response()->json(responseFormatter(DEFAULT_404), 404);
+        }
+
+        $existing = \Modules\TripManagement\Entities\MartFavorite::where('customer_id', $request->user()->id)
+            ->where('product_id', $request->product_id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            $favorited = false;
+        } else {
+            \Modules\TripManagement\Entities\MartFavorite::create([
+                'customer_id' => $request->user()->id,
+                'product_id'  => $request->product_id,
+            ]);
+            $favorited = true;
+        }
+
+        return response()->json(responseFormatter(DEFAULT_200, ['favorited' => $favorited]));
+    }
+
+    /** List the customer's favourite products (active only). */
+    public function favorites(Request $request): JsonResponse
+    {
+        $products = \Modules\TripManagement\Entities\MartFavorite::where('customer_id', $request->user()->id)
+            ->with('product')
+            ->latest()
+            ->get()
+            ->pluck('product')
+            ->filter(fn($p) => $p && $p->is_active)
+            ->values();
+
+        return response()->json(responseFormatter(DEFAULT_200, $products));
     }
 
     public function applyPromo(Request $request): JsonResponse
@@ -174,13 +227,16 @@ class VitoMartController extends Controller
                     }
 
                     $product->decrement('stock', $item['quantity']);
-                    $itemTotal = $product->price * $item['quantity'];
+                    $product->increment('sold_count', $item['quantity']);
+                    // Charge the effective price (sale price when set and lower than base).
+                    $unitPrice = $product->effective_price;
+                    $itemTotal = $unitPrice * $item['quantity'];
                     $subtotal += $itemTotal;
 
                     $orderItems[] = [
                         'product_id' => $product->id,
                         'quantity' => $item['quantity'],
-                        'unit_price' => $product->price,
+                        'unit_price' => $unitPrice,
                         'total_price' => $itemTotal,
                     ];
                 }
@@ -216,14 +272,12 @@ class VitoMartController extends Controller
                     }
                 }
 
-                // M3: optional, config-driven delivery fee + tax. Both default to 0 when
-                // unset, so the total is unchanged until the business configures rates.
-                // Tax applies to the discounted subtotal (not tip / not the flat fee).
+                // Config-driven delivery fee (mart_delivery_fee), default 0. No tax is charged
+                // (GoMart-style: no tax line); tax_amount stays 0 for schema compatibility.
                 $deliveryFee = max(0.0, (float) get_cache('mart_delivery_fee'));
-                $taxPercent  = max(0.0, (float) get_cache('mart_tax_percent'));
-                $taxAmount   = round(max(0.0, $subtotal - $discountAmount) * $taxPercent / 100, 2);
+                $taxAmount   = 0.0;
 
-                $totalAmount = max(0, $subtotal - $discountAmount + $tipAmount + $deliveryFee + $taxAmount);
+                $totalAmount = max(0, $subtotal - $discountAmount + $tipAmount + $deliveryFee);
 
                 // M1: settle wallet payments atomically at order time. Without this a
                 // payment_method='wallet' order was created 'unpaid' and never charged —

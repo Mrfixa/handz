@@ -46,6 +46,7 @@ class VitoFlowTest extends TestCase
         Schema::dropIfExists('mart_orders');
         Schema::dropIfExists('mart_promo_codes');
         Schema::dropIfExists('mart_categories');
+        Schema::dropIfExists('mart_favorites');
         Schema::dropIfExists('mart_products');
         Schema::dropIfExists('vito_otps');
         Schema::dropIfExists('vehicle_models');
@@ -313,13 +314,28 @@ class VitoFlowTest extends TestCase
                 $table->string('name');
                 $table->text('description')->nullable();
                 $table->decimal('price', 10, 2);
+                $table->decimal('discount_price', 10, 2)->nullable();
+                $table->string('unit')->nullable();
                 $table->string('image')->nullable();
                 $table->string('category')->nullable();
                 $table->boolean('is_active')->default(true);
+                $table->boolean('is_featured')->default(false);
+                $table->boolean('is_popular')->default(false);
+                $table->unsignedInteger('sold_count')->default(0);
                 $table->unsignedInteger('stock')->default(0);
                 $table->uuid('zone_id')->nullable();
                 $table->timestamps();
                 $table->softDeletes();
+            });
+        }
+
+        if (!Schema::hasTable('mart_favorites')) {
+            Schema::create('mart_favorites', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('customer_id');
+                $table->uuid('product_id');
+                $table->timestamps();
+                $table->unique(['customer_id', 'product_id']);
             });
         }
 
@@ -1359,11 +1375,10 @@ class VitoFlowTest extends TestCase
         $this->assertEquals(5, $product->fresh()->stock);
     }
 
-    // M3: config-driven delivery fee + tax are added to the server-computed total.
-    public function test_mart_order_applies_config_delivery_fee_and_tax(): void
+    // Config-driven delivery fee is added to the server total; no tax is charged.
+    public function test_mart_order_applies_config_delivery_fee(): void
     {
         \Illuminate\Support\Facades\Cache::put('mart_delivery_fee', 5);
-        \Illuminate\Support\Facades\Cache::put('mart_tax_percent', 10);
 
         $customer = $this->createUser('customer');
         Passport::actingAs($customer, ['AccessToCustomer']);
@@ -1377,13 +1392,12 @@ class VitoFlowTest extends TestCase
         ])->assertOk();
 
         $order = MartOrder::where('customer_id', $customer->id)->first();
-        // subtotal=20, no promo/tip, fee=5, tax=10% of 20=2 → total=27
+        // subtotal=20, no promo/tip, fee=5, no tax → total=25
         $this->assertEquals('5.00', $order->delivery_fee);
-        $this->assertEquals('2.00', $order->tax_amount);
-        $this->assertEquals('27.00', $order->total_amount);
+        $this->assertEquals('0.00', $order->tax_amount);
+        $this->assertEquals('25.00', $order->total_amount);
 
         \Illuminate\Support\Facades\Cache::forget('mart_delivery_fee');
-        \Illuminate\Support\Facades\Cache::forget('mart_tax_percent');
     }
 
     // M7: order details surfaces a delivery ETA only while out for delivery.
@@ -1478,6 +1492,59 @@ class VitoFlowTest extends TestCase
         $this->assertContains('Zone A Product', $names);
         $this->assertContains('Global Product', $names);
         $this->assertNotContains('Zone B Product', $names);
+    }
+
+    // GoMart discovery: sort by effective price, featured filter, and sale-price charging.
+    public function test_mart_product_discovery_sort_featured_and_sale_price(): void
+    {
+        $customer = $this->createUser('customer');
+        Passport::actingAs($customer, ['AccessToCustomer']);
+
+        MartProduct::create(['name' => 'Apple', 'price' => 3.00, 'stock' => 10, 'category' => 'fruit', 'is_active' => true]);
+        MartProduct::create(['name' => 'Steak', 'price' => 20.00, 'stock' => 10, 'category' => 'meat', 'is_active' => true, 'is_featured' => true]);
+        $sale = MartProduct::create(['name' => 'Bread', 'price' => 5.00, 'discount_price' => 4.00, 'stock' => 10, 'category' => 'bakery', 'is_active' => true]);
+
+        // sort=price_asc orders by effective price: Apple(3) < Bread(4 sale) < Steak(20)
+        $asc = $this->getJson('/api/customer/mart/products?sort=price_asc')->assertOk()->json('data.data');
+        $this->assertEquals(['Apple', 'Bread', 'Steak'], array_column($asc, 'name'));
+
+        // is_featured filter returns only the featured product
+        $feat = $this->getJson('/api/customer/mart/products?is_featured=1')->assertOk()->json('data.data');
+        $this->assertCount(1, $feat);
+        $this->assertEquals('Steak', $feat[0]['name']);
+
+        // ordering an on-sale product charges the discount price + bumps sold_count
+        $this->postJson('/api/customer/mart/order', [
+            'items' => [['product_id' => $sale->id, 'quantity' => 2]],
+            'delivery_address' => 'X',
+        ])->assertOk();
+        $order = MartOrder::where('customer_id', $customer->id)->first();
+        $this->assertEquals('8.00', $order->total_amount); // 2 × 4.00 sale price
+        $this->assertEquals(2, $sale->fresh()->sold_count);
+    }
+
+    // GoMart favorites: toggle on/off and list, owner-scoped.
+    public function test_mart_favorites_toggle_and_list(): void
+    {
+        $customer = $this->createUser('customer');
+        Passport::actingAs($customer, ['AccessToCustomer']);
+        $product = MartProduct::create(['name' => 'Eggs', 'price' => 4.00, 'stock' => 10, 'category' => 'dairy', 'is_active' => true]);
+
+        // toggle on
+        $this->postJson('/api/customer/mart/favorites/toggle', ['product_id' => $product->id])
+            ->assertOk()->assertJsonPath('data.favorited', true);
+        $this->assertEquals(1, count($this->getJson('/api/customer/mart/favorites')->json('data')));
+
+        // toggle off
+        $this->postJson('/api/customer/mart/favorites/toggle', ['product_id' => $product->id])
+            ->assertOk()->assertJsonPath('data.favorited', false);
+        $this->assertEquals(0, count($this->getJson('/api/customer/mart/favorites')->json('data')));
+
+        // another customer doesn't see it
+        $this->postJson('/api/customer/mart/favorites/toggle', ['product_id' => $product->id])->assertOk();
+        $other = $this->createUser('customer');
+        Passport::actingAs($other, ['AccessToCustomer']);
+        $this->assertEquals(0, count($this->getJson('/api/customer/mart/favorites')->json('data')));
     }
 
     // ========================================================================
