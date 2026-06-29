@@ -65,7 +65,7 @@ class SafetyAlertController extends Controller
             ]
         ];
 
-        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId, 'status' => PENDING], relations: ['trip'], whereHasRelations: $whereHasRelations);
+        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId, 'sent_by' => auth('api')->user()?->id, 'status' => PENDING], relations: ['trip'], whereHasRelations: $whereHasRelations);
         if (!$safetyAlert) {
             return response()->json(responseFormatter(SAFETY_ALERT_NOT_FOUND_404), 404);
         }
@@ -91,7 +91,7 @@ class SafetyAlertController extends Controller
                 'user_type' => CUSTOMER
             ]
         ];
-        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId, 'status' => PENDING], whereHasRelations: $whereHasRelations);
+        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId, 'sent_by' => auth('api')->user()?->id, 'status' => PENDING], whereHasRelations: $whereHasRelations);
         if (!$safetyAlert) {
             return response()->json(responseFormatter(SAFETY_ALERT_NOT_FOUND_404), 404);
         }
@@ -110,7 +110,7 @@ class SafetyAlertController extends Controller
                 'user_type' => CUSTOMER
             ]
         ];
-        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId], whereHasRelations: $whereHasRelations);
+        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId, 'sent_by' => auth('api')->user()?->id], whereHasRelations: $whereHasRelations);
 
         if (!$safetyAlert) {
             return response()->json(responseFormatter(SAFETY_ALERT_NOT_FOUND_404), 404);
@@ -128,7 +128,7 @@ class SafetyAlertController extends Controller
                 'user_type' => CUSTOMER
             ]
         ];
-        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId], whereHasRelations: $whereHasRelations);
+        $safetyAlert = $this->safetyAlertService->findOneBy(criteria: ['trip_request_id' => $tripRequestId, 'sent_by' => auth('api')->user()?->id], whereHasRelations: $whereHasRelations);
         if (!$safetyAlert) {
             return response()->json(responseFormatter(SAFETY_ALERT_NOT_FOUND_404), 404);
         }

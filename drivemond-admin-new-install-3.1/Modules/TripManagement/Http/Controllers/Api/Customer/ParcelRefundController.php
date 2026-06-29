@@ -5,6 +5,7 @@ namespace Modules\TripManagement\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Modules\TripManagement\Entities\TripRequest;
 use Modules\TripManagement\Http\Requests\StoreParcelRefundRequest;
 use Modules\TripManagement\Service\Interfaces\ParcelRefundServiceInterface;
 
@@ -19,6 +20,16 @@ class ParcelRefundController extends Controller
 
     public function createParcelRefundRequest(StoreParcelRefundRequest $request)
     {
+        // Authorization: a customer may only open a refund for their own parcel trip.
+        // Without this owner scope any authenticated customer could file a refund (and
+        // push a notification to the driver) against an arbitrary trip by its UUID.
+        $ownsTrip = TripRequest::where('id', $request->trip_request_id)
+            ->where('customer_id', auth('api')->user()?->id)
+            ->exists();
+        if (!$ownsTrip) {
+            return response()->json(responseFormatter(DEFAULT_404), 404);
+        }
+
         $parcelRefund = $this->parcelRefundService->findOneBy(criteria: ['trip_request_id' => $request->trip_request_id]);
         if ($parcelRefund) {
             return response()->json(responseFormatter(PARCEL_REFUND_ALREADY_EXIST_200), 403);
