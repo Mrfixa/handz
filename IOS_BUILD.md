@@ -35,21 +35,23 @@ To extend the workflow for signed distribution: import the `.p12` + profile (e.g
 `xcrun altool`/`fastlane`. Add the secrets (`IOS_DIST_CERT_P12`, `IOS_CERT_PASSWORD`,
 `IOS_PROVISION_PROFILE`, `APP_STORE_CONNECT_*`) to the repo first.
 
-## Known limitation — driver app ML Kit pod conflict (iOS)
+## Resolved — driver app ML Kit pod conflict (iOS)
 
-The **driver** app currently cannot resolve iOS pods because two plugins pull in
+The **driver** app previously couldn't resolve iOS pods because two plugins pulled in
 **incompatible ML Kit native versions**:
 
 - `google_mlkit_commons` (face verification) → `MLKitVision (~> 10.0)`
-- `mobile_scanner` (QR token scanner) → `GoogleMLKit/BarcodeScanning 7.0` → `MLKitBarcodeScanning 6.0`
+- `mobile_scanner` 6 (QR token scanner) → `GoogleMLKit/BarcodeScanning 7.0` → `MLKitBarcodeScanning 6.0`
   → `MLKitVision (~> 8.0)`
 
-The `8.x` vs `10.x` ranges don't overlap, so CocoaPods can't satisfy both. This does not affect
-Android (the shipping platform) because the ML Kit Android artifacts resolve independently. Fixing iOS
-means **realigning the ML Kit plugin versions** in the driver `pubspec.yaml` (e.g. bump `mobile_scanner`
-to a release whose barcode pod uses `MLKitVision ~> 10`, or pin `google_mlkit_*` to a release using
-`~> 8`) and re-running `flutter pub get` + the full Android build to confirm no regression. Deferred
-until that dependency decision is made — the **user app** iOS build proves the pipeline end to end.
+The `8.x` vs `10.x` ranges don't overlap, so CocoaPods couldn't satisfy both. **Fixed** by bumping
+`mobile_scanner` to `^7.0.0`: the 7.x line uses **AVFoundation / Apple Vision** for iOS barcode
+scanning and no longer depends on GoogleMLKit, so the only remaining `MLKitVision` consumer is
+face-detection (`~> 10`) and the conflict disappears. The driver QR scanner screen
+(`qr_scanner_screen.dart`) uses only APIs that are unchanged between 6.x and 7.x
+(`facing`, `detectionSpeed`, `MobileScanner(controller:, onDetect:)`, `analyzeImage`, `toggleTorch`),
+so no Dart migration was required. **Runtime QR-scan behavior on the driver app should still be smoke-
+tested on a device before release**, since CI can only verify compilation, not camera/scan behavior.
 
 ## Notes / known iOS considerations for this plugin set
 - **Deployment target 16.0** — `google_mlkit_commons` (driver) and `mobile_scanner` (user) require

@@ -77,7 +77,11 @@ dependencies:
   flutter_image_compress: ^2.4.0
   loading_overlay_pro: ^2.1.1
   app_links: ">=7.0.0 <8.0.0"
-  mobile_scanner: ^6.0.2
+  # 7.x uses Apple Vision on iOS (drops the GoogleMLKit/MLKitVision pod), which
+  # resolves the iOS pod conflict with google_mlkit_face_detection (MLKitVision ~>10
+  # vs mobile_scanner 6's GoogleMLKit barcode pod at ~>8). The QR scanner screen only
+  # uses APIs unchanged in 7.x (facing/detectionSpeed/onDetect/analyzeImage/toggleTorch).
+  mobile_scanner: ^7.0.0
   sqflite: ^2.4.1
 
 dependency_overrides:
