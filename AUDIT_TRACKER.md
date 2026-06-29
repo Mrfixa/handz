@@ -32,6 +32,8 @@ with a stable ID, a severity, the area, the finding, a status, and the fix commi
 | C3 | Med | CI / iOS | After C2 the **user** app reached the Xcode build but both apps hit `connectivity_plus 7.2.0` using `NWPath.isUltraConstrained` (iOS 18 SDK only) — the macos-14 Xcode was too old. Moved the runner to `macos-15` and pinned the newest Xcode via `setup-xcode` (`latest-stable`) to get the iOS 18.4+ SDK that defines `isUltraConstrained`. **Verified:** the user-app iOS job builds green (run 28352365183); only the driver job remains, isolated to C4. | fixed | `209496a` |
 | C4 | Med | CI / iOS (driver) | Driver `pod install` couldn't resolve ML Kit: `google_mlkit_commons` needs `MLKitVision ~>10` while `mobile_scanner 6`→`GoogleMLKit/BarcodeScanning 7.0`→`MLKitVision ~>8` (non-overlapping). Fixed by bumping `mobile_scanner` to `^7.0.0`, which uses **Apple Vision** on iOS and drops the GoogleMLKit pod entirely — removing one side of the conflict. The QR scanner screen uses only APIs unchanged in 7.x (`facing`/`detectionSpeed`/`onDetect`/`analyzeImage`/`toggleTorch`), so no Dart changes were needed. | fixed | `90c0425` |
 
+| U2 | Med (i18n) | User app / localization | Removed **Arabic** entirely (product decision): dropped the `ar` `LanguageModel` and `assets/language/ar.json`, trimmed the parity test to en/es, and added a `localization_controller` fallback so a previously-stored `ar` locale resets to `en` (otherwise the app would render RTL with English fallback text after upgrade). | fixed | _WS1_ |
+
 ## Accepted (reviewed, intentionally not changed)
 
 | ID | Severity | Area | Finding & rationale | Status |

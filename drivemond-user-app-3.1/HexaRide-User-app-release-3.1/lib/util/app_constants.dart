@@ -9,7 +9,7 @@ class AppConstants {
     'BASE_URL',
     defaultValue: 'https://dacatlon.store',
   );
-  static const double appVersion = 2.0; /// v2.3.1 release
+  static const double appVersion = 2.0; /// v2.3.2 release
   static const String fontFamily = 'SFProText';
   static const double coverageRadiusInMeter = 50;
   static const String configUri = '/api/customer/configuration';
@@ -178,7 +178,6 @@ class AppConstants {
   static List<LanguageModel> languages = [
     LanguageModel(imageUrl: Images.unitedKingdom, languageName: 'English', countryCode: 'US', languageCode: 'en'),
     LanguageModel(imageUrl: 'flags/es.png', imagePackage: 'country_code_picker', languageName: 'Español', countryCode: 'ES', languageCode: 'es'),
-    LanguageModel(imageUrl: 'flags/sa.png', imagePackage: 'country_code_picker', languageName: 'العربية', countryCode: 'SA', languageCode: 'ar'),
   ];
 
 

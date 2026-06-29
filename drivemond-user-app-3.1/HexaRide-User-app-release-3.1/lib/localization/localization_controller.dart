@@ -47,8 +47,17 @@ class LocalizationController extends GetxController implements GetxService {
 
   void loadCurrentLanguage() async {
     if(sharedPreferences.containsKey(AppConstants.languageCode)){
-      _locale = Locale(sharedPreferences.getString(AppConstants.languageCode)!,
-          sharedPreferences.getString(AppConstants.countryCode));
+      final String storedCode = sharedPreferences.getString(AppConstants.languageCode)!;
+      final bool isSupported = AppConstants.languages.any((l) => l.languageCode == storedCode);
+      if (isSupported) {
+        _locale = Locale(storedCode, sharedPreferences.getString(AppConstants.countryCode));
+      } else {
+        // A previously-selected language that is no longer supported (e.g. removed Arabic)
+        // would otherwise leave the app in a broken state (RTL flag + English fallback text).
+        // Reset to the default language and persist it.
+        _locale = Locale(AppConstants.languages[0].languageCode, AppConstants.languages[0].countryCode);
+        saveLanguage(_locale);
+      }
       _isLtr = !intl.Bidi.isRtlLanguage(_locale.languageCode);
       update();
     }
