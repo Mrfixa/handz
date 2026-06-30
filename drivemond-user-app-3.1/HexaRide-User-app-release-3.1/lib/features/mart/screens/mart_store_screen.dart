@@ -40,11 +40,8 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure categories and products are loaded
-    if (_martController.categories.isEmpty) {
-      _martController.getCategories();
-    }
-    _martController.getProducts();
+    // Products are loaded by MartController.onInit() - no need to call here
+    // This prevents duplicate API calls (GAP-005 fix)
   }
 
   @override

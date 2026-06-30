@@ -46,6 +46,8 @@ class LoginHelper{
     } else if (!Get.find<LocalizationController>().haveLocalLanguageCode()) {
       Get.offAll(() => LanguageSelectionScreen(notificationData: notificationData));
     } else {
+      // Fetch registration lookups (identity types, vehicle categories, brands, fuel types)
+      Get.find<AuthController>().fetchRegistrationLookups();
       checkLoginRoutes(notificationData);
     }
   }

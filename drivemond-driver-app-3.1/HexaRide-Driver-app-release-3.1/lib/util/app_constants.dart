@@ -127,6 +127,12 @@ class AppConstants {
   static const String martMyOrders = '/api/driver/mart/my-orders';
   static const String martOrderDetails = '/api/driver/mart/orders/';
 
+  // Driver Registration Lookups (fetched from backend)
+  static const String registrationLookups = '/api/driver/registration/lookups';
+  static const String registrationVehicleCategories = '/api/driver/registration/vehicle-categories';
+  static const String registrationVehicleBrands = '/api/driver/registration/vehicle-brands';
+  static const String registrationVehicleModels = '/api/driver/registration/vehicle-models';
+
   //Ride Status
 
   static const String pending = 'pending';

@@ -16,6 +16,7 @@ use Modules\UserManagement\Http\Controllers\Api\Driver\LoyaltyPointController as
 use Modules\UserManagement\Http\Controllers\Api\Driver\TimeTrackController;
 use Modules\UserManagement\Http\Controllers\Api\Driver\WithdrawController;
 use Modules\UserManagement\Http\Controllers\Api\Driver\WithdrawMethodInfoController;
+use Modules\UserManagement\Http\Controllers\Api\Driver\DriverRegistrationLookupController;
 use Modules\UserManagement\Http\Controllers\Api\User\LocationController;
 
 Route::group(['prefix' => 'customer'], function () {
@@ -67,6 +68,16 @@ Route::group(['prefix' => 'customer'], function () {
 });
 
 Route::group(['prefix' => 'driver'], function () {
+    // Registration lookup endpoints (no auth required for initial registration)
+    Route::group(['prefix' => 'registration'], function () {
+        Route::controller(DriverRegistrationLookupController::class)->group(function () {
+            Route::get('lookups', 'index');
+            Route::get('vehicle-categories', 'vehicleCategories');
+            Route::get('vehicle-brands', 'vehicleBrands');
+            Route::get('vehicle-models', 'vehicleModels');
+        });
+    });
+
     Route::group(['middleware' => ['auth:api', 'maintenance_mode']], function () {
         Route::controller(TimeTrackController::class)->group(function () {
             Route::get('time-tracking', 'store');
