@@ -123,7 +123,12 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
         if (_currentStatus == 'delivered' && !_hasPromptedRating) {
           _hasPromptedRating = true;
           Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) _showRatingBottomSheet();
+            if (mounted) {
+              _showDeliveryCelebration();
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (mounted) _showRatingBottomSheet();
+              });
+            }
           });
         }
       } else {
@@ -836,6 +841,34 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
           );
         },
       ),
+    );
+  }
+
+  // GAP-045: Show delivery celebration animation
+  void _showDeliveryCelebration() {
+    Get.snackbar(
+      '',
+      '🎉 ${'order_delivered_successfully'.tr}',
+      titleText: Text(
+        '🎉 ${'order_delivered'.tr}',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+          fontSize: Dimensions.fontSizeDefault,
+        ),
+      ),
+      messageText: Text(
+        'thank_you_order'.tr,
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+      ),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      snackPosition: SnackPosition.TOP,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+      borderRadius: Dimensions.paddingSizeSmall,
+      icon: const Icon(Icons.check_circle, color: Colors.green, size: 40),
     );
   }
 
