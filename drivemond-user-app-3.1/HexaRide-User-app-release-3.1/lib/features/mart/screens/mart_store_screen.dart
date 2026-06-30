@@ -1181,6 +1181,14 @@ class _MartCartScreenState extends State<MartCartScreen> {
       return;
     }
 
+    // GAP-023: Validate coordinates - reject (0,0) which is "Null Island"
+    if (_deliveryLat != null && _deliveryLng != null) {
+      if (_deliveryLat == 0 && _deliveryLng == 0) {
+        Get.snackbar('error'.tr, 'invalid_delivery_location'.tr);
+        return;
+      }
+    }
+
     // FIX 2: check wallet balance before submitting a wallet order
     if (_paymentMethod == 'wallet') {
       final profileController = Get.find<ProfileController>();
