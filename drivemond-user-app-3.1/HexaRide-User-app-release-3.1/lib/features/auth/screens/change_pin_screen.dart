@@ -94,7 +94,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
                       isLoading: authController.isLoading,
                       radius: 50,
                       height: 52,
-                      textColor: const Color(0xFF1D2D2B),
+                      textColor: Colors.white,
                       buttonText: 'change_pin'.tr,
                       onPressed: () {
                         final String currentPin = _currentPinController.text.trim();

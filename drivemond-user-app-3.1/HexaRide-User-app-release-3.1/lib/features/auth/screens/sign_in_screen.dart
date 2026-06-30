@@ -157,7 +157,7 @@ class _SignInScreenState extends State<SignInScreen> {
               isLoading: authController.isLoading,
               height: 52,
               radius: 50,
-              textColor: const Color(0xFF1D2D2B),
+              textColor: Colors.white,
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 String username = phoneController.text.trim();

@@ -4,8 +4,8 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 
 ThemeData darkTheme = ThemeData(
   fontFamily: AppConstants.fontFamily,
-  primaryColor: const Color(0xFFD4A000),
-  primaryColorDark: const Color(0xFFB38600),
+  primaryColor: const Color(0xFF14B19E),
+  primaryColorDark: const Color(0xFF007B6C),
   disabledColor: const Color(0xFFBABFC4),
   scaffoldBackgroundColor: const Color(0xFF121212),
   canvasColor: const Color(0xFF1C1F1F),
@@ -21,7 +21,7 @@ ThemeData darkTheme = ThemeData(
     titleMedium: TextStyle(color: Color(0xffF1F1F1)),
   ),
   colorScheme: const ColorScheme.dark(
-    primary: Color(0xFFF5B800),
+    primary: Color(0xFF14B19E),
     error: Color(0xFFFF6767),
     surface: Color(0xFFF3F3F3),
     secondary: Color(0xFF1B2838),
@@ -35,7 +35,7 @@ ThemeData darkTheme = ThemeData(
     outline: Color(0xFF8CFFF1),
     onPrimaryContainer: Color(0xFFDEFFFB),
     errorContainer: Color(0xFFF6F6F6),
-    primaryContainer: Color(0xFFFFA800),
+    primaryContainer: Color(0xFF008C7B),
     onSurface: Color(0xFF1D2D2B),
     onPrimary: Color(0xFFFFFFFF),
     inverseSurface: Color(0xFF0148AF),
@@ -43,7 +43,7 @@ ThemeData darkTheme = ThemeData(
     secondaryFixedDim: Color(0xff808080),
 
   ),
-  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFFD4A000))),
+  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF14B19E))),
 
   extensions: <ThemeExtension<CustomThemeColors>>[
     CustomThemeColors.dark(),
