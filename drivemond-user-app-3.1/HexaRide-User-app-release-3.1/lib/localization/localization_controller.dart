@@ -52,7 +52,7 @@ class LocalizationController extends GetxController implements GetxService {
       if (isSupported) {
         _locale = Locale(storedCode, sharedPreferences.getString(AppConstants.countryCode));
       } else {
-        // A previously-selected language that is no longer supported (e.g. removed Arabic)
+        // A previously-selected language that is no longer supported
         // would otherwise leave the app in a broken state (RTL flag + English fallback text).
         // Reset to the default language and persist it.
         _locale = Locale(AppConstants.languages[0].languageCode, AppConstants.languages[0].countryCode);

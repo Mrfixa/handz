@@ -1181,6 +1181,13 @@ class _MartCartScreenState extends State<MartCartScreen> {
       return;
     }
 
+    // GAP-028: Validate address - minimum length and not just coordinates
+    final address = _addressController.text.trim();
+    if (address.length < 10) {
+      Get.snackbar('error'.tr, 'address_too_short'.tr);
+      return;
+    }
+
     // GAP-023: Validate coordinates - reject (0,0) which is "Null Island"
     if (_deliveryLat != null && _deliveryLng != null) {
       if (_deliveryLat == 0 && _deliveryLng == 0) {
