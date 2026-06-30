@@ -151,6 +151,7 @@ class SignUpScreen extends StatelessWidget {
                 child: ButtonWidget(
                   margin: EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
                   radius: Dimensions.radiusExtraLarge,
+                  height: 52,
                   buttonText: 'next'.tr,
                   onPressed: (){
                     HapticFeedback.mediumImpact();

@@ -145,6 +145,7 @@ class _AdditionalSignUpScreen1State extends State<AdditionalSignUpScreen1> {
                 child: ButtonWidget(
                   margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
                   radius: Dimensions.radiusExtraLarge,
+                  height: 52,
                   buttonText: 'next'.tr,
                   isLoading: authController.isCheckingUsername,
                   onPressed: () async {

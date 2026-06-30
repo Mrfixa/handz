@@ -77,6 +77,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
               child: ButtonWidget(
                       isLoading: authController.isLoading,
                       radius: Dimensions.radiusExtraLarge,
+                      height: 52,
                       buttonText: 'change_pin'.tr,
                       onPressed: () {
                         final String currentPin = _currentPinController.text.trim();

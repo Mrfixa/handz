@@ -111,7 +111,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         ButtonWidget(
                           isLoading: authController.isOtpSending,
-                          buttonText: 'get_otp'.tr, radius: 50,
+                          buttonText: 'get_otp'.tr, radius: 50, height: 52,
                           onPressed: () {
                             String phoneNumber = phoneController.text;
                             if (phoneNumber.isEmpty) {

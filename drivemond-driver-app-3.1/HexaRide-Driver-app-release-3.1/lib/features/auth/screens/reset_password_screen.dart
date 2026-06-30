@@ -134,6 +134,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                 ButtonWidget(
                     isLoading: authController.isLoading,
+                    height: 52,
                     buttonText: widget.fromChangePassword && Get.find<ProfileController>().profileInfo?.loggedInVia != 'otp'? 'update'.tr : 'save'.tr,
                     onPressed: (){
                       String oldPassword = oldPasswordController.text;

@@ -380,7 +380,7 @@ class AdditionalSignUpScreen2 extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall, horizontal: Dimensions.paddingSizeDefault).copyWith(bottom: Dimensions.paddingSizeExtraLarge),
               child: authController.isLoading ?
               Center(child: SpinKitCircle(color: Theme.of(context).primaryColor, size: 40.0)) :
-              ButtonWidget(buttonText: 'submit'.tr,
+              ButtonWidget(height: 52, buttonText: 'submit'.tr,
                   onPressed: () async {
                     String email = authController.emailController.text;
                     String address = authController.addressController.text;

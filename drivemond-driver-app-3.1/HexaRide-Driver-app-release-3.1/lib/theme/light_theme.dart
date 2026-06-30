@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:ride_sharing_user_app/theme/custom_theme_colors.dart';
 ThemeData lightTheme = ThemeData(
     fontFamily: 'SFProText',
-    primaryColor: const Color(0xFFF5B800),
+    primaryColor: const Color(0xFF008C7B),
     disabledColor: const Color(0xFFBABFC4),
-    primaryColorDark: const Color(0xFFD4A000),
+    primaryColorDark: const Color(0xFF007B6C),
     brightness: Brightness.light,
     hintColor: const Color(0xFF9F9F9F),
     cardColor: Colors.white,
+    scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+    canvasColor: const Color(0xFFFFFFFF),
 
     extensions: <ThemeExtension<CustomThemeColors>>[
       CustomThemeColors.light()
@@ -15,7 +17,7 @@ ThemeData lightTheme = ThemeData(
 
 
   colorScheme: const ColorScheme.light(
-      primary: Color(0xFFF5B800),
+      primary: Color(0xFF008C7B),
       surface: Color(0xFFF3F3F3),
       error: Color(0xFFFF6767),
       secondary: Color(0xFF1B2838),
@@ -28,7 +30,7 @@ ThemeData lightTheme = ThemeData(
       onTertiaryContainer: Color(0xFF425956),
       outline: Color(0xFF8CFFF1),
       onPrimaryContainer: Color(0xFFDEFFFB),
-      primaryContainer: Color(0xFFFFA800),
+      primaryContainer: Color(0xFF14B19E),
       onErrorContainer: Color(0xFFFFE6AD),
       onPrimary: Color(0xFFFFFFFF),
       surfaceTint: Color(0xFF0B9722),
@@ -39,7 +41,7 @@ ThemeData lightTheme = ThemeData(
 
 
   ),
-  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFFF5B800))),
+  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF008C7B))),
 
   textTheme: const TextTheme(
    displayLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF202020)),

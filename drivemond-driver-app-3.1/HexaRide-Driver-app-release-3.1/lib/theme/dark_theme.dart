@@ -4,12 +4,12 @@ import 'custom_theme_colors.dart';
 
 ThemeData darkTheme = ThemeData(
   fontFamily: 'SFProText',
-  primaryColor: const Color(0xFFD4A000),
+  primaryColor: const Color(0xFF14B19E),
   brightness: Brightness.dark,
   cardColor: const Color(0xFF242424),
   hintColor: const Color(0xFF9F9F9F),
-  scaffoldBackgroundColor: const Color(0xFF1B2838),
-  primaryColorDark: const Color(0xFFB38600),
+  scaffoldBackgroundColor: const Color(0xFF121212),
+  primaryColorDark: const Color(0xFF007B6C),
 
     extensions: <ThemeExtension<CustomThemeColors>>[
       CustomThemeColors.dark()
@@ -17,7 +17,7 @@ ThemeData darkTheme = ThemeData(
 
 
   colorScheme: const ColorScheme.dark(
-      primary: Color(0xFFF5B800),
+      primary: Color(0xFF14B19E),
       error: Color(0xFFFF6767),
       secondary: Color(0xFF1B2838),
       tertiary: Color(0xFF7CCD8B),
@@ -29,20 +29,21 @@ ThemeData darkTheme = ThemeData(
       onTertiaryContainer: Color(0xFF425956),
       outline: Color(0xFF8CFFF1),
       onPrimaryContainer: Color(0xFF929494),
-      primaryContainer: Color(0xFFFFA800),
-      onSurface: Color(0xFFFFE6AD),
+      primaryContainer: Color(0xFF008C7B),
+      onSurface: Color(0xFFF1F1F1),
       onPrimary: Color(0xFFFFFFFF),
       surfaceContainer: Color(0xFF016ACD),
       secondaryFixedDim: Color(0xFF808080)
 
   ),
-  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFFD4A000))),
+  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF14B19E))),
+    // Dark-mode text must be light — the originals were near-black (invisible on the dark background).
     textTheme: const TextTheme(
-      displayLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF202020)),
-      displayMedium: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF393939)),
-      displaySmall: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF282828)),
-      bodyLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF272727)),
+      displayLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFFF1F1F1)),
+      displayMedium: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFFE0E0E0)),
+      displaySmall: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFFF1F1F1)),
+      bodyLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFFFFFFFF)),
       bodyMedium: TextStyle(fontWeight: FontWeight.w300, color: Color(0xffffffff)),
-      bodySmall: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFF1D2D2B)),
+      bodySmall: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFFD5E1E0)),
     )
 );
