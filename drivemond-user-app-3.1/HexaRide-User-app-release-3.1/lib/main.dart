@@ -95,6 +95,20 @@ class MyApp extends StatelessWidget {
               fallbackLocale: Locale(AppConstants.languages[0].languageCode, AppConstants.languages[0].countryCode),
               defaultTransition: Transition.fadeIn,
               transitionDuration: const Duration(milliseconds: 500),
+              // Handle deep links for auth screens
+              onGenerateRoute: (settings) {
+                // Handle vito://auth/* deep links
+                if (settings.name?.startsWith('vito://auth/') ?? false) {
+                  final path = settings.name!.replaceFirst('vito://auth/', '');
+                  // These will be handled after splash screen loads config
+                  // Just return the deep link path for later processing
+                  return GetPageRoute(
+                    settings: settings,
+                    page: () => SplashScreen(notificationData: {'deep_link': path}),
+                  );
+                }
+                return null;
+              },
               builder:(context,child){
                 return MediaQuery(
                   data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(0.95)),
