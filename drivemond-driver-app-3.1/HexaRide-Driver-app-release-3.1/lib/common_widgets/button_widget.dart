@@ -25,7 +25,7 @@ class ButtonWidget extends StatelessWidget {
   final bool enableHaptic;
   const ButtonWidget({
     super.key, this.onPressed, required this.buttonText, this.transparent = false, this.margin = EdgeInsets.zero,
-    this.width = Dimensions.webMaxWidth, this.height = 45, this.fontSize, this.radius = 5, this.icon,this.showBorder = false,this.borderWidth=1,
+    this.width = Dimensions.webMaxWidth, this.height = 48, this.fontSize, this.radius = 10, this.icon,this.showBorder = false,this.borderWidth=1,
     this.borderColor, this.textColor, this.backgroundColor, this.semanticLabel,
     this.isLoading = false, this.enableHaptic = true,
   });

@@ -37,6 +37,28 @@ ThemeData darkTheme = ThemeData(
 
   ),
   textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF14B19E))),
+
+  dialogTheme: DialogThemeData(
+    backgroundColor: const Color(0xFF242424),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  ),
+  cardTheme: CardThemeData(
+    elevation: 1,
+    color: const Color(0xFF242424),
+    surfaceTintColor: Colors.transparent,
+    shadowColor: Colors.black.withValues(alpha: 0.2),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    clipBehavior: Clip.antiAlias,
+  ),
+  bottomSheetTheme: const BottomSheetThemeData(
+    backgroundColor: Color(0xFF1C1F1F),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    clipBehavior: Clip.antiAlias,
+  ),
+  snackBarTheme: SnackBarThemeData(
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  ),
     // Dark-mode text must be light — the originals were near-black (invisible on the dark background).
     textTheme: const TextTheme(
       displayLarge: TextStyle(fontWeight: FontWeight.w300, color: Color(0xFFF1F1F1)),

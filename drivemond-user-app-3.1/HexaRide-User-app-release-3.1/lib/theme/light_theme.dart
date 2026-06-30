@@ -19,7 +19,24 @@ ThemeData lightTheme = ThemeData(
     titleMedium: TextStyle(color: Color(0xff1D2D2B)),
   ),
   dialogTheme: DialogThemeData(
-    backgroundColor: const Color(0xFFEEEEEE)
+    backgroundColor: const Color(0xFFEEEEEE),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  ),
+  cardTheme: CardThemeData(
+    elevation: 1,
+    color: Colors.white,
+    surfaceTintColor: Colors.transparent,
+    shadowColor: Colors.black.withValues(alpha: 0.06),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    clipBehavior: Clip.antiAlias,
+  ),
+  bottomSheetTheme: const BottomSheetThemeData(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    clipBehavior: Clip.antiAlias,
+  ),
+  snackBarTheme: SnackBarThemeData(
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
   ),
 
   pageTransitionsTheme: PageTransitionsTheme(

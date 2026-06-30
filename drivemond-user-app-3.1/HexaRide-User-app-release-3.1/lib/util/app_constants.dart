@@ -9,7 +9,7 @@ class AppConstants {
     'BASE_URL',
     defaultValue: 'https://dacatlon.store',
   );
-  static const double appVersion = 2.0; /// v2.4.4 release
+  static const double appVersion = 2.0; /// v2.5.0 release
   static const String fontFamily = 'SFProText';
   static const double coverageRadiusInMeter = 50;
   static const String configUri = '/api/customer/configuration';
