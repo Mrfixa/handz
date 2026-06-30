@@ -25,7 +25,7 @@ class AppVersionWarningScreen extends StatelessWidget {
             child: Column(children: [
               const SizedBox(height: Dimensions.topSpace),
 
-              Image.asset(Images.logoWithName, height: 75),
+              Image.asset(Images.logoWithName, color: const Color(0xFF008C7B), height: 75),
               const SizedBox(height: Dimensions.paddingSizeLarge),
 
               Image.asset(Images.appVersionWarningIcon, height: 150),

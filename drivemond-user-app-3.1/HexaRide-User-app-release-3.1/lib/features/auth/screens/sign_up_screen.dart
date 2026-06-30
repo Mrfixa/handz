@@ -155,7 +155,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Center(child: Image.asset(Images.logoWithName, height: 75, width: 200)),
+                  Center(child: Image.asset(Images.logoWithName, color: const Color(0xFF008C7B), height: 75, width: 200)),
                   const SizedBox(height: Dimensions.paddingSizeExtraLarge),
 
                   Text(
