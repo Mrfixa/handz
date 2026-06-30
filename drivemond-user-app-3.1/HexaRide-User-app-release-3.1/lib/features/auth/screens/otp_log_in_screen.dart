@@ -112,6 +112,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                     Center(child: SpinKitCircle(color: Theme.of(context).primaryColor, size: 40.0)) :
                     ButtonWidget(
                       buttonText: 'get_otp'.tr,
+                      height: 52,
+                      textColor: const Color(0xFF1D2D2B),
                       onPressed: () {
                         String phone = phoneController.text.trim();
 
@@ -154,6 +156,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                         showBorder: true,
                         borderWidth: 1,
                         transparent: true,
+                        height: 52,
                         buttonText: 'log_in'.tr,
                         onPressed: () => Get.back(),
                         radius: 50,

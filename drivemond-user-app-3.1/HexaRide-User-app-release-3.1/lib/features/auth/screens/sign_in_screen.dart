@@ -16,6 +16,7 @@ import 'package:ride_sharing_user_app/features/settings/screens/policy_screen.da
 import 'package:ride_sharing_user_app/features/splash/controllers/config_controller.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/custom_text_field.dart';
+import 'package:ride_sharing_user_app/features/auth/widgets/auth_divider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -154,6 +155,9 @@ class _SignInScreenState extends State<SignInScreen> {
             ButtonWidget(
               buttonText: 'log_in'.tr,
               isLoading: authController.isLoading,
+              height: 52,
+              radius: 50,
+              textColor: const Color(0xFF1D2D2B),
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 String username = phoneController.text.trim();
@@ -174,18 +178,15 @@ class _SignInScreenState extends State<SignInScreen> {
                   authController.login('', username, pin);
                 }
               },
-              radius: 50,
             ),
 
-            Center(child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall,vertical: 8),
-              child: Text('or'.tr ,style: textRegular.copyWith(color: Theme.of(context).hintColor),),
-            )),
+            const AuthDivider(label: 'or'),
 
             ButtonWidget(
               showBorder: true,
               borderWidth: 1,
               transparent: true,
+              height: 52,
               buttonText: 'login_with_otp'.tr,
               onPressed: () => Get.to(() => const OtpLoginScreen(from: VerificationForm.login)),
               radius: 50,

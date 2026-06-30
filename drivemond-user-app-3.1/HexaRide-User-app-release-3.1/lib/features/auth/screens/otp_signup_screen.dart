@@ -128,6 +128,8 @@ class _OtpSignUpScreenState extends State<OtpSignupScreen> {
                   : ButtonWidget(
                 buttonText: 'done'.tr,
                 radius: 50,
+                height: 52,
+                textColor: const Color(0xFF1D2D2B),
                 onPressed: () {
                   final String fName = fNameController.text.trim();
 

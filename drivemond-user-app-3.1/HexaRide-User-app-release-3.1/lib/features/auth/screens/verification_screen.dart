@@ -127,8 +127,8 @@ class VerificationScreenState extends State<VerificationScreen> {
                       errorAnimationController: _errorController,
                       pinTheme: PinTheme(
                         shape: PinCodeFieldShape.box,
-                        fieldHeight: 40,
-                        fieldWidth: 40,
+                        fieldHeight: 50,
+                        fieldWidth: 48,
                         borderWidth: 1,
                         borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
                         selectedColor: Theme.of(context).hintColor.withValues(alpha:0.2),
@@ -162,7 +162,8 @@ class VerificationScreenState extends State<VerificationScreen> {
                     child: ButtonWidget(
                       buttonText: 'verify'.tr,
                       radius: 50,
-                      textColor: authController.verificationCode.length == 6 ? Theme.of(context).cardColor : Theme.of(context).textTheme.bodyMedium?.color,
+                      height: 52,
+                      textColor: authController.verificationCode.length == 6 ? const Color(0xFF1D2D2B) : Theme.of(context).textTheme.bodyMedium?.color,
                       onPressed: authController.verificationCode.length == 6 ? () {
                         authController.otpVerification(
                             widget.number, authController.verificationCode, from: widget.form,
