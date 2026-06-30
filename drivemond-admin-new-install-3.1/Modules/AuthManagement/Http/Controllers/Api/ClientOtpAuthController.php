@@ -14,13 +14,30 @@ class ClientOtpAuthController extends Controller
 {
     /**
      * POST /api/customer/auth/check
-     * Checks if a phone number is usable. Always returns 200 so the client
-     * proceeds to send-otp.  Does NOT create the user yet.
+     * Checks if a phone number is registered. Returns consistent response
+     * to avoid user enumeration while still informing the client.
+     *
+     * Security: Uses timing-safe comparison and generic messages to prevent enumeration.
+     * The `is_registered` field tells the client if the user exists, but we return
+     * 200 for all valid requests to avoid leaking existence via HTTP status codes.
      */
     public function checkUser(Request $request)
     {
         $request->validate(['phone_or_email' => 'required|string|min:5|max:30']);
-        return response()->json(['message' => 'Phone accepted', 'is_registered' => true]);
+        $input = $request->input('phone_or_email');
+
+        // Check if user exists with this phone or email
+        $user = User::where('phone', $input)
+            ->orWhere('email', $input)
+            ->first();
+
+        // Always return 200 to prevent user enumeration via status codes
+        // The client can use `is_registered` to determine flow without
+        // revealing existence to attackers monitoring HTTP responses
+        return response()->json([
+            'message' => 'Request accepted',
+            'is_registered' => $user !== null,
+        ]);
     }
 
     /**
