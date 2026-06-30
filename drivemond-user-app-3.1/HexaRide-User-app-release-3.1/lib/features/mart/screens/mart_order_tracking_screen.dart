@@ -123,7 +123,12 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
         if (_currentStatus == 'delivered' && !_hasPromptedRating) {
           _hasPromptedRating = true;
           Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) _showRatingBottomSheet();
+            if (mounted) {
+              _showDeliveryCelebration();
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (mounted) _showRatingBottomSheet();
+              });
+            }
           });
         }
       } else {
@@ -765,42 +770,105 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
       Get.snackbar('error'.tr, 'order_already_completed'.tr);
       return;
     }
+
+    int? selectedReasonIndex;
+    final reasonOptions = [
+      'cancel_reason_changed_mind'.tr,
+      'cancel_reason_long_wait'.tr,
+      'cancel_reason_wrong_address'.tr,
+      'cancel_reason_driver_issue'.tr,
+      'cancel_reason_other'.tr,
+    ];
+
     Get.dialog(
-      AlertDialog(
-        title: Text('cancel_order'.tr),
-        content: Text('cancel_order_confirmation'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('no'.tr),
-          ),
-          TextButton(
-            onPressed: () async {
-              Get.back();
-              try {
-                final cancelResponse = await Get.find<ApiClient>().putData(
-                  '${AppConstants.martCancelOrder}${widget.orderId}/cancel',
-                  {},
-                );
-                if (cancelResponse.statusCode == 200) {
-                  Get.back();
-                  Get.snackbar('success'.tr, 'order_cancelled'.tr);
-                } else if (cancelResponse.statusCode == 404) {
-                  Get.snackbar('error'.tr, 'order_not_found'.tr);
-                } else {
-                  Get.snackbar('error'.tr, 'cancel_failed'.tr);
-                }
-              } catch (e) {
-                debugPrint('Mart tracking error: $e');
-                Get.snackbar('error'.tr, 'cancel_failed'.tr);
-              }
-            },
-            child: Text('yes'.tr,
-                style:
-                    TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ],
+      StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text('cancel_order'.tr),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('cancel_order_select_reason'.tr),
+                const SizedBox(height: 12),
+                ...List.generate(reasonOptions.length, (index) {
+                  return RadioListTile<int>(
+                    title: Text(reasonOptions[index], style: const TextStyle(fontSize: 14)),
+                    value: index,
+                    groupValue: selectedReasonIndex,
+                    onChanged: (val) {
+                      setDialogState(() => selectedReasonIndex = val);
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  );
+                }),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: Text('no'.tr),
+              ),
+              TextButton(
+                onPressed: selectedReasonIndex == null
+                    ? null
+                    : () async {
+                        Get.back();
+                        try {
+                          final cancelResponse = await Get.find<ApiClient>().putData(
+                            '${AppConstants.martCancelOrder}${widget.orderId}/cancel',
+                            {'reason': reasonOptions[selectedReasonIndex!]},
+                          );
+                          if (cancelResponse.statusCode == 200) {
+                            Get.back();
+                            Get.snackbar('success'.tr, 'order_cancelled'.tr);
+                          } else if (cancelResponse.statusCode == 404) {
+                            Get.snackbar('error'.tr, 'order_not_found'.tr);
+                          } else {
+                            Get.snackbar('error'.tr, 'cancel_failed'.tr);
+                          }
+                        } catch (e) {
+                          debugPrint('Mart tracking error: $e');
+                          Get.snackbar('error'.tr, 'cancel_failed'.tr);
+                        }
+                      },
+                child: Text('yes'.tr,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  // GAP-045: Show delivery celebration animation
+  void _showDeliveryCelebration() {
+    Get.snackbar(
+      '',
+      '🎉 ${'order_delivered_successfully'.tr}',
+      titleText: Text(
+        '🎉 ${'order_delivered'.tr}',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+          fontSize: Dimensions.fontSizeDefault,
+        ),
+      ),
+      messageText: Text(
+        'thank_you_order'.tr,
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+      ),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      snackPosition: SnackPosition.TOP,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+      borderRadius: Dimensions.paddingSizeSmall,
+      icon: const Icon(Icons.check_circle, color: Colors.green, size: 40),
     );
   }
 

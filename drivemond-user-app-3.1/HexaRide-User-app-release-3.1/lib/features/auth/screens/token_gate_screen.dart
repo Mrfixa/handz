@@ -257,9 +257,13 @@ class _TokenGateScreenState extends State<TokenGateScreen> {
       showCustomSnackBar('token_is_required'.tr);
       return;
     }
-    // Token should be at least 6 chars (UUID format)
-    if (token.length < 6) {
-      showCustomSnackBar('invalid_token_length'.tr);
+
+    // UUID format: 8-4-4-4-12 characters OR 64-char hex (legacy format)
+    // Validate format client-side to avoid unnecessary API calls
+    final uuidRegex = RegExp(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$');
+    final hexRegex = RegExp(r'^[a-fA-F0-9]{64}$');
+    if (!uuidRegex.hasMatch(token) && !hexRegex.hasMatch(token)) {
+      showCustomSnackBar('invalid_token_format'.tr);
       return;
     }
 

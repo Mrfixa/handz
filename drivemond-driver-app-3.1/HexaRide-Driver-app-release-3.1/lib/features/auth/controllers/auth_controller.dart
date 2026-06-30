@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ride_sharing_user_app/data/api_checker.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/enums/verification_from_enum.dart';
+import 'package:ride_sharing_user_app/features/auth/domain/models/registration_lookups_model.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/services/auth_service_interface.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
 import 'package:ride_sharing_user_app/features/auth/widgets/manual_auth_waring_bottom_sheet_widget.dart';
@@ -155,14 +156,41 @@ class AuthController extends GetxController implements GetxService {
     otherDocuments.clear();
   }
 
-  final List<String> _identityTypeList = ['passport', 'driving_license', 'nid', ];
+  // Default identity types (fallback when API is unavailable)
+  static const List<String> _defaultIdentityTypes = ['passport', 'driving_license', 'nid'];
+
+  // Fetched from API, fallback to defaults
+  List<String> _identityTypeList = _defaultIdentityTypes;
   List<String> get identityTypeList => _identityTypeList;
+
+  // Registration lookups fetched from backend
+  RegistrationLookupsModel? _registrationLookups;
+  RegistrationLookupsModel? get registrationLookups => _registrationLookups;
+
   String _identityType = '';
   String get identityType => _identityType;
 
   void setIdentityType (String setValue){
     _identityType = setValue;
     update();
+  }
+
+  /// Fetch registration lookups (identity types, vehicle categories, brands, fuel types) from API
+  Future<void> fetchRegistrationLookups() async {
+    try {
+      final response = await Get.find<ApiClient>().getData(AppConstants.registrationLookups);
+      if (response.statusCode == 200 && response.body['data'] != null) {
+        _registrationLookups = RegistrationLookupsModel.fromJson(response.body['data']);
+        if (_registrationLookups!.identityTypes.isNotEmpty) {
+          _identityTypeList = _registrationLookups!.identityTypes;
+        }
+        update();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch registration lookups: $e');
+      // Use default values on error
+      _identityTypeList = _defaultIdentityTypes;
+    }
   }
 
 

@@ -311,4 +311,181 @@ class VitoAuthController extends Controller
             'is_phone_verified' => $user->phone_verified_at ? 1 : 0,
         ];
     }
+
+    /**
+     * POST /api/{customer|driver}/auth/forgot-pin
+     * AUTH-SEC-04: Initiates PIN recovery by sending OTP to user's registered phone.
+     * Requires the user to have a verified phone number on file.
+     */
+    public function forgotPin(Request $request): JsonResponse
+    {
+        $request->merge(['username' => trim((string) $request->username)]);
+
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        $isCustomerRoute = str_contains($request->route()->getPrefix(), 'customer');
+        $userType = $isCustomerRoute ? CUSTOMER : DRIVER;
+
+        $user = User::where('username', $request->username)
+            ->where('user_type', $userType)
+            ->first();
+
+        if (!$user) {
+            // Return 200 to prevent user enumeration - same response whether user exists or not
+            return response()->json([
+                'response_code' => 'otp_sent',
+                'message' => translate('If your account exists, you will receive an OTP'),
+            ]);
+        }
+
+        // User must have a verified phone number for PIN recovery
+        if (!$user->phone || !$user->phone_verified_at) {
+            return response()->json([
+                'response_code' => 'pin_recovery_unavailable',
+                'message' => translate('PIN recovery requires a verified phone number. Please contact support.'),
+            ], 400);
+        }
+
+        // Generate OTP and store it
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Delete any existing PIN recovery OTPs for this user
+        DB::table('vito_otps')
+            ->where('phone', $user->phone)
+            ->where('type', 'pin_recovery')
+            ->delete();
+
+        DB::table('vito_otps')->insert([
+            'id'         => \Illuminate\Support\Str::uuid(),
+            'phone'      => $user->phone,
+            'otp_hash'   => Hash::make($otp),
+            'type'       => 'pin_recovery',
+            'expires_at' => now()->addMinutes(5)->toDateTimeString(),
+            'created_at' => now()->toDateTimeString(),
+            'updated_at' => now()->toDateTimeString(),
+        ]);
+
+        // Send OTP via SMS
+        $this->dispatchSms($user->phone, $otp);
+
+        return response()->json([
+            'response_code' => 'otp_sent',
+            'message' => translate('If your account exists, you will receive an OTP'),
+            // Only include for testing/development
+            '_debug_otp' => app()->environment('testing', 'local') ? $otp : null,
+        ]);
+    }
+
+    /**
+     * POST /api/{customer|driver}/auth/reset-pin
+     * AUTH-SEC-04: Resets PIN after OTP verification for PIN recovery flow.
+     */
+    public function resetPin(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|max:50',
+            'otp' => 'required|string|digits:6',
+            'new_pin' => 'required|string|digits:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        $isCustomerRoute = str_contains($request->route()->getPrefix(), 'customer');
+        $userType = $isCustomerRoute ? CUSTOMER : DRIVER;
+
+        $user = User::where('username', $request->username)
+            ->where('user_type', $userType)
+            ->first();
+
+        if (!$user || !$user->phone) {
+            return response()->json([
+                'response_code' => 'invalid_request',
+                'message' => translate('Invalid request'),
+            ], 400);
+        }
+
+        // Verify the OTP
+        $record = DB::table('vito_otps')
+            ->where('phone', $user->phone)
+            ->where('type', 'pin_recovery')
+            ->where('expires_at', '>', now()->toDateTimeString())
+            ->whereNull('verified_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'response_code' => 'otp_expired',
+                'message' => translate('OTP has expired or was not found. Please request a new one.'),
+            ], 404);
+        }
+
+        if (!Hash::check($request->otp, $record->otp_hash)) {
+            return response()->json([
+                'response_code' => 'invalid_otp',
+                'message' => translate('Invalid OTP'),
+            ], 400);
+        }
+
+        // Mark OTP as verified
+        DB::table('vito_otps')
+            ->where('id', $record->id)
+            ->update(['verified_at' => now()->toDateTimeString(), 'updated_at' => now()->toDateTimeString()]);
+
+        // Reset the PIN
+        $this->authService->update(id: $user->id, data: [
+            'pin_hash' => Hash::make($request->new_pin),
+            'pin_attempts' => 0,
+            'is_temp_blocked' => 0,
+            'pin_blocked_at' => null,
+        ]);
+
+        // Revoke all existing sessions
+        foreach ($user->tokens as $token) {
+            $token->revoke();
+        }
+
+        return response()->json(responseFormatter(DEFAULT_200));
+    }
+
+    private function dispatchSms(string $phone, string $otp): void
+    {
+        // Reuse SMS dispatch logic from ClientOtpAuthController
+        $message = "Your VITO PIN recovery code is: {$otp}";
+
+        try {
+            $status = \Modules\BusinessManagement\Lib\SMSGateway::send($phone, $otp);
+            if ($status === 'success') {
+                return;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Configured SMS gateway failed: ' . $e->getMessage());
+        }
+
+        // Fallback to Twilio env vars
+        try {
+            $sid   = env('TWILIO_ACCOUNT_SID');
+            $token = env('TWILIO_AUTH_TOKEN');
+            $from  = env('TWILIO_FROM_NUMBER');
+
+            if ($sid && $token && $from) {
+                $client = new \Twilio\Rest\Client($sid, $token);
+                retry(3, fn() => $client->messages->create($phone, ['from' => $from, 'body' => $message]), 1000);
+                return;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Twilio env SMS dispatch failed: ' . $e->getMessage());
+        }
+
+        // Last resort: log only
+        \Illuminate\Support\Facades\Log::info("PIN Recovery SMS to {$phone}: {$message}");
+    }
 }

@@ -40,11 +40,8 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure categories and products are loaded
-    if (_martController.categories.isEmpty) {
-      _martController.getCategories();
-    }
-    _martController.getProducts();
+    // Products are loaded by MartController.onInit() - no need to call here
+    // This prevents duplicate API calls (GAP-005 fix)
   }
 
   @override
@@ -1182,6 +1179,21 @@ class _MartCartScreenState extends State<MartCartScreen> {
     if (_addressController.text.trim().isEmpty) {
       Get.snackbar('error'.tr, 'please_enter_delivery_address'.tr);
       return;
+    }
+
+    // GAP-028: Validate address - minimum length and not just coordinates
+    final address = _addressController.text.trim();
+    if (address.length < 10) {
+      Get.snackbar('error'.tr, 'address_too_short'.tr);
+      return;
+    }
+
+    // GAP-023: Validate coordinates - reject (0,0) which is "Null Island"
+    if (_deliveryLat != null && _deliveryLng != null) {
+      if (_deliveryLat == 0 && _deliveryLng == 0) {
+        Get.snackbar('error'.tr, 'invalid_delivery_location'.tr);
+        return;
+      }
     }
 
     // FIX 2: check wallet balance before submitting a wallet order

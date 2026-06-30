@@ -38,7 +38,9 @@ class MartController extends GetxController implements GetxService {
   void onInit() {
     super.onInit();
     _loadCartFromStorage();
+    // GAP-005: Load both categories and products here to avoid duplicate calls in screens
     getCategories();
+    getProducts();
   }
 
   Future<void> _loadCartFromStorage() async {

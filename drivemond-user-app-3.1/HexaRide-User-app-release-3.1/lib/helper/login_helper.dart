@@ -4,6 +4,7 @@ import 'package:app_links/app_links.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/sign_in_screen.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/otp_log_in_screen.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/enums/verification_from_enum.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,25 +39,48 @@ class LoginHelper{
     FirebaseHelper().listenForTokenRefresh();
     String? path = await initDynamicLinks();
 
+    // Check for deep link in notificationData (set by onGenerateRoute)
+    final deepLink = notificationData?['deep_link'] as String?;
+    if (deepLink != null && deepLink.isNotEmpty) {
+      path = deepLink;
+    }
+
     Get.find<ConfigController>().getConfigData()
         .timeout(const Duration(seconds: 15), onTimeout: () => false)
         .then((value){
       if(_isForceUpdate(Get.find<ConfigController>().config)) {
         Get.offAll(()=> const AppVersionWarningScreen());
-      }else if(path != null){
-        Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
+      }else if(path != null && path.isNotEmpty){
+        // Check if it's an auth deep link
+        if (path == 'signup' || path == 'login') {
+          _handleAuthDeepLink(path);
+        } else {
+          Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
+        }
       }else{
         route(notificationData);
       }
     }).catchError((_){
       // Never get stuck on splash if config fails to load.
-      if(path != null){
-        Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
+      if(path != null && path.isNotEmpty){
+        if (path == 'signup' || path == 'login') {
+          _handleAuthDeepLink(path);
+        } else {
+          Get.offAll(()=> LiveLocationScreen(trackingUrl: path));
+        }
       }else{
         route(notificationData);
       }
     });
 
+  }
+
+  void _handleAuthDeepLink(String path) {
+    if (path == 'signup') {
+      Get.offAll(() => const TokenGateScreen());
+    } else if (path == 'login') {
+      Get.offAll(() => const SignInScreen());
+    }
   }
 
   Future<String?> initDynamicLinks() async {

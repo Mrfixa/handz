@@ -272,7 +272,8 @@ class _SignInScreenState extends State<SignInScreen> {
                             text: ' ${'click_here_to_sigh_up'.tr}',
                             style: textRegular.copyWith(color: Theme.of(context).colorScheme.surfaceContainer,fontSize: Dimensions.fontSizeExtraSmall,decoration: TextDecoration.underline),
                             recognizer: TapGestureRecognizer()..onTap = () async{
-                              navigateToMart('sixammart://open?country_code=&phone=signUp&password=}');
+                              // AUTH-SEC-02 fix: corrected malformed deeplink URL
+                              navigateToMart('sixammart://open?country_code=&phone=sign_up&password=');
                             }
                         ),
                         TextSpan(
