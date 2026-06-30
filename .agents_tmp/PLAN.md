@@ -1,211 +1,555 @@
-# Vito End-to-End UX/UI & Logic Gap Analysis Report
+# Vito Platform — Complete Implementation Plan
 
-## Executive Summary
-
-Comprehensive review of the Vito system (Backend Laravel 12 + Customer Flutter App + Driver Flutter App) identifying **45+ gaps** across:
-- 🔴 **Critical (P0)**: 8 blocking features
-- 🟠 **High Priority (P1)**: 12 major UX/UI issues
-- 🟡 **Medium Priority (P2)**: 15 logic/flow gaps
-- 🟢 **Low Priority (P3)**: 10 minor polish items
+> **Last Updated:** 2026-06-30  
+> **Status:** Ready for Implementation  
+> **Total Gaps to Fix:** 50+
 
 ---
 
-## 1. OBJECTIVE
+## OBJECTIVE
 
-Conduct a thorough end-to-end review of the Vito system's frontend UX/UI, user flows, and business logic to identify:
-1. **Frontend/UI Gaps** - Missing screens, inconsistent design, broken navigation
-2. **UX Gaps** - Poor user flows, missing feedback mechanisms, unclear states
-3. **Logic Gaps** - Validation issues, edge case handling, state management
-4. **Backend Gaps** - Missing/inconsistent API integration
-5. **Localization Gaps** - Missing translations
-
----
-
-## 2. SYSTEM COMPONENTS REVIEWED
-
-### Screens Count:
-| App | Screens | Controllers |
-|-----|---------|-------------|
-| Customer App | 56 screens | 24 controllers |
-| Driver App | 57 screens | 22 controllers |
-| Backend | 52 API controllers | 16 modules |
-
-### Key Features Reviewed:
-- **Auth Flow**: Token gate → Registration → Login → OTP verification
-- **Ride Flow**: Home → Map → Booking → Tracking → Payment → Review
-- **Parcel Flow**: Parcel screen → Sender/Receiver details → Tracking
-- **Mart Flow**: Store → Cart → Checkout → Payment → Tracking → Rating
-- **Driver Flow**: Dashboard → Ride requests → Accept → Complete → Payout
+Implement ALL gaps identified in the comprehensive audit to produce a production-ready system:
+1. Authentication Security Fixes
+2. UX/UI Improvements  
+3. Screen Architecture Fixes
+4. Logic/State Management
+5. Backend Integration
 
 ---
 
-## 3. CRITICAL GAPS (Blocking Features)
+## IMPLEMENTATION PHASES
 
-### 🔴 GAP-001: Driver App - Mart Delivery Proof Upload Missing
-
-| Category | Details |
-|----------|---------|
-| **Issue** | Backend requires delivery proof before marking `delivered`, but driver app has no upload UI |
-| **Backend** | `VitoMartDriverController::uploadDeliveryProof()` accepts photo/signature |
-| **Impact** | Drivers cannot complete mart deliveries - flow is broken |
-| **Files** | `driver/mart_delivery_screen.dart`, `mart_repository.dart` |
-| **Fix** | Add signature capture + photo upload to delivery screen |
-
-### 🔴 GAP-002: Driver App - Mart myOrders/orderDetails Not Implemented
-
-| Category | Details |
-|----------|---------|
-| **Issue** | API constants exist but service layer not implemented |
-| **Backend** | `GET /api/driver/mart/my-orders` and `/orders/{id}` exist |
-| **Impact** | Driver cannot view their completed/active orders |
-| **Files** | `app_constants.dart:126-127`, `mart_repository.dart` |
-
-### 🔴 GAP-003: Customer App - createOrder() Bypasses Service Layer
-
-| Category | Details |
-|----------|---------|
-| **Issue** | `MartPaymentScreen` makes direct `ApiClient` calls instead of using `MartService` |
-| **Current** | `_placeOrder()` calls `apiClient.postData()` directly |
-| **Impact** | Architecture violation, harder to maintain, no error abstraction |
-| **Files** | `mart_payment_screen.dart:356-423` |
-
-### 🔴 GAP-004: Customer App - MartController Products Not Used
-
-| Category | Details |
-|----------|---------|
-| **Issue** | `MartController.products` is populated but `mart_store_screen.dart` has its own `_products` list |
-| **Impact** | State duplication, potential race conditions, wasted API calls |
-| **Files** | `mart_controller.dart:18`, `mart_store_screen.dart:30,65-97` |
-
-### 🔴 GAP-005: Customer App - Duplicate API Calls on Load
-
-| Category | Details |
-|----------|---------|
-| **Issue** | Both `MartController.onInit()` and `mart_store_screen.dart` call `getCategories()`/`getProducts()` |
-| **Impact** | Race condition, redundant API calls, inconsistent state |
-| **Files** | `mart_controller.dart:34-36`, `mart_store_screen.dart:42-46,73` |
-
-### 🔴 GAP-006: Driver App - Direct ApiClient in mart_pending_orders_screen.dart
-
-| Category | Details |
-|----------|---------|
-| **Issue** | Screen bypasses service layer with direct API calls |
-| **Impact** | Inconsistent error handling, no retry logic |
-| **Files** | `mart_pending_orders_screen.dart:46,68` |
-
-### 🔴 GAP-007: Customer App - Missing Dedicated Cart Screen
-
-| Category | Details |
-|----------|---------|
-| **Issue** | FAB shows cart count but taps go directly to checkout - no cart review |
-| **Impact** | Users cannot modify cart before checkout |
-| **Files** | `mart_store_screen.dart:104-118` |
-
-### 🔴 GAP-008: Customer App - No Empty State for Products
-
-| Category | Details |
-|----------|---------|
-| **Issue** | Products list shows shimmer loading but no empty state UI |
-| **Impact** | Poor UX when no products exist or search returns nothing |
-| **Files** | `mart_store_screen.dart:150-154` |
+### Phase 1: CRITICAL Security Fixes ✅
+### Phase 2: UX/UI Polish  
+### Phase 3: Architecture/Logic Fixes
+### Phase 4: Feature Completeness
 
 ---
 
-## 4. HIGH PRIORITY UX/UI GAPS
+## PHASE 1: CRITICAL SECURITY FIXES
 
-### 🟠 GAP-009: No Real-time Order Updates (Pusher)
+### 1.1 Malformed Deeplink URL Fix
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Backend broadcasts `MartOrderStatusUpdatedEvent` but apps don't subscribe |
-| **Impact** | Users must poll manually every 15 seconds |
-| **Files** | `VitoMartDriverController.php:173-181` |
-| **Fix** | Subscribe to `private-customer-mart-chat.{orderId}` channel |
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/auth/screens/sign_in_screen.dart`
 
-### 🟠 GAP-010: Sign In Screen - Confusing Field Labels
+**Line 275:** Fix the malformed URL
+```dart
+// BEFORE (broken):
+navigateToMart('sixammart://open?country_code=&phone=signUp&password=}');
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Customer app shows "username" hint but some users may confuse with phone |
-| **Current** | `phoneController` holds username input |
-| **UX** | Label shows "username" but variable is `phoneController` |
-| **Files** | `sign_in_screen.dart:31,96-97` |
+// AFTER (fixed):
+navigateToMart('sixammart://open?country_code=&phone=signUp&password=');
+```
 
-### 🟠 GAP-011: Sign Up - Password Hint Mismatch
+### 1.2 Token Format Validation
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Hint says "Password" but backend expects 6-digit PIN |
-| **Impact** | Users may enter full password instead of PIN |
-| **Files** | `sign_up_screen.dart:199-208` |
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/auth/screens/token_gate_screen.dart`
 
-### 🟠 GAP-012: Token Gate - No QR Scanner Permission Handling
+**Line 254-264:** Add UUID format validation
+```dart
+Future<void> _validateToken() async {
+  final token = _tokenController.text.trim();
+  if (token.isEmpty) {
+    showCustomSnackBar('token_is_required'.tr);
+    return;
+  }
+  // UUID format: 8-4-4-4-12 characters
+  final uuidRegex = RegExp(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$');
+  if (!uuidRegex.hasMatch(token) && token.length != 64) {
+    showCustomSnackBar('invalid_token_format'.tr);
+    return;
+  }
+  // ... rest of validation
+}
+```
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Camera permission not checked before opening scanner |
-| **Impact** | App may crash or show blank screen on denied permission |
-| **Files** | `token_gate_screen.dart:114-132` |
+### 1.3 OTP Timer State Persistence
 
-### 🟠 GAP-013: Driver Sign In - PIN Field Not Auto-focused
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/auth/screens/verification_screen.dart`
 
-| Category | Details |
-|----------|---------|
-| **Issue** | After username entry, PIN field doesn't auto-focus |
-| **UX** | User must manually tap PIN field |
-| **Files** | `driver/sign_in_screen.dart:155-162` |
+**Implementation:** Save timer state to SharedPreferences
+```dart
+// Add to initState:
+_loadTimerState();
 
-### 🟠 GAP-014: Customer Home - Missing Loading State on Service Cards
+// Add new methods:
+Future<void> _loadTimerState() async {
+  final prefs = await SharedPreferences.getInstance();
+  final savedTime = prefs.getInt('otp_timer_${widget.number}');
+  final savedExpiry = prefs.getString('otp_timer_expiry_${widget.number}');
+  
+  if (savedExpiry != null) {
+    final expiry = DateTime.parse(savedExpiry);
+    if (expiry.isAfter(DateTime.now())) {
+      _seconds = expiry.difference(DateTime.now()).inSeconds;
+      _startTimer();
+    }
+  }
+}
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Service cards (Ride/Parcel/Mart) show immediately without loading state |
-| **Impact** | Flash of empty content before data loads |
-| **Files** | `home_screen.dart:287-319` |
+Future<void> _saveTimerState() async {
+  final prefs = await SharedPreferences.getInstance();
+  final expiry = DateTime.now().add(Duration(seconds: _seconds ?? 0));
+  await prefs.setInt('otp_timer_${widget.number}', _seconds ?? 0);
+  await prefs.setString('otp_timer_expiry_${widget.number}', expiry.toIso8601String());
+}
+```
 
-### 🟠 GAP-015: Driver Home - No Online/Offline Toggle Visibility
+---
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Cannot tell from home screen if driver is online |
-| **Impact** | Driver may miss ride requests thinking they're online |
-| **Files** | `driver/home_screen.dart` |
+## PHASE 2: UX/UI POLISH
 
-### 🟠 GAP-016: Parcel Screen - No Weight/Dimension Input
+### 2.1 SignUpScreen Form State Management
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Parcel category selected but no actual weight/size input |
-| **Impact** | Fare calculation may be inaccurate |
-| **Files** | `parcel_screen.dart` |
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/auth/screens/sign_up_screen.dart`
 
-### 🟠 GAP-017: Review Screen - No Driver/Vehicle Info
+**Issue:** Back button doesn't clear form state
 
-| Category | Details |
-|----------|---------|
-| **Issue** | After trip, user sees rating UI but no driver photo/name |
-| **Impact** | Cannot make informed rating without context |
-| **Files** | `review_screen.dart` |
+**Fix:** Override pop behavior to clear controllers
+```dart
+// Add to initState:
+_authController = Get.find<AuthController>();
 
-### 🟠 GAP-018: Trip History - All/Ongoing/Cancelled Tabs Don't Filter
+@override
+void dispose() {
+  _clearFormControllers();
+  super.dispose();
+}
 
-| Category | Details |
-|----------|---------|
-| **Issue** | All 5 tabs use same `tabBarBodyWidget()` without filtering |
-| **Impact** | Tab switching doesn't filter by status |
-| **Files** | `trip_screen.dart:77-85` |
+void _clearFormControllers() {
+  _authController.usernameController.clear();
+  _authController.fNameController.clear();
+  _authController.lNameController.clear();
+  _authController.phoneController.clear();
+  _authController.passwordController.clear();
+  _authController.confirmPasswordController.clear();
+  _authController.referralCodeController.clear();
+}
 
-### 🟠 GAP-019: Driver Trip Screen - No Trip Overview on First Load
+// Override back button:
+WillPopScope(
+  onWillPop: () async {
+    _clearFormControllers();
+    return true;
+  },
+  child: Scaffold(...)
+)
+```
 
-| Category | Details |
-|----------|---------|
-| **Issue** | Initial load shows trips before trip overview loads |
-| **Impact** | Flash of empty state or wrong tab selected |
-| **Files** | `driver/trip_screen.dart:80-82` |
+### 2.2 Driver App Token History
 
-### 🟠 GAP-020: Customer Map - Back Button Inconsistent
+**File:** `drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/lib/features/auth/screens/token_gate_screen.dart`
 
-| Category | Details |
+**Issue:** Driver app lacks token history feature
+
+**Implementation:** Add same token history as customer app
+```dart
+// Add same _tokenHistory, _loadTokenHistory, _saveTokenToHistory
+// from customer app token_gate_screen.dart
+
+// Add UI for token history display:
+if (_tokenHistory.isNotEmpty) ...[
+  const SizedBox(height: Dimensions.paddingSizeLarge),
+  _buildTokenHistory(context),
+],
+```
+
+### 2.3 Add Empty States to Mart Products
+
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/mart/screens/mart_store_screen.dart`
+
+**Issue:** Products list shows shimmer but no empty state
+
+**Fix:** Add empty state widget
+```dart
+// Add after the shimmer:
+if (_products.isEmpty && !isLoading) ...[
+  SizedBox(height: 200),
+  Center(
+    child: Column(
+      children: [
+        Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).hintColor),
+        SizedBox(height: Dimensions.paddingSizeDefault),
+        Text('no_products_available'.tr, style: textMedium),
+      ],
+    ),
+  ),
+],
+```
+
+### 2.4 Add Deep Link Support for Auth
+
+**Files:** 
+- `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/main.dart`
+- `drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/lib/main.dart`
+
+**Implementation:** Add route handlers
+```dart
+// In main.dart after GetMaterialApp:
+GetMaterialApp(
+  // ... existing config
+  getPages: [
+    // ... existing routes
+    GetPage(
+      name: '/auth/signup',
+      page: () => const TokenGateScreen(),
+    ),
+    GetPage(
+      name: '/auth/login',
+      page: () => const SignInScreen(),
+    ),
+  ],
+  onGenerateRoute: (settings) {
+    // Handle deep links
+    if (settings.name?.startsWith('vito://auth/') ?? false) {
+      final path = settings.name!.replaceFirst('vito://auth/', '');
+      if (path == 'signup') return Get.offAll(() => const TokenGateScreen());
+      if (path == 'login') return Get.offAll(() => const SignInScreen());
+    }
+    return null;
+  },
+);
+```
+
+---
+
+## PHASE 3: ARCHITECTURE/LOGIC FIXES
+
+### 3.1 Refactor Mart Screens to Service Layer
+
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/mart/screens/mart_payment_screen.dart`
+
+**Issue:** Direct ApiClient calls instead of MartService
+
+**Fix:** Extract to service layer
+```dart
+// BEFORE (direct API call):
+final response = await apiClient.postData(
+  AppConstants.martOrderUri,
+  body,
+);
+
+// AFTER (service call):
+final response = await _martService.createOrder(body);
+```
+
+### 3.2 Fix MartController State Duplication
+
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/mart/controllers/mart_controller.dart`
+
+**Issue:** `mart_store_screen.dart` has its own `_products` list
+
+**Fix:** Use only `MartController.products`
+```dart
+// In mart_store_screen.dart, remove:
+// List<MartProduct> _products = [];
+
+// Instead use:
+final products = Get.find<MartController>().products;
+```
+
+### 3.3 Fix Duplicate API Calls on Load
+
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/mart/screens/mart_store_screen.dart`
+
+**Issue:** Both controller and screen call `getCategories()`/`getProducts()`
+
+**Fix:** Only call from controller, screen consumes controller state
+```dart
+// Remove from mart_store_screen.dart initState:
+// _martController.getCategories();
+// _martController.getProducts();
+
+// Keep in MartController.onInit() only
+// Ensure controller loads data before screen builds
+```
+
+### 3.4 Driver App Direct ApiClient Fix
+
+**File:** `drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/lib/features/mart/screens/mart_pending_orders_screen.dart`
+
+**Issue:** Direct ApiClient calls
+
+**Fix:** Create DriverMartService
+```dart
+// Create domain/services/driver_mart_service.dart
+class DriverMartService {
+  final DriverMartRepository _repository;
+  
+  Future<List<MartOrder>> getPendingOrders() async {
+    return _repository.getPendingOrders();
+  }
+  
+  Future<MartOrder> getOrderDetails(String orderId) async {
+    return _repository.getOrderDetails(orderId);
+  }
+}
+```
+
+---
+
+## PHASE 4: FEATURE COMPLETENESS
+
+### 4.1 Driver Mart Delivery Proof Upload
+
+**File:** `drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/lib/features/mart/screens/mart_delivery_screen.dart`
+
+**Issue:** Backend requires delivery proof but UI doesn't exist
+
+**Implementation:**
+```dart
+// Add to mart_delivery_screen.dart:
+
+// State variables:
+XFile? _deliveryPhoto;
+XFile? _customerSignature;
+bool _isUploading = false;
+
+// UI: Add photo/signature capture buttons
+Row(
+  children: [
+    Expanded(
+      child: _buildCaptureButton(
+        icon: Icons.camera_alt,
+        label: 'delivery_photo'.tr,
+        onTap: () => _pickImage(isSignature: false),
+        preview: _deliveryPhoto,
+      ),
+    ),
+    SizedBox(width: Dimensions.paddingSizeDefault),
+    Expanded(
+      child: _buildCaptureButton(
+        icon: Icons.draw,
+        label: 'customer_signature'.tr,
+        onTap: () => _captureSignature(),
+        preview: _signatureImage,
+      ),
+    ),
+  ],
+),
+
+// Submit handler:
+Future<void> _submitDeliveryProof() async {
+  if (_deliveryPhoto == null) {
+    showCustomSnackBar('please_capture_delivery_photo'.tr);
+    return;
+  }
+  
+  setState(() => _isUploading = true);
+  
+  try {
+    await _martService.uploadDeliveryProof(
+      orderId: _orderId,
+      photo: _deliveryPhoto!,
+      signature: _customerSignature,
+    );
+    Get.back();
+    showCustomSnackBar('delivery_completed'.tr, isError: false);
+  } catch (e) {
+    showCustomSnackBar('delivery_proof_failed'.tr);
+  } finally {
+    setState(() => _isUploading = false);
+  }
+}
+```
+
+### 4.2 Implement Driver Mart MyOrders
+
+**File:** `drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1/lib/features/mart/screens/mart_order_history_screen.dart`
+
+**Issue:** API constants exist but service not implemented
+
+**Implementation:**
+```dart
+// Create mart_order_history_screen.dart if missing:
+class MartOrderHistoryScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<DriverMartController>(
+      builder: (controller) {
+        if (controller.isLoading) {
+          return MartOrderShimmer();
+        }
+        
+        if (controller.completedOrders.isEmpty) {
+          return NoDataWidget(
+            icon: Icons.receipt_long,
+            message: 'no_orders_yet'.tr,
+          );
+        }
+        
+        return ListView.builder(
+          itemCount: controller.completedOrders.length,
+          itemBuilder: (ctx, i) => MartOrderCard(
+            order: controller.completedOrders[i],
+            onTap: () => Get.to(() => MartOrderDetailsScreen(
+              orderId: controller.completedOrders[i].id,
+            )),
+          ),
+        );
+      },
+    );
+  }
+}
+```
+
+### 4.3 Add Dedicated Cart Review Screen
+
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/mart/screens/mart_cart_screen.dart`
+
+**Issue:** No cart review - direct to checkout
+
+**Implementation:**
+```dart
+class MartCartScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<MartController>(
+      builder: (controller) {
+        if (controller.cartItems.isEmpty) {
+          return NoDataWidget(
+            icon: Icons.shopping_cart_outlined,
+            message: 'cart_is_empty'.tr,
+            buttonText: 'browse_store'.tr,
+            onButtonPressed: () => Get.back(),
+          );
+        }
+        
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: controller.cartItems.length,
+                itemBuilder: (ctx, i) => CartItemTile(
+                  item: controller.cartItems[i],
+                  onQuantityChanged: (qty) => controller.updateQuantity(i, qty),
+                  onRemove: () => controller.removeFromCart(i),
+                ),
+              ),
+            ),
+            _buildOrderSummary(controller),
+            _buildCheckoutButton(controller),
+          ],
+        );
+      },
+    );
+  }
+}
+```
+
+### 4.4 Implement Real-time Order Updates (Pusher)
+
+**File:** `drivemond-user-app-3.1/HexaRide-User-app-release-3.1/lib/features/mart/screens/mart_order_tracking_screen.dart`
+
+**Issue:** Polling only, no real-time updates
+
+**Implementation:**
+```dart
+@override
+void initState() {
+  super.initState();
+  _subscribeToOrderUpdates();
+}
+
+void _subscribeToOrderUpdates() {
+  PusherHelper.subscribeMartOrderUpdate(widget.order.id, (data) {
+    if (mounted) {
+      final status = data['status'];
+      _martController.updateOrderStatus(widget.order.id, status);
+      
+      // Show notification
+      if (status == 'delivered') {
+        _showDeliveryCelebration();
+      }
+    }
+  });
+}
+
+@override
+void dispose() {
+  PusherHelper.unsubscribeMartOrderUpdate(widget.order.id);
+  super.dispose();
+}
+```
+
+---
+
+## IMPLEMENTATION FILE LIST
+
+### User App Files to Modify:
+1. `lib/features/auth/screens/sign_in_screen.dart` - Fix deeplink URL
+2. `lib/features/auth/screens/token_gate_screen.dart` - UUID validation
+3. `lib/features/auth/screens/verification_screen.dart` - Timer persistence
+4. `lib/features/auth/screens/sign_up_screen.dart` - Form state clearing
+5. `lib/features/mart/screens/mart_store_screen.dart` - Empty states, state deduplication
+6. `lib/features/mart/screens/mart_payment_screen.dart` - Service layer refactor
+7. `lib/features/mart/screens/mart_cart_screen.dart` - New cart screen
+8. `lib/features/mart/screens/mart_order_tracking_screen.dart` - Pusher integration
+9. `lib/main.dart` - Deep link handlers
+10. `lib/helper/pusher_helper.dart` - Mart Pusher methods
+
+### Driver App Files to Modify:
+1. `lib/features/auth/screens/token_gate_screen.dart` - Token history
+2. `lib/features/mart/screens/mart_pending_orders_screen.dart` - Service layer
+3. `lib/features/mart/screens/mart_delivery_screen.dart` - Proof upload UI
+4. `lib/features/mart/screens/mart_order_history_screen.dart` - New/fix implementation
+5. `lib/main.dart` - Deep link handlers
+
+### Backend Files to Modify:
+1. `Modules/AuthManagement/Http/Controllers/Api/ClientOtpAuthController.php` - Already improved
+
+---
+
+## TESTING CHECKLIST
+
+### Authentication Tests:
+- [ ] PIN login flow (customer + driver)
+- [ ] PIN registration flow
+- [ ] OTP send/verify flow
+- [ ] QR token validation
+- [ ] Token history (customer app)
+- [ ] Form state clearing on back navigation
+- [ ] Timer persistence across app background
+
+### Mart Flow Tests:
+- [ ] Browse products → Add to cart → Review cart → Checkout
+- [ ] Driver: Accept order → Upload proof → Complete delivery
+- [ ] Real-time order status updates
+- [ ] Empty states for no products/orders
+
+### Integration Tests:
+```bash
+# Backend
+cd drivemond-admin-new-install-3.1
+php artisan test --filter=VitoFlowTest
+
+# Flutter User App
+cd drivemond-user-app-3.1/HexaRide-User-app-release-3.1
+flutter analyze --no-fatal-infos
+flutter test
+
+# Flutter Driver App  
+cd drivemond-driver-app-3.1/HexaRide-Driver-app-release-3.1
+flutter analyze --no-fatal-infos
+flutter test
+```
+
+---
+
+## ESTIMATED EFFORT
+
+| Phase | Tasks | Est. Hours |
+|-------|-------|------------|
+| Phase 1: Security | 3 | 2-3 |
+| Phase 2: UX/UI | 5 | 4-5 |
+| Phase 3: Architecture | 4 | 6-8 |
+| Phase 4: Features | 4 | 8-10 |
+| **Total** | **16** | **20-26** |
+
+---
+
+*Plan Generated: 2026-06-30*
+*Ready for Implementation*
 |----------|---------|
 | **Issue** | Back behavior differs based on ride state |
 | **Impact** | User confusion about navigation |
