@@ -258,23 +258,6 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
     );
   }
 
-  // B20: error state with retry
-  Widget _buildErrorState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-          const SizedBox(height: Dimensions.paddingSizeSmall),
-          Text('something_went_wrong'.tr,
-              style: textMedium.copyWith(fontSize: Dimensions.fontSizeDefault)),
-          const SizedBox(height: Dimensions.paddingSizeExtraSmall),
-          TextButton(onPressed: _loadProducts, child: Text('retry'.tr)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEmptyState(BuildContext context, {Key? key}) {
     return Center(
       key: key,
@@ -1113,7 +1096,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
       if (!mounted) return;
       if (response.statusCode == 200 && response.body['data'] != null) {
         final rawDiscount = response.body['data']?['discount'];
-        if (rawDiscount is! num || (rawDiscount as num) < 0) {
+        if (rawDiscount is! num || rawDiscount < 0) {
           Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
           return;
         }
