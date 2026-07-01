@@ -66,6 +66,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  void _clearFormControllers() {
+    final authController = Get.find<AuthController>();
+    authController.usernameController.clear();
+    authController.fNameController.clear();
+    authController.lNameController.clear();
+    authController.phoneController.clear();
+    authController.passwordController.clear();
+    authController.confirmPasswordController.clear();
+    authController.referralCodeController.clear();
+  }
+
   Future<void> _submit(AuthController authController) async {
     HapticFeedback.mediumImpact();
     final username = authController.usernameController.text.trim();
@@ -146,7 +157,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: Theme.of(context).textTheme.bodyMedium?.color),
-            onPressed: () => Get.back(),
+            onPressed: () {
+              _clearFormControllers();
+              Get.back();
+            },
           ),
         ),
         body: GetBuilder<AuthController>(builder: (authController) {

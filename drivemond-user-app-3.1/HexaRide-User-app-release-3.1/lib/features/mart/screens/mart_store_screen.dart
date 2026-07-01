@@ -40,11 +40,8 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure categories and products are loaded
-    if (_martController.categories.isEmpty) {
-      _martController.getCategories();
-    }
-    _martController.getProducts();
+    // Products are loaded by MartController.onInit() - no need to call here
+    // This prevents duplicate API calls (GAP-005 fix)
   }
 
   @override
@@ -257,23 +254,6 @@ class _MartStoreScreenState extends State<MartStoreScreen> {
             borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
           ),
         ),
-      ),
-    );
-  }
-
-  // B20: error state with retry
-  Widget _buildErrorState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-          const SizedBox(height: Dimensions.paddingSizeSmall),
-          Text('something_went_wrong'.tr,
-              style: textMedium.copyWith(fontSize: Dimensions.fontSizeDefault)),
-          const SizedBox(height: Dimensions.paddingSizeExtraSmall),
-          TextButton(onPressed: _loadProducts, child: Text('retry'.tr)),
-        ],
       ),
     );
   }
@@ -1116,7 +1096,7 @@ class _MartCartScreenState extends State<MartCartScreen> {
       if (!mounted) return;
       if (response.statusCode == 200 && response.body['data'] != null) {
         final rawDiscount = response.body['data']?['discount'];
-        if (rawDiscount is! num || (rawDiscount as num) < 0) {
+        if (rawDiscount is! num || rawDiscount < 0) {
           Get.snackbar('error'.tr, 'invalid_promo_code'.tr);
           return;
         }
@@ -1182,6 +1162,21 @@ class _MartCartScreenState extends State<MartCartScreen> {
     if (_addressController.text.trim().isEmpty) {
       Get.snackbar('error'.tr, 'please_enter_delivery_address'.tr);
       return;
+    }
+
+    // GAP-028: Validate address - minimum length and not just coordinates
+    final address = _addressController.text.trim();
+    if (address.length < 10) {
+      Get.snackbar('error'.tr, 'address_too_short'.tr);
+      return;
+    }
+
+    // GAP-023: Validate coordinates - reject (0,0) which is "Null Island"
+    if (_deliveryLat != null && _deliveryLng != null) {
+      if (_deliveryLat == 0 && _deliveryLng == 0) {
+        Get.snackbar('error'.tr, 'invalid_delivery_location'.tr);
+        return;
+      }
     }
 
     // FIX 2: check wallet balance before submitting a wallet order

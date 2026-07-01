@@ -15,6 +15,7 @@ import 'package:ride_sharing_user_app/features/splash/controllers/config_control
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/body_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VerificationScreen extends StatefulWidget {
   final String number;
@@ -32,23 +33,56 @@ class VerificationScreenState extends State<VerificationScreen> {
   final StreamController<ErrorAnimationType> _errorController = StreamController<ErrorAnimationType>();
   final TextEditingController _pinController = TextEditingController();
   String errorText = '';
+  static const String _timerExpiryKey = 'otp_timer_expiry_';
 
   @override
   void initState() {
     super.initState();
     Get.find<AuthController>().updateVerificationCode('',isUpdate: false);
+    _loadTimerState();
+  }
+
+  Future<void> _loadTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiryString = prefs.getString('$_timerExpiryKey${widget.number}');
+    
+    if (expiryString != null) {
+      final expiry = DateTime.tryParse(expiryString);
+      if (expiry != null && expiry.isAfter(DateTime.now())) {
+        _seconds = expiry.difference(DateTime.now()).inSeconds;
+        if (_seconds! > 0) {
+          _startTimer();
+          return;
+        }
+      }
+    }
+    // No saved state or expired, start fresh
     _startTimer();
   }
 
+  Future<void> _saveTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiry = DateTime.now().add(Duration(seconds: _seconds ?? 0));
+    await prefs.setString('$_timerExpiryKey${widget.number}', expiry.toIso8601String());
+  }
+
   void _startTimer() {
-    _seconds = Get.find<ConfigController>().config?.otpResendTime ?? 60;
+    _seconds ??= Get.find<ConfigController>().config?.otpResendTime ?? 60;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _seconds = _seconds! - 1;
       if(_seconds == 0) {
         timer.cancel();
         _timer?.cancel();
+        // Clear saved state when timer completes
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.remove('$_timerExpiryKey${widget.number}');
+        });
       }
       setState(() {});
+      // Save state periodically (every 5 seconds to reduce writes)
+      if (_seconds! % 5 == 0) {
+        _saveTimerState();
+      }
     });
   }
 
