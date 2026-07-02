@@ -5,9 +5,11 @@ import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/features/dashboard/controllers/bottom_menu_controller.dart';
 import 'package:ride_sharing_user_app/features/payment/controllers/payment_controller.dart';
+import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/body_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
+import 'package:ride_sharing_user_app/common_widgets/image_widget.dart';
 
 class ReviewScreen extends StatefulWidget {
   final String tripId;
@@ -40,6 +42,62 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   Padding(padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeOverLarge),
                     child: Center(child: Text('payment_successful'.tr,
                       style: textSemiBold.copyWith(color: Theme.of(context).primaryColor)))),
+
+                  // GAP-017: Show driver info on review screen
+                  GetBuilder<RideController>(builder: (rideController) {
+                    final trip = rideController.tripDetails;
+                    if (trip != null && trip.driver != null) {
+                      final driver = trip.driver!;
+                      final rating = trip.driverAvgRating;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: Dimensions.paddingSizeDefault),
+                        padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+                        ),
+                        child: Row(children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                            child: driver.profileImage != null
+                                ? ImageWidget(
+                                    image: driver.profileImage!.startsWith('http')
+                                        ? driver.profileImage!
+                                        : '${driver.profileImage}',
+                                    width: 50, height: 50, fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    width: 50, height: 50,
+                                    color: Theme.of(context).primaryColor.withValues(alpha:0.2),
+                                    child: Icon(Icons.person, color: Theme.of(context).primaryColor),
+                                  ),
+                          ),
+                          const SizedBox(width: Dimensions.paddingSizeDefault),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(
+                              '${driver.firstName ?? ''} ${driver.lastName ?? ''}',
+                              style: textBold.copyWith(fontSize: Dimensions.fontSizeLarge),
+                            ),
+                            if (driver.vehicle?.model != null)
+                              Text(
+                                driver.vehicle!.model!.name ?? '',
+                                style: textRegular.copyWith(color: Theme.of(context).hintColor, fontSize: Dimensions.fontSizeSmall),
+                              ),
+                            if (rating != null)
+                              Row(children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  double.tryParse(rating.toString())?.toStringAsFixed(1) ?? rating.toString(),
+                                  style: textMedium.copyWith(fontSize: Dimensions.fontSizeSmall),
+                                ),
+                              ]),
+                          ])),
+                        ]),
+                      );
+                    }
+                    return const SizedBox();
+                  }),
 
                   Text('review'.tr, style: textSemiBold.copyWith(color: Theme.of(context).primaryColor),),
                   Padding(padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),

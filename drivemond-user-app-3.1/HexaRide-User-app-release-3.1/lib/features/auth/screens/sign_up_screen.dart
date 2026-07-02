@@ -227,10 +227,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: Dimensions.paddingSizeSmall),
 
                   CustomTextField(
-                    hintText: 'password'.tr,
-                    inputType: TextInputType.text,
+                    hintText: 'enter_6_digit_pin'.tr,
+                    inputType: TextInputType.number,
                     prefixIcon: Images.lock,
                     isPassword: true,
+                    maxLength: 6,
                     controller: authController.passwordController,
                     focusNode: _passwordNode,
                     nextFocus: _confirmPasswordNode,

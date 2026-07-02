@@ -152,6 +152,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               focusNode: usernameNode,
                               autoFocus: usernameController.text.isEmpty,
                               inputAction: TextInputAction.next,
+                              nextFocus: pinNode, // GAP-013: Auto-focus PIN field after username entry
                             ),
                             const SizedBox(height: Dimensions.paddingSizeDefault),
 

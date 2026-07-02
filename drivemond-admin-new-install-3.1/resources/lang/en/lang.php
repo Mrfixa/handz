@@ -4449,4 +4449,8 @@
   'The new pin must be 6 digits.' => 'The new pin must be 6 digits.',
   'promo_code_added_successfully' => 'Promo code added successfully',
   'category_added_successfully' => 'Category added successfully',
+  'The amount may not be greater than 10000.' => 'The amount may not be greater than 10000.',
+  'The order id must be a valid UUID.' => 'The order id must be a valid UUID.',
+  'The selected role is invalid.' => 'The selected role is invalid.',
+  'The token must be at least 6 characters.' => 'The token must be at least 6 characters.',
 );
