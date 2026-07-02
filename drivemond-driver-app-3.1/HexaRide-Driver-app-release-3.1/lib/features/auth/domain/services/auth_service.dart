@@ -19,6 +19,16 @@ class AuthService implements AuthServiceInterface{
   }
 
   @override
+  Future forgotPinSendOtp(String username) {
+    return authRepositoryInterface.forgotPinSendOtp(username);
+  }
+
+  @override
+  Future resetPinWithOtp(String username, String otp, String newPin) {
+    return authRepositoryInterface.resetPinWithOtp(username, otp, newPin);
+  }
+
+  @override
   bool clearSharedAddress() {
    return authRepositoryInterface.clearSharedAddress();
   }

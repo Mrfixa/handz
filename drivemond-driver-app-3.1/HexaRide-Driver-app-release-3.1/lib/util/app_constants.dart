@@ -115,6 +115,8 @@ class AppConstants {
   static const String pinRegister = '/api/driver/auth/pin-register';
   static const String checkUsername = '/api/driver/auth/check-username';
   static const String changePin = '/api/driver/auth/change-pin';
+  static const String forgotPinSendOtp = '/api/driver/auth/forgot-pin/send-otp';
+  static const String forgotPinReset = '/api/driver/auth/forgot-pin/reset';
   static const String qrTokenGenerate = '/api/qr-token/generate';
   static const String qrTokenValidate = '/api/qr-token/validate';
   static const String qrTokenRevoke = '/api/qr-token/revoke';

@@ -101,6 +101,22 @@ class AuthRepository implements AuthRepositoryInterface {
     );
   }
 
+  @override
+  Future<Response?> forgotPinSendOtp(String username) async {
+    return await apiClient.postData(AppConstants.forgotPinSendOtp, {"username": username});
+  }
+
+  @override
+  Future<Response?> resetPinWithOtp(String username, String otp, String newPin) async {
+    return await apiClient.postData(AppConstants.forgotPinReset,
+      { "username": username,
+        "otp": otp,
+        "new_pin": newPin,
+        "new_pin_confirmation": newPin,
+      },
+    );
+  }
+
 
 
   String? deviceToken;
