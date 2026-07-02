@@ -97,8 +97,11 @@ class _TripScreenState extends State<TripScreen> with SingleTickerProviderStateM
   Widget tabBarBodyWidget (TripController tripController){
     return (tripController.tripModel != null && tripController.tripModel!.data != null) ?
     tripController.tripModel!.data!.isNotEmpty ?
-    SingleChildScrollView(
+    RefreshIndicator(
+      onRefresh: () => Get.find<TripController>().getTripList(1),
+      child: SingleChildScrollView(
       controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       child: PaginatedListWidget(
         scrollController: scrollController,
         totalSize: tripController.tripModel!.totalSize,
@@ -123,7 +126,7 @@ class _TripScreenState extends State<TripScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
-    ) :
+    )) :
     const NoDataWidget(title: 'no_trip_found') :
     const NotificationShimmer();
   }
