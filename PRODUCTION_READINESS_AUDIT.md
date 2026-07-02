@@ -27,6 +27,33 @@ must be treated as compromised — revoke/rotate it with the issuer, then purge 
 
 ---
 
+## 1b. Remediation status (updated 2026-07-02)
+
+Work shipped on `claude/production-readiness-audit-zxj9fx` this cycle:
+
+| Finding | Status |
+|---------|--------|
+| C1 Swish key | **Partially addressed** — untracked from git + `.gitignore`d; **rotation + history purge still required (user action)** |
+| H1 seeded demo creds | **Fixed** — `DefaultUsersSeeder` demo customer/driver gated to non-prod (`SEED_DEMO_USERS` opt-in). Admin default (separate `AdminUserSeeder`) still needs a manual password change |
+| H2 weak `.env` secrets | **Fixed** — REVERB/PUSHER secrets blanked with generate-random guidance |
+| H3 open CORS | **Fixed** — `allowed_origins` via `CORS_ALLOWED_ORIGINS` (deny by default); methods narrowed |
+| H4 driver hardcoded `baseUrl` | **Fixed** — now `String.fromEnvironment('BASE_URL', …)` |
+| M1/M6 queue & cache docs | **Fixed** — `.env.example` documents redis + worker requirement |
+| M2 user `baseUrl` default | **Deferred** — kept host fallback; emptying it needs `BASE_URL` wired into build workflows |
+| L3 Sentry sample rate | **Fixed** — `SENTRY_SAMPLE_RATE` documented in `.env.example` |
+
+New feature gaps closed (Track 2): chat send rate-limit; **self-service forgot-PIN** (backend + both
+apps); **driver arrived-at-pickup** sub-signal (backend + driver button + customer banner).
+
+**Verified already-implemented (prior-audit items now confirmed stale — no work needed):** per-user
+promo limit (`VitoMartController:261`); chat throttling (group `throttle:60,1`); ride fare recompute
+& ownership checks; **mart tip cap** (30%, `VitoMartController:245`); **auto-refund on paid-order
+cancel** and **driver-cancel endpoint** (shared `RefundsMartOrders` trait across customer/driver/admin,
+real Stripe refunds with idempotency). The oldest `AUDIT.md` predates these — treat this table as the
+current source of truth.
+
+---
+
 ## 2. Findings (severity-ranked)
 
 ### 🔴 Critical
