@@ -1016,6 +1016,39 @@ class TripRequestController extends Controller
                 $this->driverLevelUpdateChecker($trip->driver);
             }
 
+            // C4: Automatic refund on ride cancellation post-payment
+            // Refund wallet payments directly; card payments via Stripe (non-blocking)
+            if ($request->status == 'cancelled' && $trip->paid_fare > 0) {
+                $wasWalletPaid = in_array($trip->payment_method, ['wallet']);
+                $wasCardPaid = in_array($trip->payment_method, ['card', 'digital']);
+
+                if ($wasWalletPaid) {
+                    // Wallet refund: atomic increment within the existing transaction
+                    $account = $trip->customer->userAccount;
+                    if ($account) {
+                        $account->increment('wallet_balance', (float) $trip->paid_fare);
+                        try {
+                            sendDeviceNotification(
+                                fcm_token: $trip->customer->fcm_token,
+                                title: 'Refund Processed',
+                                description: "Your wallet has been credited with " . getCurrencyFormat($trip->paid_fare) . " for cancelled trip #{$trip->ref_id}.",
+                                status: 'success',
+                                ride_request_id: $trip->id,
+                                notification_type: 'trip',
+                                action: 'trip_refund_success',
+                                user_id: $trip->customer->id,
+                            );
+                        } catch (\Throwable $e) {
+                            Log::warning('Trip wallet refund FCM notify failed: ' . $e->getMessage());
+                        }
+                    }
+                    $this->tripRequestService->update(id: $trip->id, data: ['payment_status' => 'refunded']);
+                } elseif ($wasCardPaid) {
+                    // Card refund via Stripe webhook is handled by the refundOrderPayment call below
+                    $this->tripRequestService->update(id: $trip->id, data: ['payment_status' => 'refund_pending']);
+                }
+            }
+
 
             if ($trip->driver_id && $request->status == 'cancelled' && $trip->current_status == ONGOING && $trip->type == PARCEL) {
                 $env = env('APP_MODE');

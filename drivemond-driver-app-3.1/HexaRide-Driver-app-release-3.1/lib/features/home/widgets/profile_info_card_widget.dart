@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart';
 import 'package:ride_sharing_user_app/common_widgets/confirmation_bottomsheet_widget.dart';
 import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
+import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/helper/home_screen_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
@@ -196,6 +197,11 @@ class _ProfileStatusCardWidgetState extends State<ProfileStatusCardWidget> {
                     ));
 
                   }else{
+                    // C5: Check location permission before going online
+                    final hasLocationPermission = await Get.find<LocationController>().checkPermission();
+                    if (!hasLocationPermission) {
+                      return; // checkPermission shows its own dialog
+                    }
                     final String previousState = widget.profileController.isOnline;
                     Get.dialog(const LoaderWidget(), barrierDismissible: false);
                     await widget.profileController.profileOnlineOffline(val).then((value){

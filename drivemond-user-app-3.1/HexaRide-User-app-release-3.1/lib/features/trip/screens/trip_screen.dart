@@ -77,11 +77,11 @@ class _TripScreenState extends State<TripScreen> with SingleTickerProviderStateM
                   Expanded(child: TabBarView(
                       controller: tabController,
                       children: [
-                        tabBarBodyWidget(tripController),
-                        tabBarBodyWidget(tripController),
-                        tabBarBodyWidget(tripController),
-                        tabBarBodyWidget(tripController),
-                        tabBarBodyWidget(tripController)
+                        tabBarBodyWidget(tripController, 'all'),
+                        tabBarBodyWidget(tripController, 'ongoing'),
+                        tabBarBodyWidget(tripController, 'cancelled'),
+                        tabBarBodyWidget(tripController, 'completed'),
+                        tabBarBodyWidget(tripController, 'returned')
                       ]
                   ))
 
@@ -94,38 +94,54 @@ class _TripScreenState extends State<TripScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget tabBarBodyWidget (TripController tripController){
-    return (tripController.tripModel != null && tripController.tripModel!.data != null) ?
-    tripController.tripModel!.data!.isNotEmpty ?
-    SingleChildScrollView(
-      controller: scrollController,
-      child: PaginatedListWidget(
-        scrollController: scrollController,
-        totalSize: tripController.tripModel!.totalSize,
-        offset:
-        (tripController.tripModel != null && tripController.tripModel!.offset != null) ?
-        int.parse(tripController.tripModel!.offset.toString()) :
-        null,
-        onPaginate: (int? offset) async {
-          await tripController.getTripList(offset!);
-        },
-        itemView: Padding(
-          padding: const EdgeInsets.only(bottom: 70.0),
-          child: ListView.separated(
-            itemCount: tripController.tripModel!.data!.length,
-            padding: const EdgeInsets.all(0),
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemBuilder: (BuildContext context, int index) {
-              return TripItemView(tripDetails: tripController.tripModel!.data![index]);
+  Widget tabBarBodyWidget (TripController tripController, String filter){
+    // GAP-018: Filter trips by status based on selected tab
+    final filteredTrips = tripController.tripModel?.data?.where((trip) {
+      switch (filter) {
+        case 'ongoing':
+          return trip.currentStatus == 'accepted' || trip.currentStatus == 'started';
+        case 'cancelled':
+          return trip.currentStatus == 'cancelled';
+        case 'completed':
+          return trip.currentStatus == 'completed';
+        case 'returned':
+          return trip.currentStatus == 'returned';
+        default: // 'all'
+          return true;
+      }
+    }).toList() ?? [];
+
+    if (tripController.tripModel != null) {
+      if (filteredTrips.isNotEmpty) {
+        return SingleChildScrollView(
+          controller: scrollController,
+          child: PaginatedListWidget(
+            scrollController: scrollController,
+            totalSize: filteredTrips.length,
+            offset: null,
+            onPaginate: (int? offset) async {
+              await tripController.getTripList(offset ?? 1);
             },
-            separatorBuilder: (BuildContext context, int index) => Divider(color: Theme.of(context).highlightColor.withValues(alpha:0.15)),
+            itemView: Padding(
+              padding: const EdgeInsets.only(bottom: 70.0),
+              child: ListView.separated(
+                itemCount: filteredTrips.length,
+                padding: const EdgeInsets.all(0),
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemBuilder: (BuildContext context, int index) {
+                  return TripItemView(tripDetails: filteredTrips[index]);
+                },
+                separatorBuilder: (BuildContext context, int index) => Divider(color: Theme.of(context).highlightColor.withValues(alpha:0.15)),
+              ),
+            ),
           ),
-        ),
-      ),
-    ) :
-    const NoDataWidget(title: 'no_trip_found') :
-    const NotificationShimmer();
+        );
+      } else {
+        return const NoDataWidget(title: 'no_trip_found');
+      }
+    }
+    return const NotificationShimmer();
   }
 }
 

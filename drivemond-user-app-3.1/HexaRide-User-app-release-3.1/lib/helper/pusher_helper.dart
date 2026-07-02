@@ -5,6 +5,7 @@ import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.
 import 'package:ride_sharing_user_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:ride_sharing_user_app/features/map/controllers/map_controller.dart';
 import 'package:ride_sharing_user_app/features/map/screens/map_screen.dart';
+import 'package:ride_sharing_user_app/features/mart/controllers/mart_controller.dart';
 import 'package:ride_sharing_user_app/features/parcel/controllers/parcel_controller.dart';
 import 'package:ride_sharing_user_app/features/payment/screens/payment_screen.dart';
 import 'package:ride_sharing_user_app/features/payment/screens/review_screen.dart';
@@ -72,7 +73,9 @@ class PusherHelper {
   late PrivateChannel driverTripCancelled;
   late PrivateChannel driverTripCompleted;
   late PrivateChannel driverPaymentReceived;
+  late PrivateChannel martOrderStatus;
   PrivateChannel? _currentRideChannel;
+  PrivateChannel? _currentMartOrderChannel;
 
   void pusherDriverStatus(String tripId) async {
     if (pusherClient == null) return;
@@ -270,6 +273,47 @@ class PusherHelper {
       }
     }
 
+  }
+
+  // GAP-009: Subscribe to mart order status updates
+  void subscribeMartOrderStatus(String orderId) async {
+    if (pusherClient == null) return;
+    _currentMartOrderChannel?.unsubscribe();
+
+    if (Get.find<ConfigController>().pusherConnectionStatus != null || Get.find<ConfigController>().pusherConnectionStatus == 'Connected') {
+      martOrderStatus = pusherClient!.privateChannel("mart-order.$orderId",
+        authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPrivateChannel(
+          authorizationEndpoint: Uri.parse('${Get.find<ConfigController>().config!.websocketScheme ?? 'https'}://${Get.find<ConfigController>().config!.webSocketUrl}/broadcasting/auth'),
+          headers: {
+            "Accept": "application/json",
+            "Authorization": "Bearer ${Get.find<AuthController>().getUserToken()}",
+            "Access-Control-Allow-Origin": "*",
+            'Access-Control-Allow-Methods': "PUT, GET, POST, DELETE, OPTIONS"
+          },
+        )
+      );
+      _currentMartOrderChannel = martOrderStatus;
+
+      if (martOrderStatus.currentStatus == null) {
+        martOrderStatus.subscribe();
+        martOrderStatus.bind("mart.order.status.updated").listen((event) {
+          final data = _safeDecodeData(event.data);
+          if (data == null) return;
+          // Trigger mart controller to refresh order details
+          try {
+            final martController = Get.find<MartController>();
+            martController.getOrderDetails(orderId);
+          } catch (_) {
+            // MartController not registered, ignore
+          }
+        });
+      }
+    }
+  }
+
+  void unsubscribeMartOrderStatus() {
+    _currentMartOrderChannel?.unsubscribe();
+    _currentMartOrderChannel = null;
   }
 
 }
