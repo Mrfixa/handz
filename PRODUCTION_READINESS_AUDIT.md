@@ -223,9 +223,10 @@ Items previously flagged and **verified fixed** in current source (excluded from
 - `USER_APP_AUDIT.md` / `AUTH_AUDIT.md` / `VITO_AUDIT.md` C-series and audited H-series → marked
   shipped in v2.x; not re-opened here.
 
-Open product-decision items noted by prior docs (not defects): no self-service forgot-PIN recovery,
-gate-free OTP registration, no Passport token expiry, retained legacy auth routes. These are design
-choices to confirm before launch, not code bugs.
+Open product-decision items noted by prior docs (not defects): gate-free OTP registration, no
+Passport token expiry, retained legacy auth routes. These are design choices to confirm before
+launch, not code bugs. (Self-service forgot-PIN recovery — previously listed here — was implemented
+in Track 2; see §1b.)
 
 ---
 
