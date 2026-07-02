@@ -16,6 +16,8 @@ abstract class AuthRepositoryInterface implements RepositoryInterface{
   Future<Response?> resetPassword(String phoneOrEmail, String password);
   Future<Response?> changePassword(String oldPassword, String password);
   Future<Response?> changePin(String currentPin, String newPin);
+  Future<Response?> forgotPinSendOtp(String username);
+  Future<Response?> resetPinWithOtp(String username, String otp, String newPin);
   Future<Response?> updateToken();
   Future<Response?> forgetPassword(String? phone);
   Future<Response?> verifyPhone(String phone, String otp);

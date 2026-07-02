@@ -22,6 +22,16 @@ class DefaultUsersSeeder extends Seeder
 {
     public function run(): void
     {
+        // Demo customer/driver use guessable PINs (123456) and must never exist in
+        // production. Skip them there unless explicitly opted in (SEED_DEMO_USERS=true
+        // for a staging/demo box). User levels are harmless and always seeded.
+        if (app()->environment('production') && !filter_var(env('SEED_DEMO_USERS', false), FILTER_VALIDATE_BOOLEAN)) {
+            $this->command?->warn('DefaultUsersSeeder: skipping demo customer/driver accounts in production (set SEED_DEMO_USERS=true to override).');
+            $this->ensureUserLevel('customer');
+            $this->ensureUserLevel('driver');
+            return;
+        }
+
         $customerLevelId = $this->ensureUserLevel('customer');
         $driverLevelId = $this->ensureUserLevel('driver');
 

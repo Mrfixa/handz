@@ -60,12 +60,18 @@ Route::controller(\Modules\AuthManagement\Http\Controllers\Api\VitoAuthControlle
         Route::post('pin-login', 'pinLogin');
         Route::post('pin-register', 'pinRegister');
         Route::get('check-username', 'checkUsername');
+        // Self-service PIN recovery (SMS OTP); tighter limit since each hit sends an SMS.
+        Route::post('forgot-pin/send-otp', 'forgotPinSendOtp')->middleware('throttle:5,1');
+        Route::post('forgot-pin/reset', 'resetPinWithOtp')->middleware('throttle:5,1');
     });
 
     Route::group(['prefix' => 'driver/auth', 'middleware' => 'throttle:20,1'], function () {
         Route::post('pin-login', 'pinLogin');
         Route::post('pin-register', 'pinRegister');
         Route::get('check-username', 'checkUsername');
+        // Self-service PIN recovery (SMS OTP); tighter limit since each hit sends an SMS.
+        Route::post('forgot-pin/send-otp', 'forgotPinSendOtp')->middleware('throttle:5,1');
+        Route::post('forgot-pin/reset', 'resetPinWithOtp')->middleware('throttle:5,1');
     });
 
     Route::group(['middleware' => ['auth:api', 'maintenance_mode']], function () {

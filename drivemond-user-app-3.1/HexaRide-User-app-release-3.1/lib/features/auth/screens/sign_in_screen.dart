@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/auth/domain/enums/verification_from_enum.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/otp_log_in_screen.dart';
-import 'package:ride_sharing_user_app/features/auth/screens/forgot_password_screen.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/forgot_pin_screen.dart';
 import 'package:ride_sharing_user_app/features/settings/domain/html_enum_types.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
@@ -143,9 +143,9 @@ class _SignInScreenState extends State<SignInScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    Get.to(() => const ForgotPasswordScreen(from: VerificationForm.resetPassword));
+                    Get.to(() => const ForgotPinScreen());
                   },
-                  child: Text('forgot_password'.tr, style: textRegular.copyWith(
+                  child: Text('forgot_pin'.tr, style: textRegular.copyWith(
                     fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor,
                   )),
                 ),

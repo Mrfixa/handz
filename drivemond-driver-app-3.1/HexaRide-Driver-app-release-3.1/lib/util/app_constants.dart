@@ -4,7 +4,9 @@ import 'package:ride_sharing_user_app/util/images.dart';
 
 class AppConstants {
   static const String appName = 'Vito Driver';
-  static const String baseUrl = 'https://dacatlon.store';
+  // Configurable per build (staging/prod) via --dart-define=BASE_URL=...; falls back to the
+  // default host so existing builds keep working. Matches the user app's pattern.
+  static const String baseUrl = String.fromEnvironment('BASE_URL', defaultValue: 'https://dacatlon.store');
   static const String polylineMapKey =
       String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
   static const double appVersion = 2.0; /// v2.5.1 release
@@ -115,6 +117,8 @@ class AppConstants {
   static const String pinRegister = '/api/driver/auth/pin-register';
   static const String checkUsername = '/api/driver/auth/check-username';
   static const String changePin = '/api/driver/auth/change-pin';
+  static const String forgotPinSendOtp = '/api/driver/auth/forgot-pin/send-otp';
+  static const String forgotPinReset = '/api/driver/auth/forgot-pin/reset';
   static const String qrTokenGenerate = '/api/qr-token/generate';
   static const String qrTokenValidate = '/api/qr-token/validate';
   static const String qrTokenRevoke = '/api/qr-token/revoke';

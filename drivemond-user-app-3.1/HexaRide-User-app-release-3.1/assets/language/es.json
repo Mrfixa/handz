@@ -1139,5 +1139,11 @@
     "items_added_to_cart": "Artículos añadidos a tu carrito",
     "some_items_unavailable": "Algunos artículos ya no están disponibles y se omitieron",
     "favorites": "Favoritos",
-    "no_favorites_yet": "Aún no tienes favoritos"
+    "no_favorites_yet": "Aún no tienes favoritos",
+    "forgot_pin": "¿Olvidaste tu PIN?",
+    "forgot_pin_hint": "Ingresa tu nombre de usuario y enviaremos un código de un solo uso al número de teléfono de tu cuenta.",
+    "otp": "OTP",
+    "otp_must_be_6_digits": "El OTP debe tener 6 dígitos",
+    "reset_pin": "Restablecer PIN",
+    "driver_has_arrived": "Tu conductor ha llegado al punto de recogida"
 }

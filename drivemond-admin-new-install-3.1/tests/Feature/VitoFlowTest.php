@@ -221,6 +221,7 @@ class VitoFlowTest extends TestCase
                 $table->uuid('driver_id')->nullable();
                 $table->timestamp('pending')->nullable();
                 $table->timestamp('accepted')->nullable();
+                $table->timestamp('arrived')->nullable();
                 $table->timestamp('out_for_pickup')->nullable();
                 $table->timestamp('picked_up')->nullable();
                 $table->timestamp('ongoing')->nullable();
@@ -918,6 +919,74 @@ class VitoFlowTest extends TestCase
         $this->assertTrue((bool) $user->tokens()->where('id', $sessionB->token->id)->first()->revoked);
     }
 
+    public function test_forgot_pin_recovery(): void
+    {
+        $user = $this->createUser('customer', [
+            'username' => 'forgetful',
+            'phone' => '+15558675309',
+            'pin_hash' => Hash::make('111111'),
+        ]);
+
+        // An existing session that recovery must revoke.
+        $session = $user->createToken('old-device', ['AccessToCustomer']);
+
+        // Unknown username -> 404.
+        $this->postJson('/api/customer/auth/forgot-pin/send-otp', [
+            'username' => 'nobody-here',
+        ])->assertStatus(404);
+
+        // Request the OTP (testing env returns the raw code in the response).
+        $send = $this->postJson('/api/customer/auth/forgot-pin/send-otp', [
+            'username' => 'forgetful',
+        ])->assertOk();
+        $otp = $send->json('otp');
+        $this->assertNotEmpty($otp);
+
+        // Wrong OTP -> 400, PIN unchanged.
+        $this->postJson('/api/customer/auth/forgot-pin/reset', [
+            'username' => 'forgetful',
+            'otp' => '000000',
+            'new_pin' => '222222',
+            'new_pin_confirmation' => '222222',
+        ])->assertStatus(400);
+
+        // Correct OTP -> resets the PIN.
+        $this->postJson('/api/customer/auth/forgot-pin/reset', [
+            'username' => 'forgetful',
+            'otp' => $otp,
+            'new_pin' => '222222',
+            'new_pin_confirmation' => '222222',
+        ])->assertOk();
+
+        $user->refresh();
+        $this->assertTrue(Hash::check('222222', $user->pin_hash));
+        $this->assertFalse(Hash::check('111111', $user->pin_hash));
+
+        // Recovery revokes every prior session.
+        $this->assertTrue((bool) $user->tokens()->where('id', $session->token->id)->first()->revoked);
+
+        // Old PIN no longer logs in; the new PIN does.
+        $this->postJson('/api/customer/auth/pin-login', [
+            'username' => 'forgetful', 'pin' => '111111',
+        ])->assertStatus(403);
+        $this->postJson('/api/customer/auth/pin-login', [
+            'username' => 'forgetful', 'pin' => '222222',
+        ])->assertOk();
+    }
+
+    public function test_forgot_pin_rejects_account_without_phone(): void
+    {
+        $this->createUser('customer', [
+            'username' => 'nophone',
+            'phone' => null,
+            'pin_hash' => Hash::make('111111'),
+        ]);
+
+        $this->postJson('/api/customer/auth/forgot-pin/send-otp', [
+            'username' => 'nophone',
+        ])->assertStatus(422);
+    }
+
     public function test_pin_login_trims_username(): void
     {
         $this->createUser('customer', [
@@ -1036,6 +1105,72 @@ class VitoFlowTest extends TestCase
         Passport::actingAs($driver2, ['AccessToDriver']);
         $res2 = $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $rideId]);
         $res2->assertStatus(404);
+    }
+
+    public function test_driver_arrived_at_pickup_sub_signal(): void
+    {
+        $customer = $this->createUser('customer');
+        $driver = $this->createUser('driver', ['username' => 'arrivedriver']);
+
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(), 'last_ride_completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $rideId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $rideId,
+            'customer_id' => $customer->id,
+            'driver_id' => $driver->id,
+            'current_status' => 'accepted',
+            'type' => 'ride_request',
+            'zone_id' => Str::uuid()->toString(),
+            'area_id' => Str::uuid()->toString(),
+            'vehicle_category_id' => Str::uuid()->toString(),
+            'payment_method' => 'cash',
+            'estimated_fare' => 100,
+            'actual_fare' => 0,
+            'estimated_distance' => 5,
+            'paid_fare' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('trip_status')->insert([
+            'trip_request_id' => $rideId,
+            'customer_id' => $customer->id,
+            'driver_id' => $driver->id,
+            'accepted' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+
+        // Marking arrived records the timestamp but does NOT change current_status.
+        $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $rideId,
+            'status' => 'arrived',
+        ])->assertOk();
+
+        $this->assertNotNull(DB::table('trip_status')->where('trip_request_id', $rideId)->value('arrived'));
+        $this->assertSame('accepted', DB::table('trip_requests')->where('id', $rideId)->value('current_status'));
+
+        // Also valid once the driver is out for pickup (the usual trigger state).
+        DB::table('trip_requests')->where('id', $rideId)->update(['current_status' => 'out_for_pickup']);
+        $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $rideId,
+            'status' => 'arrived',
+        ])->assertOk();
+        $this->assertSame('out_for_pickup', DB::table('trip_requests')->where('id', $rideId)->value('current_status'));
+
+        // 'arrived' is not valid once the trip is ongoing.
+        DB::table('trip_requests')->where('id', $rideId)->update(['current_status' => 'ongoing']);
+        $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $rideId,
+            'status' => 'arrived',
+        ])->assertStatus(400);
     }
 
     // ========================================================================

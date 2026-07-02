@@ -635,6 +635,40 @@ class TripRequestController extends Controller
             return response()->json(responseFormatter(TRIP_REQUEST_PAUSED_404), 403);
         }
 
+        // "Driver arrived at pickup" is a sub-signal, not a state transition: it
+        // records the arrival time and notifies the customer while current_status
+        // stays 'accepted' (the ride only becomes 'ongoing' once it actually starts).
+        // Handled here so it bypasses updateRideStatus, which would otherwise flip
+        // current_status to the raw status value.
+        if ($request->status === 'arrived') {
+            // The driver reaches the pickup point while heading there — valid from
+            // 'accepted' or 'out_for_pickup', but not once the trip is 'ongoing'/done.
+            if (!in_array($trip->current_status, [ACCEPTED, 'out_for_pickup'], true)) {
+                return response()->json(responseFormatter(DEFAULT_400), 400);
+            }
+            $trip->tripStatus()->update(['arrived' => now()]);
+
+            try {
+                $push = getNotification('trip_arrived');
+                if ($push) {
+                    sendDeviceNotification(fcm_token: $trip->customer->fcm_token,
+                        title: translate(key: $push['title'], locale: $trip->customer->current_language_key),
+                        description: textVariableDataFormat(value: $push['description'], tripId: $trip->ref_id, sentTime: pushSentTime($trip->updated_at), locale: $trip->customer->current_language_key),
+                        status: $push['status'],
+                        ride_request_id: $request['trip_request_id'],
+                        type: $trip->type,
+                        notification_type: $trip->type == RIDE_REQUEST ? 'trip' : 'parcel',
+                        action: $push['action'],
+                        user_id: $trip->customer->id
+                    );
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Push notification failed in rideStatusUpdate(arrived): ' . $e->getMessage());
+            }
+
+            return response()->json(responseFormatter(DEFAULT_UPDATE_200, $trip));
+        }
+
         $data = $this->tripRequestService->updateRideStatus(data: array_merge($validator->validated(), ['trip' => $trip]));
         if (!$data) {
             return response()->json(responseFormatter(constant: [ 'response_code' => 'drop_off_location_not_found_404',

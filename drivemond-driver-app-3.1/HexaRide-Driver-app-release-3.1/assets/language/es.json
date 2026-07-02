@@ -1123,5 +1123,12 @@
     "search_vehicle_brand": "Buscar marca de vehículo",
     "search_vehicle_model": "Buscar modelo de vehículo",
     "search_vehicle_category": "Buscar categoría de vehículo",
-    "no_match_found": "No se encontraron coincidencias"
+    "no_match_found": "No se encontraron coincidencias",
+    "forgot_pin": "¿Olvidaste tu PIN?",
+    "forgot_pin_hint": "Ingresa tu nombre de usuario y enviaremos un código de un solo uso al número de teléfono de tu cuenta.",
+    "otp": "OTP",
+    "otp_must_be_6_digits": "El OTP debe tener 6 dígitos",
+    "reset_pin": "Restablecer PIN",
+    "i_have_arrived": "He llegado",
+    "the_customer_has_been_notified": "Se ha notificado al cliente"
 }

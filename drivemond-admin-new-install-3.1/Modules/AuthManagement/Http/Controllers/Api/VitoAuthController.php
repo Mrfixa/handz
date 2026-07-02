@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Modules\AuthManagement\Http\Controllers\Concerns\HandlesPhoneOtp;
 use Modules\AuthManagement\Entities\QrToken;
 use Modules\AuthManagement\Service\Interfaces\AuthServiceInterface;
 use Modules\UserManagement\Entities\User;
@@ -22,6 +23,8 @@ use Modules\UserManagement\Service\Interfaces\DriverServiceInterface;
 
 class VitoAuthController extends Controller
 {
+    use HandlesPhoneOtp;
+
     protected $authService;
     protected $customerService;
     protected $driverService;
@@ -299,6 +302,107 @@ class VitoAuthController extends Controller
             'username'  => $request->username,
             'message'   => $available ? 'Username available' : 'Username already taken',
         ]);
+    }
+
+    /**
+     * POST /api/{customer|driver}/auth/forgot-pin/send-otp
+     * Starts self-service PIN recovery: looks up the account by username and, if it
+     * has a phone on file, sends a one-time code (reusing the vito_otps flow).
+     * Usernames are already publicly discoverable via check-username, so this
+     * returns clear, actionable errors rather than a uniform response.
+     */
+    public function forgotPinSendOtp(Request $request): JsonResponse
+    {
+        $request->merge(['username' => trim((string) $request->username)]);
+
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        $userType = str_contains($request->route()->getPrefix(), 'customer') ? CUSTOMER : DRIVER;
+
+        $user = User::where('username', $request->username)
+            ->where('user_type', $userType)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['errors' => ['message' => ['No account found for this username.']]], 404);
+        }
+
+        if (empty($user->phone)) {
+            return response()->json([
+                'response_code' => 'no_phone_on_file',
+                'message' => 'No phone number is on file for this account. Please contact support to reset your PIN.',
+            ], 422);
+        }
+
+        if ($this->otpResendCooldownActive($user->phone)) {
+            return response()->json(['errors' => ['message' => ['Please wait 30 seconds before requesting a new OTP.']]], 429);
+        }
+
+        $otp = $this->issuePhoneOtp($user->phone);
+
+        $resp = ['message' => 'OTP sent successfully'];
+        if (app()->environment('testing', 'local')) {
+            $resp['otp'] = $otp;
+        }
+
+        return response()->json($resp);
+    }
+
+    /**
+     * POST /api/{customer|driver}/auth/forgot-pin/reset
+     * Completes recovery: verifies the OTP against the account's phone, sets the new
+     * PIN, clears any lockout state, and revokes ALL existing sessions (recovery is a
+     * full credential reset, so every device must re-authenticate).
+     */
+    public function resetPinWithOtp(Request $request): JsonResponse
+    {
+        $request->merge(['username' => trim((string) $request->username)]);
+
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|max:50',
+            'otp' => 'required|string|digits:6',
+            'new_pin' => 'required|string|digits:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 422);
+        }
+
+        $userType = str_contains($request->route()->getPrefix(), 'customer') ? CUSTOMER : DRIVER;
+
+        $user = User::where('username', $request->username)
+            ->where('user_type', $userType)
+            ->first();
+
+        if (!$user || empty($user->phone)) {
+            return response()->json(responseFormatter(AUTH_LOGIN_401), 403);
+        }
+
+        $result = $this->verifyPhoneOtp($user->phone, $request->otp);
+        if (!$result['ok']) {
+            return response()->json(['errors' => ['message' => [$result['message']]]], $result['status']);
+        }
+
+        $this->authService->update(id: $user->id, data: [
+            'pin_hash' => Hash::make($request->new_pin),
+            'pin_attempts' => 0,
+            'is_temp_blocked' => 0,
+            'pin_blocked_at' => null,
+        ]);
+
+        // Recovery resets the credential — revoke every session so all devices
+        // must sign in again with the new PIN.
+        foreach ($user->tokens as $token) {
+            $token->revoke();
+        }
+
+        return response()->json(responseFormatter(DEFAULT_200));
     }
 
     private function authenticate($user, $accessType): array

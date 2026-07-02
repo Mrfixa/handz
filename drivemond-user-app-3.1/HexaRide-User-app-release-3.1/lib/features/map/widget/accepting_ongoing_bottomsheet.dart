@@ -156,6 +156,27 @@ class _AcceptingAndOngoingBottomSheetState extends State<AcceptingAndOngoingBott
             SizedBox(height: Dimensions.paddingSizeSmall),
           ],
 
+          // Shown once the driver signals arrival at pickup, until the trip starts.
+          if (rideController.tripDetails?.isDriverArrived == true && (rideController.currentRideState == RideState.outForPickup || rideController.currentRideState == RideState.afterAcceptRider)) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+              ),
+              child: Row(children: [
+                Icon(Icons.check_circle, color: Theme.of(context).primaryColor, size: 18),
+                const SizedBox(width: Dimensions.paddingSizeSmall),
+                Expanded(child: Text(
+                  'driver_has_arrived'.tr,
+                  style: textRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor),
+                )),
+              ]),
+            ),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+          ],
+
           if(rideController.tripDetails != null && rideController.tripDetails!.type != AppConstants.parcel && !rideController.tripDetails!.isPaused!)
             Center(child: SliderButton(
               action: (){

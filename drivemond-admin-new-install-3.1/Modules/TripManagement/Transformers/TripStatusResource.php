@@ -20,6 +20,7 @@ class TripStatusResource extends JsonResource
             'customer_id' => CustomerResource::make($this->whenLoaded('customer')),
             'pending' => $this->pending,
             'accepted' => $this->accepted,
+            'arrived' => $this->arrived,
             'confirmed' => $this->confirmed,
             'out_for_pickup' => $this->out_for_pickup,
             'picked_up' => $this->picked_up,

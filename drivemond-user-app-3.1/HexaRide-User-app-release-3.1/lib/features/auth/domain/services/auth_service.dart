@@ -17,6 +17,16 @@ class AuthService implements AuthServiceInterface{
   }
 
   @override
+  Future forgotPinSendOtp(String username) async{
+    return await authRepositoryInterface.forgotPinSendOtp(username);
+  }
+
+  @override
+  Future resetPinWithOtp(String username, String otp, String newPin) async{
+    return await authRepositoryInterface.resetPinWithOtp(username, otp, newPin);
+  }
+
+  @override
   Future checkEmail(String email) async{
    return await authRepositoryInterface.checkEmail(email);
   }

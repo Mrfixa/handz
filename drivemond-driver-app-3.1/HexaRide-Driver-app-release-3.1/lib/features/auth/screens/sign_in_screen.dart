@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:ride_sharing_user_app/common_widgets/vito_pin_field.dart';
 import 'package:ride_sharing_user_app/features/auth/screens/token_gate_screen.dart';
+import 'package:ride_sharing_user_app/features/auth/screens/forgot_pin_screen.dart';
 import 'package:ride_sharing_user_app/features/html/domain/html_enum_types.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
@@ -179,6 +180,17 @@ class _SignInScreenState extends State<SignInScreen> {
                                 ]),
                               ),
                               const Spacer(),
+                              TextButton(
+                                onPressed: () => Get.to(() => const ForgotPinScreen()),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(50, 30),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text('forgot_pin'.tr, style: textRegular.copyWith(
+                                  fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor,
+                                )),
+                              ),
                             ]),
 
                             const SizedBox(height: Dimensions.paddingSizeDefault),
