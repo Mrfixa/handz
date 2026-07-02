@@ -17,6 +17,7 @@ class TripStatus extends Model
         'driver_id',
         'pending',
         'accepted',
+        'arrived',
         'out_for_pickup',
         'picked_up',
         'ongoing',

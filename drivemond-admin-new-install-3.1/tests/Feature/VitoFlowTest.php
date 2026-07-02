@@ -221,6 +221,7 @@ class VitoFlowTest extends TestCase
                 $table->uuid('driver_id')->nullable();
                 $table->timestamp('pending')->nullable();
                 $table->timestamp('accepted')->nullable();
+                $table->timestamp('arrived')->nullable();
                 $table->timestamp('out_for_pickup')->nullable();
                 $table->timestamp('picked_up')->nullable();
                 $table->timestamp('ongoing')->nullable();
@@ -1104,6 +1105,64 @@ class VitoFlowTest extends TestCase
         Passport::actingAs($driver2, ['AccessToDriver']);
         $res2 = $this->postJson('/api/driver/ride/atomic-accept', ['trip_request_id' => $rideId]);
         $res2->assertStatus(404);
+    }
+
+    public function test_driver_arrived_at_pickup_sub_signal(): void
+    {
+        $customer = $this->createUser('customer');
+        $driver = $this->createUser('driver', ['username' => 'arrivedriver']);
+
+        DB::table('driver_details')->insert([
+            'user_id' => $driver->id, 'is_online' => 1, 'availability_status' => 'available', 'is_verified' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_tracks')->insert([
+            'user_id' => $driver->id, 'date' => now()->toDateString(), 'last_ride_completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $rideId = Str::uuid()->toString();
+        DB::table('trip_requests')->insert([
+            'id' => $rideId,
+            'customer_id' => $customer->id,
+            'driver_id' => $driver->id,
+            'current_status' => 'accepted',
+            'type' => 'ride_request',
+            'zone_id' => Str::uuid()->toString(),
+            'area_id' => Str::uuid()->toString(),
+            'vehicle_category_id' => Str::uuid()->toString(),
+            'payment_method' => 'cash',
+            'estimated_fare' => 100,
+            'actual_fare' => 0,
+            'estimated_distance' => 5,
+            'paid_fare' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('trip_status')->insert([
+            'trip_request_id' => $rideId,
+            'customer_id' => $customer->id,
+            'driver_id' => $driver->id,
+            'accepted' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($driver, ['AccessToDriver']);
+
+        // Marking arrived records the timestamp but does NOT change current_status.
+        $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $rideId,
+            'status' => 'arrived',
+        ])->assertOk();
+
+        $this->assertNotNull(DB::table('trip_status')->where('trip_request_id', $rideId)->value('arrived'));
+        $this->assertSame('accepted', DB::table('trip_requests')->where('id', $rideId)->value('current_status'));
+
+        // 'arrived' is only valid from the accepted state.
+        DB::table('trip_requests')->where('id', $rideId)->update(['current_status' => 'ongoing']);
+        $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $rideId,
+            'status' => 'arrived',
+        ])->assertStatus(400);
     }
 
     // ========================================================================
