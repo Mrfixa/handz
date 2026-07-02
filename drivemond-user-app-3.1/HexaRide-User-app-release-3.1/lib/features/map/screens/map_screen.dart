@@ -66,22 +66,18 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
   }
 
 
+  bool _isSearchingForMatch() =>
+      Get.find<RideController>().currentRideState.name == AppConstants.findingRider ||
+      Get.find<ParcelController>().currentParcelState.name == AppConstants.findingRider;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: PopScope(
-        canPop: Navigator.canPop(context),
+        canPop: Navigator.canPop(context) && !_isSearchingForMatch(),
         onPopInvokedWithResult: (didPop, value){
-          if(didPop){
-            Future.delayed(const Duration(milliseconds: 500)).then((onValue){
-              if(Get.find<RideController>().currentRideState.name == AppConstants.findingRider ||
-                  Get.find<ParcelController>().currentParcelState.name == AppConstants.findingRider){
-                Get.offAll(()=> const DashboardScreen());
-              }
-            });
-
-          }else{
+          if(!didPop){
             Get.offAll(()=> const DashboardScreen());
           }
         },
@@ -94,14 +90,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
                   subTitle: widget.fromScreen == MapScreenType.parcel ? null : rideController.isLoading ? 'refreshing_date'.tr : _getAppbarSubTitle(rideController),
                   centerTitle: true,
                   onBackPressed: () {
-                    if(Navigator.canPop(context)) {
-                      if(Get.find<RideController>().currentRideState.name == AppConstants.findingRider ||
-                          Get.find<ParcelController>().currentParcelState.name == AppConstants.findingRider){
-                        Get.offAll(()=> const DashboardScreen());
-                      }else{
-                        Get.back();
-                      }
-
+                    if(Navigator.canPop(context) && !_isSearchingForMatch()) {
+                      Get.back();
                     }else {
                       Get.offAll(()=> const DashboardScreen());
                     }

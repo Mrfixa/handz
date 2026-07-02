@@ -47,8 +47,11 @@ class ReferralEarningScreen extends StatelessWidget {
 
             referAndEarnController.referralModel?.data != null ?
             (referAndEarnController.referralModel!.data!.isNotEmpty) ?
-            Expanded(child: SingleChildScrollView(
+            Expanded(child: RefreshIndicator(
+              onRefresh: () => referAndEarnController.getEarningHistoryList(1),
+              child: SingleChildScrollView(
               controller: referAndEarnController.scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
               child: PaginatedListWidget(
                 scrollController: referAndEarnController.scrollController,
                 totalSize: referAndEarnController.referralModel!.totalSize,
@@ -66,7 +69,7 @@ class ReferralEarningScreen extends StatelessWidget {
                   },
                 ),
               ),
-            )) :
+            ))) :
             const Expanded(child: NoDataWidget(title: 'no_transaction_found')) :
             const Expanded(child: NotificationShimmer()),
 

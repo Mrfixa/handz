@@ -1158,6 +1158,13 @@ class _MartCartScreenState extends State<MartCartScreen> {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
+      // Reject the "null island" (0,0) fix — a GPS/emulator glitch, not a real
+      // location — rather than silently sending it and hitting a generic 400
+      // from the backend after the order is submitted.
+      if (position.latitude == 0.0 && position.longitude == 0.0) {
+        if (mounted) Get.snackbar('error'.tr, 'location_fetch_failed'.tr);
+        return;
+      }
       if (mounted) {
         setState(() {
           _deliveryLat = position.latitude;

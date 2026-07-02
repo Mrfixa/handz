@@ -40,8 +40,11 @@ class _MessageListScreenState extends State<MessageListScreen> {
              // const SearchWidget(),
               const SizedBox(height: Dimensions.paddingSizeSmall),
 
-              (messageController.channelModel?.data != null) ? messageController.channelModel!.data!.isNotEmpty ? Expanded(child: SingleChildScrollView(
+              (messageController.channelModel?.data != null) ? messageController.channelModel!.data!.isNotEmpty ? Expanded(child: RefreshIndicator(
+                onRefresh: () => Get.find<MessageController>().getChannelList(1),
+                child: SingleChildScrollView(
                 controller: scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: PaginatedListWidget(reverse: true,
                   scrollController: scrollController,
                   totalSize: messageController.channelModel!.totalSize,
@@ -68,7 +71,7 @@ class _MessageListScreenState extends State<MessageListScreen> {
                     },
                   ),
                 ),
-              )) : const Expanded(child: NoDataWidget(title: 'no_chat_found')) : const Expanded(child: NotificationShimmer()),
+              ))) : const Expanded(child: NoDataWidget(title: 'no_chat_found')) : const Expanded(child: NotificationShimmer()),
 
             ]));
           }),
