@@ -4,7 +4,9 @@ import 'package:ride_sharing_user_app/util/images.dart';
 
 class AppConstants {
   static const String appName = 'Vito Driver';
-  static const String baseUrl = 'https://dacatlon.store';
+  // Configurable per build (staging/prod) via --dart-define=BASE_URL=...; falls back to the
+  // default host so existing builds keep working. Matches the user app's pattern.
+  static const String baseUrl = String.fromEnvironment('BASE_URL', defaultValue: 'https://dacatlon.store');
   static const String polylineMapKey =
       String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
   static const double appVersion = 2.0; /// v2.5.1 release

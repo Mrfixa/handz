@@ -17,9 +17,12 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => ['*'],
+    // Mobile clients use bearer tokens (CORS is browser-only), so cross-origin
+    // browser access is denied by default. Set CORS_ALLOWED_ORIGINS to a
+    // comma-separated list of web origins that legitimately call the API.
+    'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', ''))))),
 
     'allowed_origins_patterns' => [],
 
