@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
+import 'package:ride_sharing_user_app/common_widgets/confirmation_bottomsheet_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/custom_text_field.dart';
 import 'package:ride_sharing_user_app/common_widgets/expandable_bottom_sheet.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
@@ -231,6 +232,33 @@ class _InitialWidgetState extends State<InitialWidget> {
   // }
 
   void _sendFindRiderRequest(RideController rideController){
+    // C6: Show booking confirmation before submitting ride request
+    Get.bottomSheet(
+      ConfirmationBottomsheetWidget(
+        iconColor: Theme.of(context!).primaryColor,
+        title: 'confirm_ride_request'.tr,
+        description: _buildRideConfirmationText(rideController),
+        icon: Images.success,
+        onYesPressed: () {
+          Get.back();
+          _submitRideRequest(rideController);
+        },
+        onNoPressed: () => Get.back(),
+      ),
+    );
+  }
+
+  String _buildRideConfirmationText(RideController rideController) {
+    final locationController = Get.find<LocationController>();
+    final pickup = locationController.fromAddress?.address ?? '';
+    final destination = locationController.toAddress?.address ?? '';
+    final fare = rideController.discountAmount.toDouble() > 0
+        ? rideController.discountFare
+        : rideController.estimatedFare;
+    return '$pickup → $destination\n${'estimated_fare'.tr}: \$$fare';
+  }
+
+  void _submitRideRequest(RideController rideController) {
     rideController.submitRideRequest(rideController.noteController.text, false).then((value) {
       if (value.statusCode == 200) {
         Get.find<AuthController>().saveFindingRideCreatedTime();
