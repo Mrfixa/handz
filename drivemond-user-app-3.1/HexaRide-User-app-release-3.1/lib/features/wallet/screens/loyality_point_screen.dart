@@ -73,7 +73,9 @@ class _LoyaltyPointScreenState extends State<LoyaltyPointScreen> {
         Expanded(
           child: walletController.loyaltyPointModel?.data != null ?
           (walletController.loyaltyPointModel!.data!.isNotEmpty) ?
-          SingleChildScrollView(controller: scrollController, child: PaginatedListWidget(
+          RefreshIndicator(
+            onRefresh: () => Get.find<WalletController>().getLoyaltyPointList(1),
+            child: SingleChildScrollView(controller: scrollController, physics: const AlwaysScrollableScrollPhysics(), child: PaginatedListWidget(
             scrollController: scrollController,
             totalSize: walletController.loyaltyPointModel!.totalSize,
             offset: (walletController.loyaltyPointModel?.offset != null) ?
@@ -91,7 +93,7 @@ class _LoyaltyPointScreenState extends State<LoyaltyPointScreen> {
                 return LoyaltyPointCard(points: walletController.loyaltyPointModel!.data![index]);
               },
             ),
-          )) :
+          ))) :
           const NoDataWidget(title: 'no_point_gain_yet') :
           const NotificationShimmer(),
         ),

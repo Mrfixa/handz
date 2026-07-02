@@ -765,10 +765,28 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
       Get.snackbar('error'.tr, 'order_already_completed'.tr);
       return;
     }
+    final reasonController = TextEditingController();
     Get.dialog(
       AlertDialog(
         title: Text('cancel_order'.tr),
-        content: Text('cancel_order_confirmation'.tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('cancel_order_confirmation'.tr),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+            Text('cancellation_reason'.tr, style: textMedium),
+            const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+            TextField(
+              controller: reasonController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'type_here_your_cancel_reason'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
@@ -776,11 +794,16 @@ class _MartOrderTrackingScreenState extends State<MartOrderTrackingScreen> {
           ),
           TextButton(
             onPressed: () async {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                Get.snackbar('error'.tr, 'please_write_your_cancel_reason'.tr);
+                return;
+              }
               Get.back();
               try {
                 final cancelResponse = await Get.find<ApiClient>().putData(
                   '${AppConstants.martCancelOrder}${widget.orderId}/cancel',
-                  {},
+                  {'reason': reason},
                 );
                 if (cancelResponse.statusCode == 200) {
                   Get.back();

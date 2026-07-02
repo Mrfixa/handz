@@ -113,26 +113,30 @@ class _TripScreenState extends State<TripScreen> with SingleTickerProviderStateM
 
     if (tripController.tripModel != null) {
       if (filteredTrips.isNotEmpty) {
-        return SingleChildScrollView(
-          controller: scrollController,
-          child: PaginatedListWidget(
-            scrollController: scrollController,
-            totalSize: filteredTrips.length,
-            offset: null,
-            onPaginate: (int? offset) async {
-              await tripController.getTripList(offset ?? 1);
-            },
-            itemView: Padding(
-              padding: const EdgeInsets.only(bottom: 70.0),
-              child: ListView.separated(
-                itemCount: filteredTrips.length,
-                padding: const EdgeInsets.all(0),
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemBuilder: (BuildContext context, int index) {
-                  return TripItemView(tripDetails: filteredTrips[index]);
-                },
-                separatorBuilder: (BuildContext context, int index) => Divider(color: Theme.of(context).highlightColor.withValues(alpha:0.15)),
+        return RefreshIndicator(
+          onRefresh: () => Get.find<TripController>().getTripList(1),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: PaginatedListWidget(
+              scrollController: scrollController,
+              totalSize: filteredTrips.length,
+              offset: null,
+              onPaginate: (int? offset) async {
+                await tripController.getTripList(offset ?? 1);
+              },
+              itemView: Padding(
+                padding: const EdgeInsets.only(bottom: 70.0),
+                child: ListView.separated(
+                  itemCount: filteredTrips.length,
+                  padding: const EdgeInsets.all(0),
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemBuilder: (BuildContext context, int index) {
+                    return TripItemView(tripDetails: filteredTrips[index]);
+                  },
+                  separatorBuilder: (BuildContext context, int index) => Divider(color: Theme.of(context).highlightColor.withValues(alpha:0.15)),
+                ),
               ),
             ),
           ),
@@ -144,4 +148,3 @@ class _TripScreenState extends State<TripScreen> with SingleTickerProviderStateM
     return const NotificationShimmer();
   }
 }
-
