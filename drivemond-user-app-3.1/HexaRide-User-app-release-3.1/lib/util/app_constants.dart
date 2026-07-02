@@ -110,6 +110,8 @@ class AppConstants {
   static const String pinRegister = '/api/customer/auth/pin-register';
   static const String checkUsername = '/api/customer/auth/check-username';
   static const String changePin = '/api/customer/auth/change-pin';
+  static const String forgotPinSendOtp = '/api/customer/auth/forgot-pin/send-otp';
+  static const String forgotPinReset = '/api/customer/auth/forgot-pin/reset';
   static const String martProducts = '/api/customer/mart/products';
   static const String martCategories = '/api/customer/mart/categories';
   static const String martProductDetails = '/api/customer/mart/products/';

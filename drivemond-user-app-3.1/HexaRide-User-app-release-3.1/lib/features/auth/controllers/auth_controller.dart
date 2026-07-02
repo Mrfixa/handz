@@ -380,6 +380,42 @@ class AuthController extends GetxController implements GetxService {
     update();
   }
 
+  /// Requests a recovery OTP for a forgotten PIN. Returns true when the OTP
+  /// was sent so the screen can advance to the reset step.
+  Future<bool> forgotPinSendOtp(String username) async {
+    _isLoading = true;
+    update();
+    Response? response = await authServiceInterface.forgotPinSendOtp(username);
+    bool sent = false;
+    if (response!.statusCode == 200) {
+      sent = true;
+      showCustomSnackBar('otp_sent_successfully'.tr, isError: false);
+    } else {
+      ApiChecker.checkApi(response);
+    }
+    _isLoading = false;
+    update();
+    return sent;
+  }
+
+  /// Verifies the OTP and sets a new PIN. Returns true on success so the screen
+  /// can pop back to sign-in.
+  Future<bool> resetPinWithOtp(String username, String otp, String newPin) async {
+    _isLoading = true;
+    update();
+    Response? response = await authServiceInterface.resetPinWithOtp(username, otp, newPin);
+    bool success = false;
+    if (response!.statusCode == 200) {
+      success = true;
+      showCustomSnackBar('pin_changed_successfully'.tr, isError: false);
+    } else {
+      ApiChecker.checkApi(response);
+    }
+    _isLoading = false;
+    update();
+    return success;
+  }
+
   void updateVerificationCode(String query, {bool isUpdate = true}) {
     _verificationCode = query;
     if(isUpdate){
