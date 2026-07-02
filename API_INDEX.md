@@ -20,6 +20,10 @@ Routes: `Modules/AuthManagement/Routes/api.php`
 | POST | `/auth/logout` | `VitoAuthController@logout` | auth:api |
 | POST | `/customer/auth/change-pin` | `VitoAuthController@changePin` | auth:api |
 | POST | `/driver/auth/change-pin` | `VitoAuthController@changePin` | auth:api |
+| POST | `/customer/auth/forgot-pin/send-otp` | `VitoAuthController@forgotPinSendOtp` | throttle 5/min |
+| POST | `/customer/auth/forgot-pin/reset` | `VitoAuthController@resetPinWithOtp` | throttle 5/min |
+| POST | `/driver/auth/forgot-pin/send-otp` | `VitoAuthController@forgotPinSendOtp` | throttle 5/min |
+| POST | `/driver/auth/forgot-pin/reset` | `VitoAuthController@resetPinWithOtp` | throttle 5/min |
 
 > `pinLogin`/`pinRegister` infer customer vs driver from the route prefix. `changePin` revokes all other sessions.
 

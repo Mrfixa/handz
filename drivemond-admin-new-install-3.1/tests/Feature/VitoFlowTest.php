@@ -918,6 +918,74 @@ class VitoFlowTest extends TestCase
         $this->assertTrue((bool) $user->tokens()->where('id', $sessionB->token->id)->first()->revoked);
     }
 
+    public function test_forgot_pin_recovery(): void
+    {
+        $user = $this->createUser('customer', [
+            'username' => 'forgetful',
+            'phone' => '+15558675309',
+            'pin_hash' => Hash::make('111111'),
+        ]);
+
+        // An existing session that recovery must revoke.
+        $session = $user->createToken('old-device', ['AccessToCustomer']);
+
+        // Unknown username -> 404.
+        $this->postJson('/api/customer/auth/forgot-pin/send-otp', [
+            'username' => 'nobody-here',
+        ])->assertStatus(404);
+
+        // Request the OTP (testing env returns the raw code in the response).
+        $send = $this->postJson('/api/customer/auth/forgot-pin/send-otp', [
+            'username' => 'forgetful',
+        ])->assertOk();
+        $otp = $send->json('otp');
+        $this->assertNotEmpty($otp);
+
+        // Wrong OTP -> 400, PIN unchanged.
+        $this->postJson('/api/customer/auth/forgot-pin/reset', [
+            'username' => 'forgetful',
+            'otp' => '000000',
+            'new_pin' => '222222',
+            'new_pin_confirmation' => '222222',
+        ])->assertStatus(400);
+
+        // Correct OTP -> resets the PIN.
+        $this->postJson('/api/customer/auth/forgot-pin/reset', [
+            'username' => 'forgetful',
+            'otp' => $otp,
+            'new_pin' => '222222',
+            'new_pin_confirmation' => '222222',
+        ])->assertOk();
+
+        $user->refresh();
+        $this->assertTrue(Hash::check('222222', $user->pin_hash));
+        $this->assertFalse(Hash::check('111111', $user->pin_hash));
+
+        // Recovery revokes every prior session.
+        $this->assertTrue((bool) $user->tokens()->where('id', $session->token->id)->first()->revoked);
+
+        // Old PIN no longer logs in; the new PIN does.
+        $this->postJson('/api/customer/auth/pin-login', [
+            'username' => 'forgetful', 'pin' => '111111',
+        ])->assertStatus(403);
+        $this->postJson('/api/customer/auth/pin-login', [
+            'username' => 'forgetful', 'pin' => '222222',
+        ])->assertOk();
+    }
+
+    public function test_forgot_pin_rejects_account_without_phone(): void
+    {
+        $this->createUser('customer', [
+            'username' => 'nophone',
+            'phone' => null,
+            'pin_hash' => Hash::make('111111'),
+        ]);
+
+        $this->postJson('/api/customer/auth/forgot-pin/send-otp', [
+            'username' => 'nophone',
+        ])->assertStatus(422);
+    }
+
     public function test_pin_login_trims_username(): void
     {
         $this->createUser('customer', [
