@@ -9,7 +9,8 @@ Route::group(['prefix' => 'customer'], function () {
         Route::controller(ChattingController::class)->group(function () {
             Route::get('find-channel', 'findChannel');
             Route::put('create-channel', 'createChannel');
-            Route::put('send-message', 'sendMessage');
+            // Sends broadcast + push, so cap them tighter than reads (stacks with the group limit).
+            Route::put('send-message', 'sendMessage')->middleware('throttle:30,1');
             Route::get('conversation', 'conversation');
             Route::get('channel-list', 'channelList');
         });
@@ -21,12 +22,13 @@ Route::group(['prefix' => 'driver'], function () {
         Route::controller(ChattingController::class)->group(function () {
             Route::get('find-channel', 'findChannel');
             Route::put('create-channel', 'createChannel');
-            Route::put('send-message', 'sendMessage');
+            // Sends broadcast + push, so cap them tighter than reads (stacks with the group limit).
+            Route::put('send-message', 'sendMessage')->middleware('throttle:30,1');
             Route::get('conversation', 'conversation');
             Route::get('channel-list', 'channelList');
             Route::put('create-channel-with-admin', 'createChannelWithAdmin');
-            Route::put('send-message-to-admin', 'sendMessageToAdminFromDriver');
-            Route::put('send-predefined-question-to-admin', 'sendPredefinedQuestionToAdminFromDriver');
+            Route::put('send-message-to-admin', 'sendMessageToAdminFromDriver')->middleware('throttle:30,1');
+            Route::put('send-predefined-question-to-admin', 'sendPredefinedQuestionToAdminFromDriver')->middleware('throttle:30,1');
         });
     });
 });
