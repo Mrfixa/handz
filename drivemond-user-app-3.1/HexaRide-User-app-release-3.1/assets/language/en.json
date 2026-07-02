@@ -1144,5 +1144,6 @@
     "forgot_pin_hint": "Enter your username and we'll send a one-time code to the phone number on your account.",
     "otp": "OTP",
     "otp_must_be_6_digits": "OTP must be 6 digits",
-    "reset_pin": "Reset PIN"
+    "reset_pin": "Reset PIN",
+    "driver_has_arrived": "Your driver has arrived at the pickup point"
 }

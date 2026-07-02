@@ -62,6 +62,7 @@ class TripDetails {
   String? customerAvgRating;
   String? driverAvgRating;
   String? currentStatus;
+  bool? isDriverArrived;
   double? paidFare;
   bool? isPaused;
   ParcelInformation? parcelInformation;
@@ -128,6 +129,7 @@ class TripDetails {
         this.customerAvgRating,
         this.driverAvgRating,
         this.currentStatus,
+        this.isDriverArrived,
         this.paidFare,
         this.isPaused,
         this.parcelInformation,
@@ -223,6 +225,7 @@ class TripDetails {
     customerAvgRating = json['customer_avg_rating'];
     driverAvgRating = json['driver_avg_rating'];
     currentStatus = json['current_status'];
+    isDriverArrived = json['is_driver_arrived'];
     if(json['paid_fare'] != null){
       try{
         paidFare = json['paid_fare'].toDouble();

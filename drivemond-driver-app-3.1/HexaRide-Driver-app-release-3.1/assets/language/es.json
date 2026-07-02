@@ -1128,5 +1128,7 @@
     "forgot_pin_hint": "Ingresa tu nombre de usuario y enviaremos un código de un solo uso al número de teléfono de tu cuenta.",
     "otp": "OTP",
     "otp_must_be_6_digits": "El OTP debe tener 6 dígitos",
-    "reset_pin": "Restablecer PIN"
+    "reset_pin": "Restablecer PIN",
+    "i_have_arrived": "He llegado",
+    "the_customer_has_been_notified": "Se ha notificado al cliente"
 }

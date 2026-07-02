@@ -641,7 +641,9 @@ class TripRequestController extends Controller
         // Handled here so it bypasses updateRideStatus, which would otherwise flip
         // current_status to the raw status value.
         if ($request->status === 'arrived') {
-            if ($trip->current_status !== ACCEPTED) {
+            // The driver reaches the pickup point while heading there — valid from
+            // 'accepted' or 'out_for_pickup', but not once the trip is 'ongoing'/done.
+            if (!in_array($trip->current_status, [ACCEPTED, 'out_for_pickup'], true)) {
                 return response()->json(responseFormatter(DEFAULT_400), 400);
             }
             $trip->tripStatus()->update(['arrived' => now()]);

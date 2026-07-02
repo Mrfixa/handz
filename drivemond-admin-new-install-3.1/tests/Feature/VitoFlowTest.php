@@ -1157,7 +1157,15 @@ class VitoFlowTest extends TestCase
         $this->assertNotNull(DB::table('trip_status')->where('trip_request_id', $rideId)->value('arrived'));
         $this->assertSame('accepted', DB::table('trip_requests')->where('id', $rideId)->value('current_status'));
 
-        // 'arrived' is only valid from the accepted state.
+        // Also valid once the driver is out for pickup (the usual trigger state).
+        DB::table('trip_requests')->where('id', $rideId)->update(['current_status' => 'out_for_pickup']);
+        $this->putJson('/api/driver/ride/update-status', [
+            'trip_request_id' => $rideId,
+            'status' => 'arrived',
+        ])->assertOk();
+        $this->assertSame('out_for_pickup', DB::table('trip_requests')->where('id', $rideId)->value('current_status'));
+
+        // 'arrived' is not valid once the trip is ongoing.
         DB::table('trip_requests')->where('id', $rideId)->update(['current_status' => 'ongoing']);
         $this->putJson('/api/driver/ride/update-status', [
             'trip_request_id' => $rideId,

@@ -79,6 +79,8 @@ class TripRequestResource extends JsonResource
             'parcel_user_info' => UserResource::collection($this->whenLoaded('parcelUserInfo')),
             'coupon' => $this->coupon_id === null ? null : CouponResource::make($this->coupon),
             'tripStatus' => TripStatusResource::make($this->whenLoaded('tripStatus')),
+            'is_driver_arrived' => !is_null($this->tripStatus?->arrived),
+            'driver_arrived_at' => $this->tripStatus?->arrived,
             'screenshot' => $this->map_screenshot,
             'parcel_start_time' => $this->type === PARCEL ? $this->tripStatus?->ongoing : null,
             'ride_start_time' => $this->type === RIDE_REQUEST ? $this->tripStatus?->ongoing : null,

@@ -401,6 +401,23 @@ class _AcceptedTripWidgetState extends State<_AcceptedTripWidget> {
               SizedBox(height: Dimensions.paddingSizeSmall),
             ],
 
+            // Let the driver tell the customer they've reached the pickup point.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
+              child: ButtonWidget(
+                buttonText: 'i_have_arrived'.tr,
+                showBorder: true,
+                transparent: true,
+                textColor: Theme.of(context).primaryColor,
+                borderColor: Theme.of(context).primaryColor,
+                radius: Dimensions.paddingSizeSmall,
+                onPressed: () {
+                  rideController.tripStatusUpdate('arrived', rideController.tripDetail!.id!, 'the_customer_has_been_notified', '');
+                },
+              ),
+            ),
+            const SizedBox(height: Dimensions.paddingSizeSmall),
+
             if(!(Get.find<SplashController>().config?.otpConfirmationForTrip ?? false))...[
               rideController.isPinVerificationLoading ?
               SizedBox(width: 30,height: 30,child: CircularProgressIndicator(color: Theme.of(context).primaryColor)) :
